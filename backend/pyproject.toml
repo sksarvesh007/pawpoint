@@ -113,9 +113,6 @@ docstring-code-line-length = 80
 # Python version to check against
 python-version = "3.13"
 
-# Virtual environment for third-party module resolution
-python = ".venv"
-
 # Target platform
 python-platform = "all"
 
