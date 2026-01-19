@@ -1,0 +1,26 @@
+repos:
+  # Ruff - Python linter and formatter
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.14.13
+    hooks:
+      # Run the linter with auto-fix
+      - id: ruff
+        name: Ruff linter
+        args: [--fix]
+        files: ^backend/.*\.py$
+
+      # Run the formatter
+      - id: ruff-format
+        name: Ruff formatter
+        files: ^backend/.*\.py$
+
+  # ty - Python type checker
+  - repo: local
+    hooks:
+      - id: ty
+        name: ty type checker
+        entry: bash -c 'cd backend && ty check'
+        language: system
+        types: [python]
+        pass_filenames: false
+        files: ^backend/.*\.py$
