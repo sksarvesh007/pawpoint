@@ -31,8 +31,9 @@ Dockerfile
 docker-compose*.yml
 .docker/
 
-# Documentation
+# Documentation (keep README.md available in image)
 *.md
+!README.md
 docs/
 
 # Test coverage
