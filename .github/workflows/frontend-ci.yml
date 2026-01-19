@@ -34,13 +34,14 @@ jobs:
     needs: build-and-lint
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
+    environment: Preview
     defaults:
       run:
         working-directory: ./frontend
     steps:
       - uses: actions/checkout@v4
       - name: Deploy to Vercel (Preview)
-        uses: amondnet/vercel-action@v25 # Using a popular action for Vercel or official CLI if preferred manually
+        uses: amondnet/vercel-action@v25
         with:
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
           vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
@@ -52,6 +53,7 @@ jobs:
     needs: build-and-lint
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    environment: Production
     defaults:
       run:
         working-directory: ./frontend
