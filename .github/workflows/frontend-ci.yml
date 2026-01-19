@@ -27,6 +27,9 @@ jobs:
       - name: Lint
         run: bun run lint
 
+      - name: Type Check
+        run: bun run type-check
+
       - name: Build
         run: bun run build
 
@@ -40,8 +43,20 @@ jobs:
         working-directory: ./frontend
     steps:
       - uses: actions/checkout@v4
+      
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Build
+        run: bun run build
+
       - name: Deploy to Vercel (Preview)
-        uses: amondnet/vercel-action@v25
+        uses: vercel/actions/github@v1
         with:
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
           vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
@@ -59,8 +74,20 @@ jobs:
         working-directory: ./frontend
     steps:
       - uses: actions/checkout@v4
+      
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Build
+        run: bun run build
+
       - name: Deploy to Vercel (Production)
-        uses: amondnet/vercel-action@v25
+        uses: vercel/actions/github@v1
         with:
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
           vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
