@@ -1,3 +1,4 @@
 AI_docs
 .vscode
 **/__pycache__/
+.env

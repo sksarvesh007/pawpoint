@@ -28,7 +28,7 @@ services:
       - APP_ENV=development
       - DEBUG=true
     env_file:
-      - ./backend/.env
+      - ./backend/.env # Make sure to run 'cp backend/.env.example backend/.env' first!
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:8000/health" ]
       interval: 30s
