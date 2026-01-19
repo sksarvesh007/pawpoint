@@ -45,7 +45,7 @@ services:
   #     - "5432:5432"
   #   environment:
   #     POSTGRES_USER: pawpoint
-  #     POSTGRES_PASSWORD: pawpoint_dev
+  #     POSTGRES_PASSWORD: change_me
   #     POSTGRES_DB: pawpoint
   #   volumes:
   #     - postgres_data:/var/lib/postgresql/data
