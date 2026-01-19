@@ -1,0 +1,7 @@
+[project]
+name = "backend"
+version = "0.1.0"
+description = "Backend service for PawPoint, providing APIs for pet profiles, appointments, and user management."
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = []
