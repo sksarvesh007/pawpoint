@@ -5,7 +5,7 @@ description = "Backend service for PawPoint, providing APIs for pet profiles, ap
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
-    "fastapi[standard]>=0.115.11",
+    "fastapi[standard]>=0.128.0",
 ]
 
 # ============================================================================

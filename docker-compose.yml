@@ -43,10 +43,12 @@ services:
   #   image: postgres:16-alpine
   #   ports:
   #     - "5432:5432"
+  #   env_file:
+  #     - ./backend/.env
   #   environment:
-  #     POSTGRES_USER: pawpoint
-  #     POSTGRES_PASSWORD: pawpoint_dev
-  #     POSTGRES_DB: pawpoint
+  #     POSTGRES_USER: ${POSTGRES_USER:-pawpoint}
+  #     POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-pawpoint_dev}
+  #     POSTGRES_DB: ${POSTGRES_DB:-pawpoint}
   #   volumes:
   #     - postgres_data:/var/lib/postgresql/data
   #   restart: unless-stopped
@@ -60,5 +62,7 @@ services:
   #     - "6379:6379"
   #   restart: unless-stopped
 
+  # Note: When uncommenting the "db" service above, also uncomment this
+  #       volumes section so the postgres_data named volume is created and used.
   # volumes:
   #   postgres_data:
