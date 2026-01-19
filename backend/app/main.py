@@ -1,1 +1,3 @@
 import fastapi
+
+fastapi.main()
