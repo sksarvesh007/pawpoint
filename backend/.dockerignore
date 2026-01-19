@@ -1,0 +1,56 @@
+# =============================================================================
+# Docker Ignore - Exclude files from Docker build context
+# =============================================================================
+
+# Virtual environments
+.venv/
+venv/
+env/
+.env
+
+# Cache directories
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# IDE/Editor
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Git
+.git/
+.gitignore
+
+# Docker
+Dockerfile
+docker-compose*.yml
+.docker/
+
+# Documentation (keep README.md available in image)
+*.md
+!README.md
+docs/
+
+# Test coverage
+htmlcov/
+.coverage
+coverage.xml
+
+# Build artifacts
+*.egg-info/
+dist/
+build/
+
+# Local config (keep .env.example)
+.env
+.env.local
+.env.*.local
+
+# OS files
+.DS_Store
+Thumbs.db

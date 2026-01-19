@@ -1,0 +1,64 @@
+# =============================================================================
+# PawPoint Docker Compose - Local Development
+# =============================================================================
+# Usage:
+#   Start all services:    docker compose up
+#   Start backend only:    docker compose up backend
+#   Rebuild after changes: docker compose up --build
+#   Stop all services:     docker compose down
+# =============================================================================
+
+services:
+  # ---------------------------------------------------------------------------
+  # Backend API (FastAPI)
+  # ---------------------------------------------------------------------------
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: development # Use 'production' for prod-like testing
+    ports:
+      - "8000:8000"
+    volumes:
+      # Mount source code for hot reload
+      - ./backend:/app
+      # Prevent overwriting container's virtual env
+      - /app/.venv
+    environment:
+      - APP_ENV=development
+      - DEBUG=true
+    env_file:
+      - ./backend/.env # Make sure to run 'cp backend/.env.example backend/.env' first!
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8000/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+  # ---------------------------------------------------------------------------
+  # PostgreSQL Database (uncomment when needed)
+  # ---------------------------------------------------------------------------
+  # db:
+  #   image: postgres:16-alpine
+  #   ports:
+  #     - "5432:5432"
+  #   environment:
+  #     POSTGRES_USER: pawpoint
+  #     POSTGRES_PASSWORD: change_me
+  #     POSTGRES_DB: pawpoint
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+  #   restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
+  # Redis Cache (uncomment when needed)
+  # ---------------------------------------------------------------------------
+  # redis:
+  #   image: redis:7-alpine
+  #   ports:
+  #     - "6379:6379"
+  #   restart: unless-stopped
+
+  # volumes:
+  #   postgres_data:
