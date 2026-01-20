@@ -50,12 +50,23 @@ npm install
 
 ### 3. Environment Setup
 
-Create a `.env.local` file for local development:
+Copy the example environment file:
 
 ```bash
-# API endpoint (adjust if backend runs on different port)
-NEXT_PUBLIC_API_URL=http://localhost:8000
+cp .env.example .env.local
 ```
+
+Configure your settings in `.env.local`:
+
+```bash
+# API endpoint (required)
+NEXT_PUBLIC_API_URL=http://localhost:8000
+
+# Optional feature flags
+# NEXT_PUBLIC_ENABLE_ANALYTICS=false
+```
+
+> **Note:** All environment variables are type-safe via `src/lib/env.ts`
 
 ### 4. Run Development Server
 
