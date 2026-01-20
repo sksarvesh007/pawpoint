@@ -60,5 +60,69 @@ services:
   #     - "6379:6379"
   #   restart: unless-stopped
 
-  # volumes:
-  #   postgres_data:
+  # ===========================================================================
+  # OBSERVABILITY STACK
+  # ===========================================================================
+
+  # ---------------------------------------------------------------------------
+  # Grafana Alloy (OpenTelemetry Collector)
+  # Receives OTLP data from the backend and forwards to Prometheus/Grafana
+  # ---------------------------------------------------------------------------
+  alloy:
+    image: grafana/alloy:latest
+    ports:
+      - "4317:4317" # OTLP gRPC receiver
+      - "4318:4318" # OTLP HTTP receiver
+      - "12345:12345" # Alloy UI
+    volumes:
+      - ./observability/alloy-config.river:/etc/alloy/config.river:ro
+    command: [ "run", "/etc/alloy/config.river", "--server.http.listen-addr=0.0.0.0:12345" ]
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
+  # Prometheus - Metrics Storage
+  # Scrapes /metrics from backend and stores time-series data
+  # ---------------------------------------------------------------------------
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.enable-remote-write-receiver'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
+  # Grafana - Visualization Dashboard
+  # Access at http://localhost:3001 (admin/admin)
+  # ---------------------------------------------------------------------------
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3001:3000"
+    volumes:
+      - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - grafana_data:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Viewer
+      - GF_USERS_ALLOW_SIGN_UP=false
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+
+volumes:
+  prometheus_data:
+  grafana_data:
+    # postgres_data:
+

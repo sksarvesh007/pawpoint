@@ -7,6 +7,19 @@ requires-python = ">=3.13"
 dependencies = [
     "fastapi[standard]>=0.115.11",
     "pydantic-settings>=2.7.0",
+    # OpenTelemetry Core
+    "opentelemetry-api>=1.25.0",
+    "opentelemetry-sdk>=1.25.0",
+    # OpenTelemetry Instrumentation
+    "opentelemetry-instrumentation-fastapi>=0.46b0",
+    "opentelemetry-instrumentation-logging>=0.46b0",
+    # OpenTelemetry Exporters
+    "opentelemetry-exporter-otlp>=1.25.0",
+    "opentelemetry-exporter-prometheus>=0.46b0",
+    # Prometheus client for metrics endpoint
+    "prometheus-client>=0.20.0",
+    # Logging
+    "loguru>=0.7.0",
 ]
 
 # ============================================================================

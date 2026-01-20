@@ -131,6 +131,15 @@ class Settings(BaseSettings):
     vetspire_api_key: SecretStr | None = None
 
     # -------------------------------------------------------------------------
+    # OpenTelemetry / Observability
+    # -------------------------------------------------------------------------
+    otel_enabled: bool = True
+    otel_service_name: str = "pawpoint-api"
+    otel_exporter_otlp_endpoint: str | None = None  # e.g., http://alloy:4317
+    otel_exporter_otlp_headers: str | None = None  # e.g., "Authorization=Basic xxx"
+    prometheus_enabled: bool = True
+
+    # -------------------------------------------------------------------------
     # Properties
     # -------------------------------------------------------------------------
     @property
