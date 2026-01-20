@@ -54,7 +54,9 @@ class InterceptHandler(logging.Handler):
             frame = frame.f_back
             depth += 1
 
-        logger.opt(depth=depth, exception=record.exc_info).log(level, record.getMessage())
+        logger.opt(depth=depth, exception=record.exc_info).log(
+            level, record.getMessage()
+        )
 
 
 def configure_logging(
@@ -133,7 +135,9 @@ def configure_logging(
     for logger_name in ("uvicorn", "uvicorn.access", "uvicorn.error", "fastapi"):
         logging.getLogger(logger_name).handlers = [InterceptHandler()]
 
-    logger.info("Loguru logging configured", debug=debug, json_logs=json_logs, level=log_level)
+    logger.info(
+        "Loguru logging configured", debug=debug, json_logs=json_logs, level=log_level
+    )
 
 
 # Export configured logger

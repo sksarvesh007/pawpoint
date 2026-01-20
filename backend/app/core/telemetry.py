@@ -25,7 +25,9 @@ if TYPE_CHECKING:
     from fastapi import FastAPI
 
 
-def create_resource(service_name: str, service_version: str, environment: str) -> Resource:
+def create_resource(
+    service_name: str, service_version: str, environment: str
+) -> Resource:
     """Create OpenTelemetry resource with service metadata."""
     return Resource.create(
         {
