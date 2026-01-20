@@ -1,27 +1,43 @@
 """PawPoint Backend - Main Application Entry Point."""
 
-import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import PlainTextResponse
+from loguru import logger
+from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 
 from app.core.config import settings
-
-logger = logging.getLogger(__name__)
+from app.core.logging import configure_logging
+from app.core.telemetry import init_telemetry, shutdown_telemetry
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     """Application lifespan handler for startup/shutdown events."""
+    # Configure Loguru logging first
+    configure_logging(
+        debug=settings.debug,
+        json_logs=settings.is_production,
+        log_level="DEBUG" if settings.debug else "INFO",
+    )
+
     # Startup
-    logger.info("🐾 Starting %s v%s", settings.app_name, settings.app_version)
-    logger.info("📍 Environment: %s", settings.app_env.value)
-    logger.info("🔧 Debug mode: %s", settings.debug)
+    logger.info("🐾 Starting {} v{}", settings.app_name, settings.app_version)
+    logger.info("📍 Environment: {}", settings.app_env.value)
+    logger.info("🔧 Debug mode: {}", settings.debug)
+
+    # Initialize OpenTelemetry
+    init_telemetry(app, settings)
+    logger.info("📊 Telemetry initialized")
+
     yield
+
     # Shutdown
-    logger.info("👋 Shutting down %s", settings.app_name)
+    shutdown_telemetry(app)
+    logger.info("👋 Shutting down {}", settings.app_name)
 
 
 app = FastAPI(
@@ -59,6 +75,15 @@ async def health_check() -> dict[str, str]:
     }
 
 
+@app.get("/metrics", response_class=PlainTextResponse)
+async def metrics_endpoint() -> PlainTextResponse:
+    """Prometheus metrics endpoint for scraping."""
+    return PlainTextResponse(
+        content=generate_latest(),
+        media_type=CONTENT_TYPE_LATEST,
+    )
+
+
 @app.get("/config")
 async def config_info() -> dict[str, str | bool | list[str]]:
     """Configuration info endpoint (disabled in production)."""
@@ -71,4 +96,5 @@ async def config_info() -> dict[str, str | bool | list[str]]:
         "environment": settings.app_env.value,
         "debug": settings.debug,
         "allowed_origins": settings.allowed_origins,
+        "telemetry_enabled": settings.otel_enabled,
     }
