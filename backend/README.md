@@ -42,19 +42,24 @@ cd backend
 
 ### 2. Environment Setup
 
-**Important:** Create `.env` file before running:
+The application loads from `dev.env` or `prod.env` based on `APP_ENV`:
 
 ```bash
-cp .env.example .env
+# Development (default)
+# Uses dev.env automatically
+
+# Production
+export APP_ENV=production
+# Uses prod.env
 ```
 
-Edit `.env` and configure your settings:
+Configure your settings in `dev.env`:
 
 ```env
 APP_ENV=development
 DEBUG=true
 SECRET_KEY=your-secure-secret-key
-ALLOWED_ORIGINS=http://localhost:3000
+ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173
 ```
 
 ### 3. Install Dependencies
@@ -66,7 +71,7 @@ uv sync
 ### 4. Run Development Server
 
 ```bash
-uv run fastapi dev
+PYTHONPATH=. uv run fastapi dev app/main.py
 ```
 
 API available at [http://localhost:8000](http://localhost:8000)
