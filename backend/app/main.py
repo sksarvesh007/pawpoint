@@ -1,24 +1,27 @@
 """PawPoint Backend - Main Application Entry Point."""
 
+import logging
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-from typing import AsyncIterator
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
 
+logger = logging.getLogger(__name__)
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     """Application lifespan handler for startup/shutdown events."""
     # Startup
-    print(f"🐾 Starting {settings.app_name} v{settings.app_version}")
-    print(f"📍 Environment: {settings.app_env.value}")
-    print(f"🔧 Debug mode: {settings.debug}")
+    logger.info("🐾 Starting %s v%s", settings.app_name, settings.app_version)
+    logger.info("📍 Environment: %s", settings.app_env.value)
+    logger.info("🔧 Debug mode: %s", settings.debug)
     yield
     # Shutdown
-    print(f"👋 Shutting down {settings.app_name}")
+    logger.info("👋 Shutting down %s", settings.app_name)
 
 
 app = FastAPI(
