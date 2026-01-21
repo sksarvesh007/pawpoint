@@ -26,6 +26,11 @@ uv run pytest tests/test_api/test_health.py  # Run specific test file
 uv run ruff check . --fix            # Lint and auto-fix
 uv run ruff format .                 # Format code
 uv run ty check                      # Type check
+
+# Database migrations (Alembic)
+uv run alembic revision --autogenerate -m "description"  # Generate migration
+uv run alembic upgrade head          # Apply all migrations
+uv run alembic downgrade -1          # Rollback last migration
 ```
 
 ### Frontend
@@ -41,9 +46,10 @@ bun run lint                         # ESLint
 ### Docker & Observability
 
 ```bash
-docker compose up                    # Start all services
-docker compose up backend            # Start backend only
-# Grafana: localhost:3001 (admin/admin), Prometheus: localhost:9090
+docker compose up                    # Start all services (db, backend, observability)
+docker compose up backend            # Start backend + db
+docker compose up db                 # Start PostgreSQL only
+# PostgreSQL: localhost:5434, Grafana: localhost:3001 (admin/admin), Prometheus: localhost:9090
 ```
 
 ## Architecture
@@ -61,7 +67,7 @@ docker compose up backend            # Start backend only
 
 - **app/**: Next.js App Router pages and layouts
 - **lib/**: Shared utilities (e.g., type-safe env vars in `env.ts`)
-now
+
 ### Key Design Patterns
 
 - **Dependency Injection**: FastAPI `Depends()` for sessions, auth, services
@@ -92,6 +98,12 @@ Pre-commit runs Ruff (lint + format) and ty (type check) automatically. Install 
 ```bash
 cd backend
 uv run pre-commit install
+```
+
+**Important**: Always run pre-commit before committing to fix linting errors:
+
+```bash
+uv run pre-commit run --all-files
 ```
 
 ## API Documentation

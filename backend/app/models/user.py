@@ -8,7 +8,8 @@ Users can belong to multiple clinics through the UserClinic association.
 import enum
 from datetime import datetime
 
-from sqlalchemy import Boolean, Enum, ForeignKey, String, Table, Text
+from sqlalchemy import Boolean, Column, Enum, ForeignKey, String, Table, Text
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, SoftDeleteMixin, TimestampMixin
@@ -27,11 +28,17 @@ class UserRole(str, enum.Enum):
 user_clinic_association = Table(
     "user_clinic_associations",
     Base.metadata,
-    mapped_column(
-        "user_id", ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+    Column(
+        "user_id",
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        primary_key=True,
     ),
-    mapped_column(
-        "clinic_id", ForeignKey("clinics.id", ondelete="CASCADE"), primary_key=True
+    Column(
+        "clinic_id",
+        UUID(as_uuid=True),
+        ForeignKey("clinics.id", ondelete="CASCADE"),
+        primary_key=True,
     ),
 )
 

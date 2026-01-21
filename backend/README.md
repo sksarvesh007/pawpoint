@@ -11,7 +11,8 @@ Backend service for PawPoint - an AI-powered veterinary engagement platform prov
 | **uv** | Latest | Fast Python package manager |
 | **Ruff** | ≥0.14.13 | Linting & formatting |
 | **ty** | ≥0.0.12 | Type checking |
-| **PostgreSQL** | 16+ | Database (planned) |
+| **PostgreSQL** | 16+ | Database |
+| **Alembic** | ≥1.13.0 | Database migrations |
 | **Docker** | Latest | Containerization |
 
 ### Key Features
@@ -68,7 +69,22 @@ ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173
 uv sync
 ```
 
-### 4. Run Development Server
+### 4. Database Setup
+
+Start PostgreSQL via Docker:
+
+```bash
+# From project root
+docker compose up -d db
+```
+
+Run database migrations:
+
+```bash
+uv run alembic upgrade head
+```
+
+### 5. Run Development Server
 
 ```bash
 PYTHONPATH=. uv run fastapi dev app/main.py
@@ -77,6 +93,42 @@ PYTHONPATH=. uv run fastapi dev app/main.py
 API available at [http://localhost:8000](http://localhost:8000)
 
 Interactive docs at [http://localhost:8000/docs](http://localhost:8000/docs)
+
+---
+
+## Database Migrations (Alembic)
+
+Alembic manages database schema changes. Migration files are in `alembic/versions/`.
+
+### Common Commands
+
+| Command | Description |
+|---------|-------------|
+| `uv run alembic upgrade head` | Apply all pending migrations |
+| `uv run alembic downgrade -1` | Rollback last migration |
+| `uv run alembic revision --autogenerate -m "message"` | Generate new migration |
+| `uv run alembic history` | Show migration history |
+| `uv run alembic current` | Show current revision |
+
+### Creating a New Migration
+
+After modifying models in `app/models/`:
+
+```bash
+# Generate migration (auto-detects changes)
+uv run alembic revision --autogenerate -m "add_new_field_to_patients"
+
+# Review the generated file in alembic/versions/
+# Then apply it
+uv run alembic upgrade head
+```
+
+### Migration Best Practices
+
+- Always review auto-generated migrations before applying
+- Use descriptive migration messages (e.g., "add_email_verified_to_users")
+- Test migrations on a copy of production data before deploying
+- Never edit migrations that have been applied to production
 
 ---
 
@@ -91,6 +143,8 @@ Interactive docs at [http://localhost:8000/docs](http://localhost:8000/docs)
 | `uv run ruff check .` | Run linter |
 | `uv run ruff format .` | Format code |
 | `uv run ty check` | Run type checker |
+| `uv run alembic upgrade head` | Apply database migrations |
+| `uv run alembic revision --autogenerate -m "msg"` | Generate migration |
 
 ---
 
@@ -183,7 +237,13 @@ backend/
 │   │   └── pims_sync.py                    # Scheduled sync tasks
 │   │
 │   └── db/                                 # Database configuration
-│       └── migrations/                     # Alembic migrations
+│       └── __init__.py                     # Async engine, session factory
+│
+├── alembic/                                # Database migrations
+│   ├── env.py                              # Migration environment config
+│   ├── script.py.mako                      # Migration template
+│   └── versions/                           # Migration files
+│       └── 20260121_initial_schema.py      # Initial migration
 │
 ├── tests/                                  # Test suite
 │   ├── conftest.py                         # Pytest fixtures
@@ -191,6 +251,7 @@ backend/
 │   ├── test_services/                      # Service layer tests
 │   └── test_adapters/                      # PIMS adapter tests
 │
+├── alembic.ini                             # Alembic configuration
 ├── pyproject.toml                          # Dependencies, tool config
 ├── Dockerfile                              # Multi-stage container build
 ├── .env.example                            # Environment template
@@ -234,8 +295,18 @@ backend/
 | `HOST` | Server host | `0.0.0.0` |
 | `PORT` | Server port | `8000` |
 | `ALLOWED_ORIGINS` | CORS origins (comma-separated) | `http://localhost:3000` |
-| `DATABASE_URL` | PostgreSQL connection string | Optional |
+| `DATABASE_URL` | PostgreSQL async connection string | Required |
 | `REDIS_URL` | Redis connection string | Optional |
+
+### Database URL Format
+
+```bash
+# Inside Docker (backend connects to db service)
+DATABASE_URL=postgresql+asyncpg://pawpoint:pawpoint_dev@db:5432/pawpoint
+
+# Outside Docker (connect to docker db on mapped port)
+DATABASE_URL=postgresql+asyncpg://pawpoint:pawpoint_dev@localhost:5434/pawpoint
+```
 
 ---
 
@@ -328,6 +399,8 @@ uv run python -c "import app"
 ## Learn More
 
 - [FastAPI Documentation](https://fastapi.tiangolo.com)
+- [SQLAlchemy Documentation](https://docs.sqlalchemy.org)
+- [Alembic Documentation](https://alembic.sqlalchemy.org)
 - [uv Documentation](https://docs.astral.sh/uv/)
 - [Ruff Documentation](https://docs.astral.sh/ruff/)
 - [Pydantic Documentation](https://docs.pydantic.dev)
