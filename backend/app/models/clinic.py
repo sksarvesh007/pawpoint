@@ -6,6 +6,7 @@ Each clinic can connect to one PIMS and has its own patients, providers, and app
 """
 
 import enum
+from datetime import datetime
 from typing import TYPE_CHECKING
 
 from sqlalchemy import Boolean, Enum, String, Text
@@ -114,7 +115,7 @@ class Clinic(Base, TimestampMixin, SoftDeleteMixin):
         default=PIMSConnectionStatus.DISCONNECTED,
         nullable=False,
     )
-    pims_last_sync_at: Mapped[str | None] = mapped_column(nullable=True)
+    pims_last_sync_at: Mapped[datetime | None] = mapped_column(nullable=True)
     pims_settings: Mapped[dict | None] = mapped_column(
         JSONB,
         nullable=True,

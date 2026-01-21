@@ -115,7 +115,6 @@ class SoftDeleteMixin:
 
     def soft_delete(self) -> None:
         """Mark record as deleted."""
-        from datetime import datetime
 
         self.deleted_at = datetime.now(UTC)
 
@@ -159,7 +158,6 @@ class PIMSSyncMixin:
 
     def mark_synced(self, pims_id: str | None = None) -> None:
         """Mark record as successfully synced."""
-        from datetime import datetime
 
         if pims_id:
             self.pims_id = pims_id
