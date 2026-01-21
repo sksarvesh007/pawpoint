@@ -29,6 +29,9 @@ services:
       - DEBUG=true
     env_file:
       - ./backend/.env # Make sure to run 'cp backend/.env.example backend/.env' first!
+    depends_on:
+      db:
+        condition: service_healthy
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:8000/health" ]
       interval: 30s
@@ -37,19 +40,24 @@ services:
       start_period: 10s
     restart: unless-stopped
   # ---------------------------------------------------------------------------
-  # PostgreSQL Database (uncomment when needed)
+  # PostgreSQL Database (local development only)
   # ---------------------------------------------------------------------------
-  # db:
-  #   image: postgres:16-alpine
-  #   ports:
-  #     - "5432:5432"
-  #   environment:
-  #     POSTGRES_USER: pawpoint
-  #     POSTGRES_PASSWORD: change_me
-  #     POSTGRES_DB: pawpoint
-  #   volumes:
-  #     - postgres_data:/var/lib/postgresql/data
-  #   restart: unless-stopped
+  db:
+    image: postgres:16-alpine
+    ports:
+      - "5434:5432"  # Map to 5434 to avoid conflict with local PostgreSQL
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-pawpoint}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-localdevonly}
+      POSTGRES_DB: ${POSTGRES_DB:-pawpoint}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pawpoint -d pawpoint"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
 
   # ---------------------------------------------------------------------------
   # Redis Cache (uncomment when needed)
@@ -124,5 +132,5 @@ services:
 volumes:
   prometheus_data:
   grafana_data:
-    # postgres_data:
+  postgres_data:
 

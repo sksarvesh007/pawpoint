@@ -224,8 +224,8 @@ class CallLog(Base, TimestampMixin, SoftDeleteMixin):
         index=True,
     )
 
-    # Metadata
-    metadata: Mapped[dict | None] = mapped_column(
+    # Additional data
+    extra_data: Mapped[dict | None] = mapped_column(
         JSONB,
         nullable=True,
         comment="Additional call metadata",

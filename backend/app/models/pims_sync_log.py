@@ -193,8 +193,8 @@ class PIMSSyncLog(Base, TimestampMixin):
         comment="End of sync window for incremental sync",
     )
 
-    # Metadata
-    metadata: Mapped[dict | None] = mapped_column(
+    # Additional data
+    extra_data: Mapped[dict | None] = mapped_column(
         JSONB,
         nullable=True,
         comment="Additional sync metadata",
