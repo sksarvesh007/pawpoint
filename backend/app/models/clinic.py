@@ -161,7 +161,7 @@ class Clinic(Base, TimestampMixin, SoftDeleteMixin):
     )
     patients: Mapped[list["Patient"]] = relationship(
         back_populates="clinic",
-        lazy="selectin",
+        lazy="noload",  # Large collection - load explicitly with filters
         cascade="all, delete-orphan",
     )
     providers: Mapped[list["Provider"]] = relationship(
@@ -171,17 +171,17 @@ class Clinic(Base, TimestampMixin, SoftDeleteMixin):
     )
     appointments: Mapped[list["Appointment"]] = relationship(
         back_populates="clinic",
-        lazy="selectin",
+        lazy="noload",  # Large collection - load explicitly with date filters
         cascade="all, delete-orphan",
     )
     call_logs: Mapped[list["CallLog"]] = relationship(
         back_populates="clinic",
-        lazy="selectin",
+        lazy="noload",  # Large collection - load explicitly with date filters
         cascade="all, delete-orphan",
     )
     sync_logs: Mapped[list["PIMSSyncLog"]] = relationship(
         back_populates="clinic",
-        lazy="selectin",
+        lazy="noload",  # Large collection - load explicitly with filters
         cascade="all, delete-orphan",
     )
 

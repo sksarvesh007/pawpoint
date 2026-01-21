@@ -11,7 +11,7 @@ Provides base classes and mixins for all SQLAlchemy models:
 import enum
 from datetime import UTC, datetime
 from typing import Any, ClassVar
-from uuid import uuid4
+from uuid import UUID as PyUUID, uuid4
 
 from sqlalchemy import DateTime, Enum, String, func
 from sqlalchemy.dialects.postgresql import UUID
@@ -58,10 +58,10 @@ class Base(DeclarativeBase):
         return name + "s"
 
     # UUID primary key for all models
-    id: Mapped[str] = mapped_column(
-        UUID(as_uuid=False),
+    id: Mapped[PyUUID] = mapped_column(
+        UUID(as_uuid=True),
         primary_key=True,
-        default=lambda: str(uuid4()),
+        default=uuid4,
         index=True,
     )
 

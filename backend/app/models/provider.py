@@ -123,7 +123,7 @@ class Provider(Base, TimestampMixin, SoftDeleteMixin, PIMSSyncMixin):
     clinic: Mapped["Clinic"] = relationship(back_populates="providers")
     appointments: Mapped[list["Appointment"]] = relationship(
         back_populates="provider",
-        lazy="selectin",
+        lazy="noload",  # Large collection - load explicitly with date filters
     )
 
     @property

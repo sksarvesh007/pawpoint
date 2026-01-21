@@ -119,7 +119,7 @@ class Patient(Base, TimestampMixin, SoftDeleteMixin, PIMSSyncMixin):
     clinic: Mapped["Clinic"] = relationship(back_populates="patients")
     appointments: Mapped[list["Appointment"]] = relationship(
         back_populates="patient",
-        lazy="selectin",
+        lazy="noload",  # Load explicitly - patients can have many appointments over time
     )
 
     @property
