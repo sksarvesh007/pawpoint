@@ -40,16 +40,16 @@ services:
       start_period: 10s
     restart: unless-stopped
   # ---------------------------------------------------------------------------
-  # PostgreSQL Database
+  # PostgreSQL Database (local development only)
   # ---------------------------------------------------------------------------
   db:
     image: postgres:16-alpine
     ports:
       - "5434:5432"  # Map to 5434 to avoid conflict with local PostgreSQL
     environment:
-      POSTGRES_USER: pawpoint
-      POSTGRES_PASSWORD: pawpoint_dev
-      POSTGRES_DB: pawpoint
+      POSTGRES_USER: ${POSTGRES_USER:-pawpoint}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-localdevonly}
+      POSTGRES_DB: ${POSTGRES_DB:-pawpoint}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:

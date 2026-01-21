@@ -302,11 +302,29 @@ backend/
 
 ```bash
 # Inside Docker (backend connects to db service)
-DATABASE_URL=postgresql+asyncpg://pawpoint:pawpoint_dev@db:5432/pawpoint
+DATABASE_URL=postgresql+asyncpg://pawpoint:localdevonly@db:5432/pawpoint
 
 # Outside Docker (connect to docker db on mapped port)
-DATABASE_URL=postgresql+asyncpg://pawpoint:pawpoint_dev@localhost:5434/pawpoint
+DATABASE_URL=postgresql+asyncpg://pawpoint:localdevonly@localhost:5434/pawpoint
 ```
+
+### Recreating the Database
+
+If you need to start fresh (reset all data) or if database credentials changed:
+
+```bash
+# From project root - this removes all data!
+docker compose down -v              # Stop containers and DELETE database volume
+docker compose up -d db             # Start fresh database
+sleep 5                             # Wait for database to initialize
+cd backend
+uv run alembic upgrade head         # Re-apply all migrations
+```
+
+**What each command does:**
+- `docker compose down -v` - Stops all containers and removes volumes (deletes all database data)
+- `docker compose up -d db` - Starts only the PostgreSQL container in background
+- `alembic upgrade head` - Creates all tables by running migrations
 
 ---
 

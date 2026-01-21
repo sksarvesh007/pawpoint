@@ -7,19 +7,10 @@ automatically detects model changes for autogeneration.
 
 from logging.config import fileConfig
 
-from alembic import context
 from sqlalchemy import engine_from_config, pool
 
+from alembic import context
 from app.core.config import get_settings
-from app.models import (
-    Appointment,
-    CallLog,
-    Clinic,
-    Patient,
-    PIMSSyncLog,
-    Provider,
-    User,
-)
 from app.models.base import Base
 
 # Alembic Config object for access to .ini file values
@@ -36,9 +27,7 @@ target_metadata = Base.metadata
 settings = get_settings()
 if settings.database_url:
     # For Alembic migrations, use sync psycopg2 driver
-    sync_url = settings.database_url.replace(
-        "postgresql+asyncpg://", "postgresql://"
-    )
+    sync_url = settings.database_url.replace("postgresql+asyncpg://", "postgresql://")
     config.set_main_option("sqlalchemy.url", sync_url)
 
 

@@ -2,6 +2,8 @@ AI_docs
 .vscode
 **/__pycache__/
 .env
+*.env
+!.env.example
 prod.env
 .env.local
 **/logs
