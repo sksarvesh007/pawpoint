@@ -225,11 +225,15 @@ class PIMSSyncLog(Base, TimestampMixin):
         """Mark sync job as completed."""
 
         self.status = (
-            SyncJobStatus.COMPLETED if self.records_failed == 0 else SyncJobStatus.PARTIAL
+            SyncJobStatus.COMPLETED
+            if self.records_failed == 0
+            else SyncJobStatus.PARTIAL
         )
         self.completed_at = datetime.now(UTC)
         if self.started_at:
-            self.duration_seconds = (self.completed_at - self.started_at).total_seconds()
+            self.duration_seconds = (
+                self.completed_at - self.started_at
+            ).total_seconds()
 
     def fail(self, error_message: str, error_details: dict | None = None) -> None:
         """Mark sync job as failed."""
@@ -239,7 +243,9 @@ class PIMSSyncLog(Base, TimestampMixin):
         self.error_message = error_message
         self.error_details = error_details
         if self.started_at:
-            self.duration_seconds = (self.completed_at - self.started_at).total_seconds()
+            self.duration_seconds = (
+                self.completed_at - self.started_at
+            ).total_seconds()
 
     def __repr__(self) -> str:
         return (

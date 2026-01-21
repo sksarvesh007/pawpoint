@@ -100,7 +100,9 @@ class Patient(Base, TimestampMixin, SoftDeleteMixin, PIMSSyncMixin):
         comment="Primary contact phone for appointments/reminders",
     )
     owner_phone_alt: Mapped[str | None] = mapped_column(String(20), nullable=True)
-    owner_email: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)
+    owner_email: Mapped[str | None] = mapped_column(
+        String(255), nullable=True, index=True
+    )
     owner_address: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     # PIMS-specific data (stored as JSON for flexibility)

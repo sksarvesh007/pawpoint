@@ -27,8 +27,12 @@ class UserRole(str, enum.Enum):
 user_clinic_association = Table(
     "user_clinic_associations",
     Base.metadata,
-    mapped_column("user_id", ForeignKey("users.id", ondelete="CASCADE"), primary_key=True),
-    mapped_column("clinic_id", ForeignKey("clinics.id", ondelete="CASCADE"), primary_key=True),
+    mapped_column(
+        "user_id", ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+    ),
+    mapped_column(
+        "clinic_id", ForeignKey("clinics.id", ondelete="CASCADE"), primary_key=True
+    ),
 )
 
 
