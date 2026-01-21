@@ -1,0 +1,23 @@
+# Prometheus Configuration for PawPoint
+# Scrapes metrics from the backend and Alloy
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  # Backend API metrics
+  - job_name: 'pawpoint-api'
+    static_configs:
+      - targets: ['backend:8000']
+    metrics_path: /metrics
+
+  # Alloy self-metrics
+  - job_name: 'alloy'
+    static_configs:
+      - targets: ['alloy:12345']
+
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
