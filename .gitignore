@@ -4,4 +4,4 @@ AI_docs
 .env
 prod.env
 .env.local
-backend/logs
+**/logs
