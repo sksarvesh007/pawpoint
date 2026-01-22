@@ -31,6 +31,11 @@ uv run ty check                      # Type check
 uv run alembic revision --autogenerate -m "description"  # Generate migration
 uv run alembic upgrade head          # Apply all migrations
 uv run alembic downgrade -1          # Rollback last migration
+
+# Seed data (requires db running and DATABASE_URL in dev.env)
+PYTHONPATH=. uv run python scripts/seed_data.py           # Seed database
+PYTHONPATH=. uv run python scripts/seed_data.py --clear   # Clear and re-seed
+PYTHONPATH=. uv run python scripts/seed_data.py --minimal # Minimal data set
 ```
 
 ### Frontend
