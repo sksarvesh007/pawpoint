@@ -85,18 +85,18 @@ class CallLog(Base, TimestampMixin, SoftDeleteMixin):
 
     # Call details
     direction: Mapped[CallDirection] = mapped_column(
-        Enum(CallDirection),
+        Enum(CallDirection, values_callable=lambda e: [x.value for x in e]),
         nullable=False,
         index=True,
     )
     status: Mapped[CallStatus] = mapped_column(
-        Enum(CallStatus),
+        Enum(CallStatus, values_callable=lambda e: [x.value for x in e]),
         default=CallStatus.IN_PROGRESS,
         nullable=False,
         index=True,
     )
     outcome: Mapped[CallOutcome | None] = mapped_column(
-        Enum(CallOutcome),
+        Enum(CallOutcome, values_callable=lambda e: [x.value for x in e]),
         nullable=True,
         index=True,
     )

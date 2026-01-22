@@ -65,7 +65,7 @@ class Patient(Base, TimestampMixin, SoftDeleteMixin, PIMSSyncMixin):
     # Pet information
     name: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
     species: Mapped[Species] = mapped_column(
-        Enum(Species),
+        Enum(Species, values_callable=lambda e: [x.value for x in e]),
         default=Species.OTHER,
         nullable=False,
         index=True,
@@ -73,7 +73,7 @@ class Patient(Base, TimestampMixin, SoftDeleteMixin, PIMSSyncMixin):
     breed: Mapped[str | None] = mapped_column(String(100), nullable=True)
     color: Mapped[str | None] = mapped_column(String(50), nullable=True)
     sex: Mapped[Sex] = mapped_column(
-        Enum(Sex),
+        Enum(Sex, values_callable=lambda e: [x.value for x in e]),
         default=Sex.UNKNOWN,
         nullable=False,
     )

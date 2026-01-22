@@ -106,19 +106,19 @@ class Appointment(Base, TimestampMixin, SoftDeleteMixin, PIMSSyncMixin):
 
     # Appointment details
     appointment_type: Mapped[AppointmentType] = mapped_column(
-        Enum(AppointmentType),
+        Enum(AppointmentType, values_callable=lambda e: [x.value for x in e]),
         default=AppointmentType.CHECKUP,
         nullable=False,
         index=True,
     )
     status: Mapped[AppointmentStatus] = mapped_column(
-        Enum(AppointmentStatus),
+        Enum(AppointmentStatus, values_callable=lambda e: [x.value for x in e]),
         default=AppointmentStatus.SCHEDULED,
         nullable=False,
         index=True,
     )
     source: Mapped[AppointmentSource] = mapped_column(
-        Enum(AppointmentSource),
+        Enum(AppointmentSource, values_callable=lambda e: [x.value for x in e]),
         default=AppointmentSource.DASHBOARD,
         nullable=False,
     )
