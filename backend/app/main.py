@@ -8,12 +8,18 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import PlainTextResponse
 from loguru import logger
 from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.util import get_remote_address
 
 from app.api.v1 import api_router
 from app.core.config import settings
 from app.core.logging import configure_logging
 from app.core.telemetry import init_telemetry, shutdown_telemetry
 from app.db import close_db, init_db
+
+# Initialize rate limiter
+limiter = Limiter(key_func=get_remote_address)
 
 
 @asynccontextmanager
@@ -56,6 +62,10 @@ app = FastAPI(
     docs_url="/docs" if settings.debug else None,  # Disable docs in production
     redoc_url="/redoc" if settings.debug else None,
 )
+
+# Register rate limiter with the app
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # CORS configuration from settings
 app.add_middleware(

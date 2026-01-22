@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { env } from "@/lib/env";
+import type { TokenResponse, ErrorResponse } from "@/types/auth";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -30,6 +31,7 @@ export default function LoginPage() {
         headers: {
           "Content-Type": "application/json",
         },
+        credentials: "include", // Include cookies for httpOnly auth
         body: JSON.stringify({
           email: formData.email,
           password: formData.password,
@@ -39,11 +41,26 @@ export default function LoginPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.detail || "Invalid email or password");
+        // Specific error handling based on status
+        let errorMessage = "Login failed. Please try again.";
+
+        if (response.status === 401) {
+          errorMessage = "Invalid email or password. Please try again.";
+        } else if (response.status === 429) {
+          errorMessage =
+            "Too many login attempts. Please wait a minute before trying again.";
+        } else if (response.status >= 500) {
+          errorMessage =
+            "We're experiencing technical difficulties. Please try again in a few minutes.";
+        } else if ((data as ErrorResponse).detail) {
+          errorMessage = (data as ErrorResponse).detail;
+        }
+
+        throw new Error(errorMessage);
       }
 
-      // Store the token and redirect to dashboard
-      localStorage.setItem("access_token", data.access_token);
+      // Token is now stored in httpOnly cookie by the backend
+      // No need to store in localStorage - redirect directly
       router.push("/dashboard");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed");
@@ -79,7 +96,11 @@ export default function LoginPage() {
 
             <form onSubmit={handleSubmit} className="mt-8 space-y-6">
               {error && (
-                <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
+                <div
+                  role="alert"
+                  aria-live="polite"
+                  className="rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400"
+                >
                   {error}
                 </div>
               )}

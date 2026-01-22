@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { env } from "@/lib/env";
+import type { TokenResponse, ErrorResponse } from "@/types/auth";
 
 export default function SignupPage() {
   const router = useRouter();
@@ -30,8 +31,29 @@ export default function SignupPage() {
       return;
     }
 
+    // Client-side password validation (backend also validates)
     if (formData.password.length < 8) {
       setError("Password must be at least 8 characters");
+      return;
+    }
+
+    if (!/[A-Z]/.test(formData.password)) {
+      setError("Password must contain at least one uppercase letter");
+      return;
+    }
+
+    if (!/[a-z]/.test(formData.password)) {
+      setError("Password must contain at least one lowercase letter");
+      return;
+    }
+
+    if (!/\d/.test(formData.password)) {
+      setError("Password must contain at least one digit");
+      return;
+    }
+
+    if (!/[!@#$%^&*(),.?":{}|<>\-_=+\[\]\\;'`~]/.test(formData.password)) {
+      setError("Password must contain at least one special character");
       return;
     }
 
@@ -43,6 +65,7 @@ export default function SignupPage() {
         headers: {
           "Content-Type": "application/json",
         },
+        credentials: "include", // Include cookies for httpOnly auth
         body: JSON.stringify({
           clinic_name: formData.clinicName,
           email: formData.email,
@@ -53,11 +76,26 @@ export default function SignupPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.detail || "Registration failed");
+        // Specific error handling based on status
+        let errorMessage = "Registration failed. Please try again.";
+
+        if (response.status === 400) {
+          errorMessage =
+            (data as ErrorResponse).detail ||
+            "Please check your information and try again.";
+        } else if (response.status === 429) {
+          errorMessage =
+            "Too many registration attempts. Please try again later.";
+        } else if (response.status >= 500) {
+          errorMessage =
+            "We're experiencing technical difficulties. Please try again in a few minutes.";
+        }
+
+        throw new Error(errorMessage);
       }
 
-      // Store the token and redirect to dashboard
-      localStorage.setItem("access_token", data.access_token);
+      // Token is now stored in httpOnly cookie by the backend
+      // No need to store in localStorage - redirect directly
       router.push("/dashboard");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Registration failed");
@@ -93,7 +131,11 @@ export default function SignupPage() {
 
             <form onSubmit={handleSubmit} className="mt-8 space-y-6">
               {error && (
-                <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
+                <div
+                  role="alert"
+                  aria-live="polite"
+                  className="rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400"
+                >
                   {error}
                 </div>
               )}
@@ -153,6 +195,10 @@ export default function SignupPage() {
                   className="mt-2 block w-full rounded-lg border border-zinc-300 px-4 py-3 text-zinc-900 placeholder-zinc-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white dark:placeholder-zinc-500"
                   placeholder="••••••••"
                 />
+                <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                  Must be 8+ characters with uppercase, lowercase, number, and
+                  special character
+                </p>
               </div>
 
               <div>

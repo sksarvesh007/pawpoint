@@ -1,6 +1,8 @@
 """Authentication endpoints for clinic registration and login."""
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
@@ -16,6 +18,9 @@ from app.services.auth import AuthService
 
 router = APIRouter()
 
+# Rate limiter instance - uses the app's limiter state
+limiter = Limiter(key_func=get_remote_address)
+
 
 @router.post(
     "/register",
@@ -23,9 +28,37 @@ router = APIRouter()
     status_code=status.HTTP_201_CREATED,
     summary="Register a new clinic",
     description="Register a new clinic with an admin user account.",
+    responses={
+        201: {"description": "Registration successful"},
+        400: {
+            "description": "Validation error",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Password must contain at least 8 characters"}
+                }
+            },
+        },
+        429: {
+            "description": "Too many requests",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Rate limit exceeded: 3 per 1 hour"}
+                }
+            },
+        },
+        500: {
+            "description": "Internal server error",
+            "content": {
+                "application/json": {"example": {"detail": "Internal server error"}}
+            },
+        },
+    },
 )
+@limiter.limit("3/hour")
 async def register(
-    request: RegisterRequest,
+    request: Request,
+    response: Response,
+    body: RegisterRequest,
     db: AsyncSession = Depends(get_db),
 ) -> TokenResponse:
     """
@@ -38,15 +71,28 @@ async def register(
 
     try:
         user, clinic, access_token = await auth_service.register_clinic(
-            clinic_name=request.clinic_name,
-            email=request.email,
-            password=request.password,
+            clinic_name=body.clinic_name,
+            email=body.email,
+            password=body.password,
+            admin_first_name=body.admin_first_name,
+            admin_last_name=body.admin_last_name,
         )
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e),
         ) from None
+
+    # Set access token as httpOnly cookie for XSS protection
+    response.set_cookie(
+        key="access_token",
+        value=access_token,
+        httponly=True,
+        secure=settings.is_production,  # HTTPS only in production
+        samesite="strict",
+        max_age=settings.jwt_access_token_expire_minutes * 60,
+        path="/",
+    )
 
     return TokenResponse(
         access_token=access_token,
@@ -72,9 +118,41 @@ async def register(
     response_model=TokenResponse,
     summary="Login to a clinic account",
     description="Authenticate with email and password to receive an access token.",
+    responses={
+        200: {"description": "Login successful"},
+        400: {
+            "description": "Validation error",
+            "content": {
+                "application/json": {"example": {"detail": "Invalid email format"}}
+            },
+        },
+        401: {
+            "description": "Authentication failed",
+            "content": {
+                "application/json": {"example": {"detail": "Invalid email or password"}}
+            },
+        },
+        429: {
+            "description": "Too many requests",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Rate limit exceeded: 5 per 1 minute"}
+                }
+            },
+        },
+        500: {
+            "description": "Internal server error",
+            "content": {
+                "application/json": {"example": {"detail": "Internal server error"}}
+            },
+        },
+    },
 )
+@limiter.limit("5/minute")
 async def login(
-    request: LoginRequest,
+    request: Request,
+    response: Response,
+    body: LoginRequest,
     db: AsyncSession = Depends(get_db),
 ) -> TokenResponse:
     """
@@ -86,8 +164,8 @@ async def login(
 
     try:
         user, clinic, access_token = await auth_service.login(
-            email=request.email,
-            password=request.password,
+            email=body.email,
+            password=body.password,
         )
     except ValueError as e:
         raise HTTPException(
@@ -95,6 +173,17 @@ async def login(
             detail=str(e),
             headers={"WWW-Authenticate": "Bearer"},
         ) from None
+
+    # Set access token as httpOnly cookie for XSS protection
+    response.set_cookie(
+        key="access_token",
+        value=access_token,
+        httponly=True,
+        secure=settings.is_production,  # HTTPS only in production
+        samesite="strict",
+        max_age=settings.jwt_access_token_expire_minutes * 60,
+        path="/",
+    )
 
     return TokenResponse(
         access_token=access_token,
@@ -112,4 +201,25 @@ async def login(
             name=clinic.name,
             slug=clinic.slug,
         ),
+    )
+
+
+@router.post(
+    "/logout",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Logout from account",
+    description="Clear authentication cookies to logout.",
+)
+async def logout(response: Response) -> None:
+    """
+    Logout from the current session.
+
+    Clears the access token cookie.
+    """
+    response.delete_cookie(
+        key="access_token",
+        httponly=True,
+        secure=settings.is_production,
+        samesite="strict",
+        path="/",
     )
