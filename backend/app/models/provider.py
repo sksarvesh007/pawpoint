@@ -60,7 +60,7 @@ class Provider(Base, TimestampMixin, SoftDeleteMixin, PIMSSyncMixin):
 
     # Professional info
     provider_type: Mapped[ProviderType] = mapped_column(
-        Enum(ProviderType),
+        Enum(ProviderType, values_callable=lambda e: [x.value for x in e]),
         default=ProviderType.VETERINARIAN,
         nullable=False,
         index=True,

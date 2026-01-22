@@ -138,7 +138,7 @@ class PIMSSyncMixin:
     )
 
     sync_status: Mapped[SyncStatus] = mapped_column(
-        Enum(SyncStatus),
+        Enum(SyncStatus, values_callable=lambda e: [x.value for x in e]),
         default=SyncStatus.PENDING,
         nullable=False,
         index=True,

@@ -76,17 +76,17 @@ class PIMSSyncLog(Base, TimestampMixin):
 
     # Sync type
     sync_type: Mapped[SyncType] = mapped_column(
-        Enum(SyncType),
+        Enum(SyncType, values_callable=lambda e: [x.value for x in e]),
         nullable=False,
         index=True,
     )
     entity_type: Mapped[SyncEntityType] = mapped_column(
-        Enum(SyncEntityType),
+        Enum(SyncEntityType, values_callable=lambda e: [x.value for x in e]),
         nullable=False,
         index=True,
     )
     status: Mapped[SyncJobStatus] = mapped_column(
-        Enum(SyncJobStatus),
+        Enum(SyncJobStatus, values_callable=lambda e: [x.value for x in e]),
         default=SyncJobStatus.PENDING,
         nullable=False,
         index=True,
