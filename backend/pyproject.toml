@@ -35,6 +35,10 @@ dependencies = [
     "prometheus-client>=0.20.0",
     # Logging
     "loguru>=0.7.0",
+    # Rate limiting
+    "slowapi>=0.1.9",
+    # Direct bcrypt for security utilities
+    "bcrypt>=4.0.0",
 ]
 
 # ============================================================================

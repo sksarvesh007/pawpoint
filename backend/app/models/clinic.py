@@ -101,7 +101,7 @@ class Clinic(Base, TimestampMixin, SoftDeleteMixin):
 
     # PIMS Integration
     pims_type: Mapped[PIMSType] = mapped_column(
-        Enum(PIMSType, values_callable=lambda e: [x.value for x in e]),
+        Enum(PIMSType, values_callable=lambda x: [e.value for e in x]),
         default=PIMSType.NONE,
         nullable=False,
         index=True,
@@ -111,7 +111,7 @@ class Clinic(Base, TimestampMixin, SoftDeleteMixin):
         comment="AES-256 encrypted PIMS API credentials",
     )
     pims_connection_status: Mapped[PIMSConnectionStatus] = mapped_column(
-        Enum(PIMSConnectionStatus, values_callable=lambda e: [x.value for x in e]),
+        Enum(PIMSConnectionStatus, values_callable=lambda x: [e.value for e in x]),
         default=PIMSConnectionStatus.DISCONNECTED,
         nullable=False,
     )

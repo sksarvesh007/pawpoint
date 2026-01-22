@@ -24,3 +24,20 @@ repos:
         types: [python]
         pass_filenames: false
         files: ^backend/.*\.py$
+
+  # Frontend ESLint
+  - repo: local
+    hooks:
+      - id: eslint
+        name: ESLint
+        entry: bash -c 'cd frontend && bun run lint'
+        language: system
+        pass_filenames: false
+        files: ^frontend/.*\.(ts|tsx|js|jsx)$
+
+      - id: tsc
+        name: TypeScript type check
+        entry: bash -c 'cd frontend && bun run type-check'
+        language: system
+        pass_filenames: false
+        files: ^frontend/.*\.(ts|tsx)$
