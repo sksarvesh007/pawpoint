@@ -77,7 +77,7 @@ class User(Base, TimestampMixin, SoftDeleteMixin):
 
     # Role and permissions
     role: Mapped[UserRole] = mapped_column(
-        Enum(UserRole),
+        Enum(UserRole, values_callable=lambda x: [e.value for e in x]),
         default=UserRole.STAFF,
         nullable=False,
         index=True,

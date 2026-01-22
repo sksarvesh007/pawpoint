@@ -9,9 +9,11 @@ from fastapi.responses import PlainTextResponse
 from loguru import logger
 from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 
+from app.api.v1 import api_router
 from app.core.config import settings
 from app.core.logging import configure_logging
 from app.core.telemetry import init_telemetry, shutdown_telemetry
+from app.db import close_db, init_db
 
 
 @asynccontextmanager
@@ -33,9 +35,14 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     init_telemetry(app, settings)
     logger.info("📊 Telemetry initialized")
 
+    # Initialize database
+    await init_db()
+    logger.info("🗄️ Database initialized")
+
     yield
 
     # Shutdown
+    await close_db()
     shutdown_telemetry(app)
     logger.info("👋 Shutting down {}", settings.app_name)
 
@@ -58,6 +65,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Include API routers
+app.include_router(api_router, prefix="/api/v1")
 
 
 @app.get("/")
