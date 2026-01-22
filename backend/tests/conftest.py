@@ -150,38 +150,4 @@ async def client(
     app.dependency_overrides.clear()
 
 
-# =============================================================================
-# Test Data Fixtures
-# =============================================================================
 
-
-@pytest.fixture
-def unique_email() -> str:
-    """Generate a unique email address for test isolation."""
-    return f"test_{uuid.uuid4().hex[:8]}@example.com"
-
-
-@pytest.fixture
-def unique_clinic_name() -> str:
-    """Generate a unique clinic name for test isolation."""
-    return f"Test Clinic {uuid.uuid4().hex[:8]}"
-
-
-@pytest.fixture
-def valid_password() -> str:
-    """Return a valid password that meets security requirements."""
-    return "SecurePassword123!"
-
-
-@pytest.fixture
-def registration_payload(
-    unique_clinic_name: str, unique_email: str, valid_password: str
-) -> dict[str, Any]:
-    """Generate a unique registration payload for each test."""
-    return {
-        "clinic_name": unique_clinic_name,
-        "email": unique_email,
-        "password": valid_password,
-        "admin_first_name": "Test",
-        "admin_last_name": "User",
-    }

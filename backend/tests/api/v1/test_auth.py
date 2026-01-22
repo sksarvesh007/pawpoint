@@ -150,12 +150,7 @@ async def test_login_success(client: AsyncClient) -> None:
 
     # Register first and validate success
     register_payload = make_registration_payload(email=email, password=password)
-    register_response = await client.post(
-        "/api/v1/auth/register", json=register_payload
-    )
-    assert register_response.status_code == 201, (
-        f"Registration failed: {register_response.json()}"
-    )
+    await register_user(client, register_payload)
 
     # Login
     login_payload = {"email": email, "password": password}
@@ -186,10 +181,7 @@ async def test_login_invalid_password(client: AsyncClient) -> None:
 
     # Register first
     register_payload = make_registration_payload(email=email, password=correct_password)
-    register_response = await client.post(
-        "/api/v1/auth/register", json=register_payload
-    )
-    assert register_response.status_code == 201
+    await register_user(client, register_payload)
 
     # Login with wrong password
     login_payload = {"email": email, "password": wrong_password}
@@ -242,10 +234,7 @@ async def test_logout_clears_cookie(client: AsyncClient) -> None:
 
     # Register to get a valid session
     register_payload = make_registration_payload(email=email)
-    register_response = await client.post(
-        "/api/v1/auth/register", json=register_payload
-    )
-    assert register_response.status_code == 201
+    await register_user(client, register_payload)
 
     # Logout
     response = await client.post("/api/v1/auth/logout")
