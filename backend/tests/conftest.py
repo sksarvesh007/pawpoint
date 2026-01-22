@@ -1,11 +1,8 @@
 """Test configuration and fixtures for backend tests."""
 
-import uuid
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from typing import Any
 
-import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import (
@@ -148,6 +145,3 @@ async def client(
             yield c
 
     app.dependency_overrides.clear()
-
-
-
