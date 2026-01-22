@@ -1,8 +1,19 @@
-from collections.abc import AsyncGenerator
+"""Test configuration and fixtures for backend tests."""
 
+import uuid
+from collections.abc import AsyncGenerator
+from contextlib import asynccontextmanager
+from typing import Any
+
+import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.ext.asyncio import (
+    AsyncEngine,
+    AsyncSession,
+    async_sessionmaker,
+    create_async_engine,
+)
 
 from app.api.v1.endpoints import auth as auth_module
 from app.core.config import get_settings
@@ -12,13 +23,50 @@ from app.models.base import Base
 
 settings = get_settings()
 
+
+# =============================================================================
+# Rate Limiter Context Manager
+# =============================================================================
+
+
+@asynccontextmanager
+async def disable_rate_limiting() -> AsyncGenerator[None]:
+    """
+    Context manager to disable rate limiting during tests.
+
+    Uses try/finally to ensure rate limiting is re-enabled even if tests fail.
+    """
+    # Store original states
+    app_limiter_enabled: bool | None = None
+    auth_limiter_enabled: bool | None = None
+
+    try:
+        # Disable app state limiter
+        if hasattr(app.state, "limiter") and app.state.limiter:
+            app_limiter_enabled = getattr(app.state.limiter, "enabled", True)
+            app.state.limiter.enabled = False
+
+        # Disable auth module limiter
+        if hasattr(auth_module, "limiter"):
+            auth_limiter_enabled = getattr(auth_module.limiter, "enabled", True)
+            auth_module.limiter.enabled = False
+
+        yield
+    finally:
+        # Restore original states
+        if app_limiter_enabled is not None and hasattr(app.state, "limiter"):
+            app.state.limiter.enabled = app_limiter_enabled
+        if auth_limiter_enabled is not None and hasattr(auth_module, "limiter"):
+            auth_module.limiter.enabled = auth_limiter_enabled
+
+
 # =============================================================================
 # Database Fixtures
 # =============================================================================
 
 
 @pytest_asyncio.fixture(scope="function")
-async def test_engine():
+async def test_engine() -> AsyncGenerator[AsyncEngine]:
     """
     Create a test-specific async engine for each test function.
 
@@ -31,7 +79,7 @@ async def test_engine():
         pool_pre_ping=True,
     )
 
-    # Create tables
+    # Create tables once at the start
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
@@ -44,13 +92,20 @@ async def test_engine():
 
 
 @pytest_asyncio.fixture
-async def db_session(test_engine) -> AsyncGenerator[AsyncSession]:
+async def db_session(test_engine: AsyncEngine) -> AsyncGenerator[AsyncSession]:
     """
-    Creates a fresh database session for a test.
-    Uses a transaction that gets rolled back after test completes for isolation.
+    Creates a database session with transaction rollback for test isolation.
+
+    Each test runs in a transaction that gets rolled back after completion,
+    ensuring complete isolation between tests without expensive table drops.
     """
+    # Create a connection and begin a transaction
+    connection = await test_engine.connect()
+    transaction = await connection.begin()
+
+    # Create session bound to this connection
     async_session_factory = async_sessionmaker(
-        test_engine,
+        bind=connection,
         class_=AsyncSession,
         expire_on_commit=False,
         autocommit=False,
@@ -60,6 +115,10 @@ async def db_session(test_engine) -> AsyncGenerator[AsyncSession]:
     async with async_session_factory() as session:
         yield session
 
+    # Rollback the transaction to restore clean state
+    await transaction.rollback()
+    await connection.close()
+
 
 # =============================================================================
 # Client Fixtures
@@ -67,10 +126,15 @@ async def db_session(test_engine) -> AsyncGenerator[AsyncSession]:
 
 
 @pytest_asyncio.fixture
-async def client(db_session: AsyncSession, test_engine) -> AsyncGenerator[AsyncClient]:
+async def client(
+    db_session: AsyncSession, test_engine: AsyncEngine
+) -> AsyncGenerator[AsyncClient]:
     """
     Creates an HTTP client for testing the API.
-    Overrides the get_db dependency to use the test session.
+
+    - Overrides get_db dependency to use the test session
+    - Disables rate limiting for the duration of the test
+    - Properly cleans up after test completion
     """
 
     async def override_get_db() -> AsyncGenerator[AsyncSession]:
@@ -78,21 +142,46 @@ async def client(db_session: AsyncSession, test_engine) -> AsyncGenerator[AsyncC
 
     app.dependency_overrides[get_db] = override_get_db
 
-    # Disable rate limiting for tests by setting enabled=False on all limiter instances
-    # The auth module has its own limiter that needs to be disabled separately
-    if hasattr(app.state, "limiter") and app.state.limiter:
-        app.state.limiter.enabled = False
-    if hasattr(auth_module, "limiter"):
-        auth_module.limiter.enabled = False
-
-    transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url="http://test") as c:
-        yield c
-
-    # Re-enable rate limiting after test
-    if hasattr(app.state, "limiter") and app.state.limiter:
-        app.state.limiter.enabled = True
-    if hasattr(auth_module, "limiter"):
-        auth_module.limiter.enabled = True
+    async with disable_rate_limiting():
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://test") as c:
+            yield c
 
     app.dependency_overrides.clear()
+
+
+# =============================================================================
+# Test Data Fixtures
+# =============================================================================
+
+
+@pytest.fixture
+def unique_email() -> str:
+    """Generate a unique email address for test isolation."""
+    return f"test_{uuid.uuid4().hex[:8]}@example.com"
+
+
+@pytest.fixture
+def unique_clinic_name() -> str:
+    """Generate a unique clinic name for test isolation."""
+    return f"Test Clinic {uuid.uuid4().hex[:8]}"
+
+
+@pytest.fixture
+def valid_password() -> str:
+    """Return a valid password that meets security requirements."""
+    return "SecurePassword123!"
+
+
+@pytest.fixture
+def registration_payload(
+    unique_clinic_name: str, unique_email: str, valid_password: str
+) -> dict[str, Any]:
+    """Generate a unique registration payload for each test."""
+    return {
+        "clinic_name": unique_clinic_name,
+        "email": unique_email,
+        "password": valid_password,
+        "admin_first_name": "Test",
+        "admin_last_name": "User",
+    }
