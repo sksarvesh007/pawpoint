@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { env } from "@/lib/env";
+import { Logo, NAVBAR_HEIGHT } from "@/components/Logo";
 import type { TokenResponse, ErrorResponse } from "@/types/auth";
 
 export default function LoginPage() {
@@ -72,14 +73,12 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-screen flex-col bg-gradient-to-b from-blue-50 to-white dark:from-zinc-900 dark:to-black">
       {/* Header */}
-      <header className="flex items-center justify-between px-6 py-4 md:px-12">
+      <header
+        className="flex items-center justify-between px-6 md:px-12 bg-white border-b border-white shadow-sm"
+        style={{ height: `${NAVBAR_HEIGHT}px` }}
+      >
         <Link href="/" className="flex items-center gap-2">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-600 text-white font-bold text-xl">
-            P
-          </div>
-          <span className="text-xl font-semibold text-zinc-900 dark:text-white">
-            PawPoint
-          </span>
+          <Logo />
         </Link>
       </header>
 
@@ -87,7 +86,7 @@ export default function LoginPage() {
       <main className="flex flex-1 items-center justify-center px-6 py-12">
         <div className="w-full max-w-md">
           <div className="rounded-xl border border-zinc-200 bg-white p-8 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-            <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">
+            <h1 className="text-2xl font-nunito font-bold text-zinc-900 dark:text-white">
               Welcome back
             </h1>
             <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">

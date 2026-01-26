@@ -7,3 +7,5 @@ AI_docs
 prod.env
 .env.local
 **/logs
+.playwright-mcp
+.DS_Store
