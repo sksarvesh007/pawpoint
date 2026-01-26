@@ -162,7 +162,7 @@ export default function Home() {
       {/* Hero Section */}
       <section className="relative pt-20 overflow-visible">
         {/* Background Paw Prints - biased towards edges */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-[0.04]">
+        <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-[0.14]">
           <PawPrint
             size={50}
             className="absolute top-10 left-6 rotate-[15deg]"
@@ -200,13 +200,13 @@ export default function Home() {
         {/* Decorative Ovals Background - positioned behind waves, near phone */}
         <div className="absolute right-[5%] top-0 w-[500px] h-[150%] pointer-events-none z-[5] overflow-visible">
           {/* Additional decorative circles/ovals - clustered around phone */}
-          <div className="absolute top-[10%] left-[10%] w-[180px] h-[220px] bg-[#FFE4B5]/50 rounded-[50%]"></div>
-          <div className="absolute top-[25%] right-[5%] w-[160px] h-[160px] bg-[#E6E6FA]/55 rounded-full"></div>
-          <div className="absolute top-[20%] right-[-10%] w-[220px] h-[180px] bg-[#FFDAB9]/45 rounded-[50%] rotate-[20deg]"></div>
+          <div className="absolute top-[10%] left-[10%] w-[180px] h-[220px] bg-[#7ECDC8]/40 rounded-[50%]"></div>
+          <div className="absolute top-[25%] right-[5%] w-[160px] h-[160px] bg-[#3DA99F]/35 rounded-full"></div>
+          <div className="absolute top-[20%] right-[-10%] w-[220px] h-[180px] bg-[#2A9D8F]/30 rounded-[50%] rotate-[20deg]"></div>
         </div>
 
         {/* Hero Content */}
-        <div className="relative z-[25] flex flex-col md:flex-row items-center justify-between px-20 gap-16">
+        <div className="relative z-[25] flex flex-col md:flex-row items-start justify-between px-20 gap-16">
           <div className="flex flex-col gap-8 max-w-[600px]">
             <h1 className="text-[64px] font-nunito font-black text-[#1D3533] leading-[1.05] tracking-tight">
               The AI Receptionist
@@ -383,21 +383,13 @@ export default function Home() {
                 </div>
               </div>
             </div>
-
-            {/* Tap to hear text */}
-            <div className="mt-12 text-center z-[30]">
-              <p className="text-[18px] font-bold text-[#4A5568] flex items-center gap-3">
-                Tap to hear PawPoint answer a call{" "}
-                <span className="text-3xl animate-bounce">🐾🎧</span>
-              </p>
-            </div>
           </div>
         </div>
 
         {/* Wave section - Text Removed */}
         <div className="relative z-[15] -mt-[160px] pb-[260px]">
           {/* Paw prints over waves */}
-          <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-[0.04] z-10">
+          <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-[0.14] z-10">
             <PawPrint
               size={30}
               className="absolute top-8 left-[15%] rotate-[25deg]"
@@ -427,49 +419,66 @@ export default function Home() {
             className="transition duration-300 ease-in-out delay-150"
             preserveAspectRatio="none"
           >
-            <defs>
-              <linearGradient
-                id="heroGradient1"
-                x1="0%"
-                y1="50%"
-                x2="100%"
-                y2="50%"
-              >
-                <stop offset="5%" stopColor="#2A9D8F"></stop>
-                <stop offset="95%" stopColor="#7ECDC8"></stop>
-              </linearGradient>
-            </defs>
             <path
               d="M 0,700 L 0,356 C 67.66923076923078,398.87051282051283 135.33846153846156,441.74102564102566 217,413 C 298.66153846153844,384.25897435897434 394.3153846153846,283.90641025641025 485,231 C 575.6846153846154,178.09358974358975 661.4000000000001,172.63333333333333 743,178 C 824.5999999999999,183.36666666666667 902.0846153846153,199.56025641025641 978,183 C 1053.9153846153847,166.43974358974359 1128.2615384615385,117.12564102564102 1205,78 C 1281.7384615384615,38.87435897435898 1360.8692307692309,9.937179487179488 1440,-19 L 1440,700 L 0,700 Z"
               stroke="none"
               strokeWidth="0"
-              fill="url(#heroGradient1)"
-              fillOpacity="0.35"
+              fill="#7ECDC8"
+              fillOpacity="1"
               className="transition-all duration-300 ease-in-out delay-150"
             ></path>
-            <defs>
-              <linearGradient
-                id="heroGradient2"
-                x1="0%"
-                y1="50%"
-                x2="100%"
-                y2="50%"
-              >
-                <stop offset="5%" stopColor="#2A9D8F"></stop>
-                <stop offset="95%" stopColor="#7ECDC8"></stop>
-              </linearGradient>
-            </defs>
             <path
               d="M 0,700 L 0,706 C 67.15128205128207,715.6628205128204 134.30256410256413,725.325641025641 221,697 C 307.69743589743587,668.674358974359 413.9410256410257,602.3602564102564 487,578 C 560.0589743589743,553.6397435897436 599.9333333333333,571.2333333333333 676,563 C 752.0666666666667,554.7666666666667 864.3256410256411,520.7064102564103 947,491 C 1029.674358974359,461.2935897435897 1082.7641025641026,435.94102564102565 1160,410 C 1237.2358974358974,384.05897435897435 1338.6179487179488,357.5294871794872 1440,331 L 1440,700 L 0,700 Z"
               stroke="none"
               strokeWidth="0"
-              fill="url(#heroGradient2)"
+              fill="#2A9D8F"
               fillOpacity="1"
               className="transition-all duration-300 ease-in-out delay-150"
             ></path>
           </svg>
         </div>
       </section>
+
+      {/* Wave above Features */}
+      <div className="relative -mt-[260px]">
+        <svg
+          width="100%"
+          height="200"
+          id="svg"
+          viewBox="0 0 1440 590"
+          xmlns="http://www.w3.org/2000/svg"
+          className="transition duration-300 ease-in-out delay-150"
+          preserveAspectRatio="none"
+        >
+          <path
+            d="M 0,600 L 0,112 C 108.06698564593302,121.67464114832535 216.13397129186603,131.3492822966507 327,124 C 437.86602870813397,116.65071770334929 551.5311004784689,92.2775119617225 627,86 C 702.4688995215311,79.7224880382775 739.7416267942583,91.54066985645933 816,95 C 892.2583732057417,98.45933014354067 1007.5023923444978,93.5598086124402 1118,95 C 1228.4976076555022,96.4401913875598 1334.248803827751,104.22009569377991 1440,112 L 1440,600 L 0,600 Z"
+            stroke="none"
+            strokeWidth="0"
+            fill="#36bda5ff"
+            fillOpacity="1"
+            className="transition-all duration-300 ease-in-out delay-150 path-0"
+            transform="rotate(-180 720 300)"
+          />
+          <path
+            d="M 0,600 L 0,262 C 76.79425837320574,271.27272727272725 153.58851674641147,280.54545454545456 246,266 C 338.41148325358853,251.45454545454544 446.4401913875598,213.09090909090907 561,224 C 675.5598086124402,234.90909090909093 796.6507177033494,295.0909090909091 906,300 C 1015.3492822966506,304.9090909090909 1112.956937799043,254.54545454545456 1200,239 C 1287.043062200957,223.45454545454544 1363.5215311004786,242.72727272727272 1440,262 L 1440,600 L 0,600 Z"
+            stroke="none"
+            strokeWidth="0"
+            fill="#7ECDC8"
+            fillOpacity="1"
+            className="transition-all duration-300 ease-in-out delay-150 path-1"
+            transform="rotate(-180 720 300)"
+          />
+          <path
+            d="M 0,600 L 0,412 C 124.83253588516749,402.3732057416268 249.66507177033498,392.7464114832536 337,405 C 424.334928229665,417.2535885167464 474.17224880382776,451.3875598086125 553,462 C 631.8277511961722,472.6124401913875 739.6459330143541,459.70334928229664 835,451 C 930.3540669856459,442.29665071770336 1013.2440191387561,437.79904306220095 1112,432 C 1210.7559808612439,426.20095693779905 1325.377990430622,419.1004784688995 1440,412 L 1440,600 L 0,600 Z"
+            stroke="none"
+            strokeWidth="0"
+            fill="#2A9D8F"
+            fillOpacity="1"
+            className="transition-all duration-300 ease-in-out delay-150 path-2"
+            transform="rotate(-180 720 300)"
+          />
+        </svg>
+      </div>
 
       {/* Features Grid */}
       <section id="features" className="relative bg-white py-20 px-20">
@@ -564,7 +573,7 @@ export default function Home() {
         {/* Top Wave Layers */}
         <div className="relative">
           {/* Paw prints over waves */}
-          <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-[0.04] z-10">
+          <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-[0.14] z-10">
             <PawPrint
               size={32}
               className="absolute top-6 left-[18%] rotate-[22deg]"
@@ -672,7 +681,7 @@ export default function Home() {
         {/* CTA Content */}
         <div className="bg-[#3DA99F] relative overflow-hidden">
           {/* Decorative Elements */}
-          <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-[0.06]">
+          <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-[0.16]">
             <PawPrint
               size={60}
               className="absolute top-10 left-20 rotate-[20deg]"
@@ -691,7 +700,7 @@ export default function Home() {
             />
           </div>
 
-          <div className="px-20 py-24 flex flex-col items-center gap-8 relative z-10">
+          <div className="px-20 py-14 flex flex-col items-center gap-6 relative z-10">
             <h2 className="text-[52px] font-nunito font-black text-white text-center leading-tight">
               Ready to Never Miss a Call?
             </h2>
@@ -719,7 +728,7 @@ export default function Home() {
         {/* Bottom Wave Layers */}
         <div className="relative bg-[#3EB5B0]">
           {/* Paw prints over waves */}
-          <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-[0.04] z-10">
+          <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-[0.14] z-10">
             <PawPrint
               size={30}
               className="absolute top-4 left-[22%] rotate-[25deg]"
