@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { env } from "@/lib/env";
+import { Logo, NAVBAR_HEIGHT } from "@/components/Logo";
 import type { TokenResponse, ErrorResponse } from "@/types/auth";
 
 export default function SignupPage() {
@@ -107,14 +108,12 @@ export default function SignupPage() {
   return (
     <div className="flex min-h-screen flex-col bg-gradient-to-b from-blue-50 to-white dark:from-zinc-900 dark:to-black">
       {/* Header */}
-      <header className="flex items-center justify-between px-6 py-4 md:px-12">
+      <header
+        className="flex items-center justify-between px-6 md:px-12 bg-white border-b border-white"
+        style={{ height: `${NAVBAR_HEIGHT}px` }}
+      >
         <Link href="/" className="flex items-center gap-2">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-600 text-white font-bold text-xl">
-            P
-          </div>
-          <span className="text-xl font-semibold text-zinc-900 dark:text-white">
-            PawPoint
-          </span>
+          <Logo />
         </Link>
       </header>
 

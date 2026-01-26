@@ -1,23 +1,8 @@
 import Link from "next/link";
+import { Logo, NAVBAR_HEIGHT } from "@/components/Logo";
 
 // Custom Icon Components
-const PawLogo = () => (
-  <svg width="40" height="40" viewBox="0 0 100 100" fill="none">
-    {/* Main paw pad */}
-    <ellipse cx="50" cy="62" rx="28" ry="22" fill="#F5A623" />
-    {/* Toe pads */}
-    <circle cx="28" cy="38" r="14" fill="#F5A623" />
-    <circle cx="72" cy="38" r="14" fill="#F5A623" />
-    <circle cx="18" cy="58" r="11" fill="#F5A623" />
-    <circle cx="82" cy="58" r="11" fill="#F5A623" />
-    {/* Face details - left */}
-    <circle cx="28" cy="36" r="6" fill="#3EB5B0" />
-    <circle cx="25" cy="34" r="2" fill="white" />
-    {/* Face details - right */}
-    <circle cx="72" cy="36" r="6" fill="#3EB5B0" />
-    <circle cx="69" cy="34" r="2" fill="white" />
-  </svg>
-);
+const PawLogo = Logo;
 
 const PhoneIcon = () => (
   <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
@@ -89,12 +74,12 @@ export default function Home() {
   return (
     <div className="flex min-h-screen flex-col bg-white overflow-x-hidden">
       {/* Header */}
-      <header className="flex items-center justify-between px-20 py-6 bg-white relative z-20 border-b border-gray-50">
+      <header
+        className="flex items-center justify-between px-20 bg-white relative z-20 border-b border-white"
+        style={{ height: `${NAVBAR_HEIGHT}px` }}
+      >
         <div className="flex items-center gap-2">
           <PawLogo />
-          <span className="text-[28px] font-extrabold text-[#2A9D8F] tracking-tight">
-            PawPoint
-          </span>
         </div>
         <nav className="flex items-center gap-10">
           <Link
@@ -410,7 +395,6 @@ export default function Home() {
             <div className="flex flex-col items-start gap-6 max-w-[300px]">
               <div className="flex items-center gap-2">
                 <PawLogo />
-                <span className="text-2xl font-black text-[#2A9D8F]">PawPoint</span>
               </div>
               <p className="text-[15px] text-[#5C6F6C] font-medium leading-relaxed">
                 The #1 AI Receptionist tool built exclusively for veterinary practices.
