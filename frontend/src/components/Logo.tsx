@@ -17,6 +17,11 @@ interface LogoProps {
   paddingLeft?: string;
   className?: string;
   height?: number;
+  width?: number;
+  cropTop?: number;
+  cropBottom?: number;
+  cropLeft?: number;
+  cropRight?: number;
 }
 
 export function Logo({
@@ -25,26 +30,64 @@ export function Logo({
   paddingLeft = "0px",
   className = "",
   height = LOGO_HEIGHT,
+  width,
+  cropTop = 0,
+  cropBottom = 0,
+  cropLeft = 0,
+  cropRight = 0,
 }: LogoProps = {}) {
   const objectPosition =
     align === "left" ? "left center" : align === "right" ? "right center" : "center";
 
+  const calculatedWidth = width || height * ASPECT_RATIO;
+
+  const hasCropping = cropTop || cropBottom || cropLeft || cropRight;
+
   return (
     <div style={{ paddingTop, paddingLeft }} className={className}>
-      <Image
-        src="/pawpoint_header-removebg-preview.png"
-        alt="PawPoint Logo"
-        width={LOGO_WIDTH}
-        height={height}
-        draggable={false}
-        priority
-        style={{
-          height: `${height}px`,
-          width: "auto",
-          objectFit: "contain",
-          objectPosition,
-        }}
-      />
+      {hasCropping ? (
+        <div
+          style={{
+            width: `${calculatedWidth - cropLeft - cropRight}px`,
+            height: `${height - cropTop - cropBottom}px`,
+            overflow: "hidden",
+            position: "relative",
+          }}
+        >
+          <Image
+            src="/pawpoint_header-removebg-preview.png"
+            alt="PawPoint Logo"
+            width={calculatedWidth}
+            height={height}
+            draggable={false}
+            priority
+            style={{
+              position: "absolute",
+              top: `-${cropTop}px`,
+              left: `-${cropLeft}px`,
+              height: `${height}px`,
+              width: width ? `${width}px` : "auto",
+              objectFit: "contain",
+              objectPosition,
+            }}
+          />
+        </div>
+      ) : (
+        <Image
+          src="/pawpoint_header-removebg-preview.png"
+          alt="PawPoint Logo"
+          width={calculatedWidth}
+          height={height}
+          draggable={false}
+          priority
+          style={{
+            height: `${height}px`,
+            width: width ? `${width}px` : "auto",
+            objectFit: "contain",
+            objectPosition,
+          }}
+        />
+      )}
     </div>
   );
 }

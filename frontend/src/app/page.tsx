@@ -161,31 +161,39 @@ export default function Home() {
 
       {/* Hero Section */}
       <section className="relative pt-20 overflow-visible">
-        {/* Background Paw Prints */}
+        {/* Background Paw Prints - biased towards edges */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-[0.04]">
           <PawPrint
             size={50}
-            className="absolute top-10 left-10 rotate-[15deg]"
+            className="absolute top-10 left-6 rotate-[15deg]"
           />
           <PawPrint
             size={60}
-            className="absolute top-40 right-40 rotate-[-25deg]"
+            className="absolute top-40 right-8 rotate-[-25deg]"
           />
           <PawPrint
             size={35}
-            className="absolute top-20 left-[40%] rotate-[45deg]"
+            className="absolute top-20 left-[8%] rotate-[45deg]"
           />
           <PawPrint
             size={45}
-            className="absolute bottom-40 left-20 rotate-[-15deg]"
+            className="absolute bottom-40 left-12 rotate-[-15deg]"
           />
           <PawPrint
             size={40}
-            className="absolute top-60 right-[30%] rotate-[30deg]"
+            className="absolute top-60 right-[5%] rotate-[30deg]"
           />
           <PawPrint
             size={55}
-            className="absolute bottom-60 right-20 rotate-[-40deg]"
+            className="absolute bottom-60 right-6 rotate-[-40deg]"
+          />
+          <PawPrint
+            size={42}
+            className="absolute top-[30%] left-[3%] rotate-[20deg]"
+          />
+          <PawPrint
+            size={48}
+            className="absolute bottom-20 right-[7%] rotate-[-35deg]"
           />
         </div>
 
@@ -803,9 +811,13 @@ export default function Home() {
           <div className="flex flex-col md:flex-row justify-between items-start gap-12">
             {/* Logo and tagline */}
             <div className="flex flex-col items-start gap-6 max-w-[300px]">
-              <div className="flex items-center gap-2">
-                <PawLogo />
-              </div>
+              <PawLogo
+                height={150}
+                paddingTop="0px"
+                cropTop={42}
+                cropBottom={62}
+                cropLeft={32}
+              />
               <p className="text-[15px] text-[#5C6F6C] font-medium leading-relaxed">
                 The #1 AI Receptionist tool built exclusively for veterinary
                 practices.
