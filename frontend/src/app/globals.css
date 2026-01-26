@@ -23,6 +23,7 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --font-heading: var(--font-nunito);
 
   /* PawPoint Theme Colors */
   --color-pawpoint-teal: var(--pawpoint-teal);
@@ -47,4 +48,19 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Apply Nunito Bold to all headings */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-nunito), sans-serif;
+  font-weight: 700;
+}
+
+/* Utility classes for Nunito font */
+.font-nunito {
+  font-family: var(--font-nunito), sans-serif;
+}
+
+.font-heading {
+  font-family: var(--font-nunito), sans-serif;
 }

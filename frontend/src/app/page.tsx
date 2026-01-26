@@ -1,5 +1,7 @@
 import Link from "next/link";
+import Image from "next/image";
 import { Logo, NAVBAR_HEIGHT } from "@/components/Logo";
+import { PawBackground } from "@/components/PawBackground";
 
 // Custom Icon Components
 const PawLogo = Logo;
@@ -60,14 +62,14 @@ const DashboardIcon = () => (
   </svg>
 );
 
-const PawPrint = ({ className = "" }: { className?: string }) => (
-  <svg className={className} viewBox="0 0 100 100" fill="currentColor">
-    <ellipse cx="50" cy="65" rx="25" ry="20" />
-    <circle cx="30" cy="35" r="12" />
-    <circle cx="70" cy="35" r="12" />
-    <circle cx="20" cy="55" r="10" />
-    <circle cx="80" cy="55" r="10" />
-  </svg>
+const PawPrint = ({ className = "", size = 40 }: { className?: string; size?: number }) => (
+  <Image
+    src="/paws.png"
+    alt="Paw print"
+    width={size}
+    height={size}
+    className={className}
+  />
 );
 
 export default function Home() {
@@ -75,7 +77,7 @@ export default function Home() {
     <div className="flex min-h-screen flex-col bg-white overflow-x-hidden">
       {/* Header */}
       <header
-        className="flex items-center justify-between px-20 bg-white relative z-20 border-b border-white"
+        className="flex items-center justify-between px-20 bg-white relative z-20 border-b border-white shadow-sm"
         style={{ height: `${NAVBAR_HEIGHT}px` }}
       >
         <div className="flex items-center gap-2">
@@ -101,6 +103,12 @@ export default function Home() {
             Demo
           </Link>
           <Link
+            href="/about"
+            className="text-[17px] font-medium text-[#4A5568] hover:text-[#2A9D8F] transition-colors"
+          >
+            About Us
+          </Link>
+          <Link
             href="/signup"
             className="px-8 py-3 text-[16px] font-bold text-white bg-[#3DA99F] rounded-lg hover:bg-[#2A9D8F] transition-all shadow-[0_4px_14px_0_rgba(61,169,159,0.3)]"
           >
@@ -112,17 +120,19 @@ export default function Home() {
       {/* Hero Section */}
       <section className="relative pt-20 overflow-visible">
         {/* Background Paw Prints */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-[0.05]">
-          <PawPrint className="absolute top-10 left-10 w-24 h-24 text-[#2A9D8F]" />
-          <PawPrint className="absolute top-40 right-40 w-32 h-32 text-[#2A9D8F] rotate-[15deg]" />
-          <PawPrint className="absolute top-20 left-[40%] w-12 h-12 text-[#2A9D8F] rotate-[-20deg]" />
-          <PawPrint className="absolute bottom-40 left-20 w-16 h-16 text-[#2A9D8F]" />
+        <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-[0.04]">
+          <PawPrint size={50} className="absolute top-10 left-10 rotate-[15deg]" />
+          <PawPrint size={60} className="absolute top-40 right-40 rotate-[-25deg]" />
+          <PawPrint size={35} className="absolute top-20 left-[40%] rotate-[45deg]" />
+          <PawPrint size={45} className="absolute bottom-40 left-20 rotate-[-15deg]" />
+          <PawPrint size={40} className="absolute top-60 right-[30%] rotate-[30deg]" />
+          <PawPrint size={55} className="absolute bottom-60 right-20 rotate-[-40deg]" />
         </div>
 
         {/* Hero Content */}
         <div className="relative z-10 flex flex-col md:flex-row items-center justify-between px-20 gap-16">
           <div className="flex flex-col gap-8 max-w-[600px]">
-            <h1 className="text-[64px] font-black text-[#1D3533] leading-[1.05] tracking-tight">
+            <h1 className="text-[64px] font-nunito font-black text-[#1D3533] leading-[1.05] tracking-tight">
               The AI Receptionist
               <br />
               <span className="text-[#3DA99F]">for Veterinary Clinics</span>
@@ -152,9 +162,30 @@ export default function Home() {
           </div>
 
           {/* Phone Mockup Section */}
-          <div className="relative flex flex-col items-center">
-            {/* Soft Teal Blob Background */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[550px] h-[550px] bg-[#E0F2F1] rounded-full blur-[80px] opacity-70 pointer-events-none -z-10"></div>
+          <div className="relative flex flex-col items-center" style={{ overflow: 'visible' }}>
+            {/* Decorative Shapes Background */}
+            <div className="absolute inset-0 pointer-events-none z-0" style={{ overflow: 'visible' }}>
+              {/* Large main oval - tilted 45deg to right, from waves to phone top */}
+              <div className="absolute bottom-0 left-[-70%] w-[800px] h-[700px] bg-[#C5E8E6]/50 rounded-[50%] rotate-[130deg]"></div>
+
+              {/* Additional decorative circles/ovals */}
+              <div className="absolute top-10 left-[-50px] w-[200px] h-[250px] bg-[#D0F0EE]/45 rounded-[50%]"></div>
+              <div className="absolute top-40 right-[-60px] w-[180px] h-[180px] bg-[#C5E8E6]/50 rounded-full"></div>
+              <div className="absolute bottom-20 left-[-80px] w-[220px] h-[280px] bg-[#E8F7F6]/55 rounded-[50%] rotate-[-15deg]"></div>
+              <div className="absolute top-[30%] right-[-100px] w-[250px] h-[200px] bg-[#9DD9D5]/40 rounded-[50%] rotate-[20deg]"></div>
+              <div className="absolute bottom-0 right-[-40px] w-[160px] h-[200px] bg-[#7ECDC8]/45 rounded-[50%] rotate-[10deg]"></div>
+            </div>
+
+            {/* Paw Background without circles */}
+            <PawBackground
+              pawCount={6}
+              circleCount={0}
+              pawOpacity={0.12}
+              circleOpacity={0}
+              pawSizeRange={[40, 70]}
+              circleSizeRange={[0, 0]}
+              className="w-[600px] h-[650px] absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-0 overflow-visible"
+            />
 
             {/* Ringing Arcs */}
             <div className="absolute top-[20%] -left-12 opacity-40 animate-pulse">
@@ -171,7 +202,7 @@ export default function Home() {
             </div>
 
             {/* iPhone Frame */}
-            <div className="relative w-[280px] h-[580px] bg-[#2D3436] rounded-[50px] p-[12px] shadow-[0_45px_90px_rgba(0,0,0,0.2)] rotate-[6deg] transition-all hover:rotate-[4deg] duration-500">
+            <div className="relative w-[280px] h-[580px] bg-[#2D3436] rounded-[50px] p-[12px] shadow-[0_45px_90px_rgba(0,0,0,0.2)] rotate-[6deg] transition-all hover:rotate-0 duration-500">
               {/* Screen Content */}
               <div className="relative w-full h-full bg-[#3DA99F] rounded-[40px] overflow-hidden flex flex-col items-center">
                 {/* Dynamic Island */}
@@ -196,7 +227,7 @@ export default function Home() {
 
                   {/* Identity */}
                   <div className="text-center">
-                    <h2 className="text-[22px] font-bold text-white tracking-tight">PawPoint AI</h2>
+                    <h2 className="text-[22px] font-nunito font-bold text-white tracking-tight">PawPoint AI</h2>
                     <p className="text-[14px] text-white/80 font-medium h-4">answering...</p>
                   </div>
 
@@ -243,11 +274,30 @@ export default function Home() {
         </div>
 
         {/* Wave section - Text Removed */}
-        <div className="relative -mt-4">
-          <svg viewBox="0 0 1440 200" className="w-full block" preserveAspectRatio="none" style={{ height: '160px' }}>
-            <path fill="#C5E8E6" fillOpacity="0.5" d="M0,100 C200,140 400,80 600,100 C800,120 1000,60 1200,100 C1300,120 1400,100 1440,90 L1440,200 L0,200 Z"></path>
-            <path fill="#9DD9D5" fillOpacity="0.6" d="M0,120 C200,150 400,100 600,130 C800,160 1000,100 1200,140 C1350,160 1400,140 1440,130 L1440,200 L0,200 Z"></path>
-            <path fill="#7ECDC8" fillOpacity="0.7" d="M0,150 C200,170 400,140 600,160 C800,180 1000,140 1200,170 C1350,185 1420,170 1440,160 L1440,200 L0,200 Z"></path>
+        <div className="relative z-10 -mt-[160px] pb-[260px]">
+          {/* Paw prints over waves */}
+          <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-[0.04] z-10">
+            <PawPrint size={30} className="absolute top-8 left-[15%] rotate-[25deg]" />
+            <PawPrint size={35} className="absolute top-16 right-[25%] rotate-[-20deg]" />
+            <PawPrint size={25} className="absolute bottom-10 left-[40%] rotate-[15deg]" />
+            <PawPrint size={40} className="absolute top-12 right-[60%] rotate-[-35deg]" />
+            <PawPrint size={28} className="absolute bottom-6 right-[10%] rotate-[40deg]" />
+          </div>
+          <svg width="100%" height="160" viewBox="0 0 1440 690" xmlns="http://www.w3.org/2000/svg" className="transition duration-300 ease-in-out delay-150" preserveAspectRatio="none">
+            <defs>
+              <linearGradient id="heroGradient1" x1="0%" y1="50%" x2="100%" y2="50%">
+                <stop offset="5%" stopColor="#2A9D8F"></stop>
+                <stop offset="95%" stopColor="#7ECDC8"></stop>
+              </linearGradient>
+            </defs>
+            <path d="M 0,700 L 0,356 C 67.66923076923078,398.87051282051283 135.33846153846156,441.74102564102566 217,413 C 298.66153846153844,384.25897435897434 394.3153846153846,283.90641025641025 485,231 C 575.6846153846154,178.09358974358975 661.4000000000001,172.63333333333333 743,178 C 824.5999999999999,183.36666666666667 902.0846153846153,199.56025641025641 978,183 C 1053.9153846153847,166.43974358974359 1128.2615384615385,117.12564102564102 1205,78 C 1281.7384615384615,38.87435897435898 1360.8692307692309,9.937179487179488 1440,-19 L 1440,700 L 0,700 Z" stroke="none" strokeWidth="0" fill="url(#heroGradient1)" fillOpacity="0.35" className="transition-all duration-300 ease-in-out delay-150"></path>
+            <defs>
+              <linearGradient id="heroGradient2" x1="0%" y1="50%" x2="100%" y2="50%">
+                <stop offset="5%" stopColor="#2A9D8F"></stop>
+                <stop offset="95%" stopColor="#7ECDC8"></stop>
+              </linearGradient>
+            </defs>
+            <path d="M 0,700 L 0,706 C 67.15128205128207,715.6628205128204 134.30256410256413,725.325641025641 221,697 C 307.69743589743587,668.674358974359 413.9410256410257,602.3602564102564 487,578 C 560.0589743589743,553.6397435897436 599.9333333333333,571.2333333333333 676,563 C 752.0666666666667,554.7666666666667 864.3256410256411,520.7064102564103 947,491 C 1029.674358974359,461.2935897435897 1082.7641025641026,435.94102564102565 1160,410 C 1237.2358974358974,384.05897435897435 1338.6179487179488,357.5294871794872 1440,331 L 1440,700 L 0,700 Z" stroke="none" strokeWidth="0" fill="url(#heroGradient2)" fillOpacity="1" className="transition-all duration-300 ease-in-out delay-150"></path>
           </svg>
         </div>
       </section>
@@ -258,7 +308,7 @@ export default function Home() {
           {/* Feature 1 */}
           <div className="w-[280px] p-8 bg-[#FFF9F0] rounded-[24px] flex flex-col gap-4 shadow-sm border border-orange-100/50">
             <PhoneIcon />
-            <h3 className="text-[19px] font-black text-[#1D3533] leading-tight">
+            <h3 className="text-[19px] font-nunito font-black text-[#1D3533] leading-tight">
               24/7 Call<br />Coverage
             </h3>
             <p className="text-[15px] text-[#5C6F6C] font-medium">
@@ -269,7 +319,7 @@ export default function Home() {
           {/* Feature 2 */}
           <div className="w-[280px] p-8 bg-[#FFF9F0] rounded-[24px] flex flex-col gap-4 shadow-sm border border-orange-100/50">
             <ClipboardIcon />
-            <h3 className="text-[19px] font-black text-[#1D3533] leading-tight">
+            <h3 className="text-[19px] font-nunito font-black text-[#1D3533] leading-tight">
               Never Miss<br />an Appointment
             </h3>
             <p className="text-[15px] text-[#5C6F6C] font-medium">
@@ -280,7 +330,7 @@ export default function Home() {
           {/* Feature 3 */}
           <div className="w-[280px] p-8 bg-[#FFF9F0] rounded-[24px] flex flex-col gap-4 shadow-sm border border-orange-100/50">
             <CalendarCheckIcon />
-            <h3 className="text-[19px] font-black text-[#3DA99F] leading-tight">
+            <h3 className="text-[19px] font-nunito font-black text-[#3DA99F] leading-tight">
               Appointment<br />Requests Captured
             </h3>
             <p className="text-[15px] text-[#5C6F6C] font-medium">
@@ -291,7 +341,7 @@ export default function Home() {
           {/* Feature 4 */}
           <div className="w-[280px] p-8 bg-[#E0F2F1]/50 rounded-[24px] flex flex-col gap-4 shadow-sm border border-teal-100/50">
             <DashboardIcon />
-            <h3 className="text-[19px] font-black text-[#1D3533] leading-tight">
+            <h3 className="text-[19px] font-nunito font-black text-[#1D3533] leading-tight">
               Staff<br />Dashboard Alerts
             </h3>
             <p className="text-[15px] text-[#5C6F6C] font-medium">
@@ -308,7 +358,7 @@ export default function Home() {
           <div className="w-[580px] p-8 bg-white rounded-[24px] border border-gray-100 flex items-center gap-6 shadow-[0_10px_30px_rgba(0,0,0,0.04)]">
             <PhoneIcon />
             <div className="flex flex-col gap-1">
-              <h3 className="text-xl font-black text-[#1D3533]">
+              <h3 className="text-xl font-nunito font-black text-[#1D3533]">
                 24/7 Call Coverage
               </h3>
               <p className="text-[16px] text-[#5C6F6C] font-medium">
@@ -321,7 +371,7 @@ export default function Home() {
           <div className="w-[580px] p-8 bg-white rounded-[24px] border border-gray-100 flex items-center gap-6 shadow-[0_10px_30px_rgba(0,0,0,0.04)]">
             <CalendarCheckIcon />
             <div className="flex flex-col gap-1">
-              <h3 className="text-xl font-black text-[#1D3533]">
+              <h3 className="text-xl font-nunito font-black text-[#1D3533]">
                 After-Hours & Overflow Support
               </h3>
               <p className="text-[16px] text-[#5C6F6C] font-medium">
@@ -336,24 +386,56 @@ export default function Home() {
       <section id="demo" className="relative">
         {/* Top Wave Layers */}
         <div className="relative">
-          <svg viewBox="0 0 1440 200" className="w-full block" preserveAspectRatio="none" style={{ height: '100px' }}>
-            <path fill="#F5F7F4" d="M0,0 L1440,0 L1440,60 C1200,90 1000,50 800,70 C600,90 400,50 200,70 C100,80 50,70 0,60 Z"></path>
-            <path fill="#C5E8E6" fillOpacity="0.5" d="M0,50 C200,80 400,40 600,60 C800,80 1000,40 1200,70 C1350,85 1420,75 1440,70 L1440,200 L0,200 Z"></path>
-            <path fill="#8DD4CF" fillOpacity="0.6" d="M0,80 C200,100 400,70 600,90 C800,110 1000,70 1200,100 C1350,115 1420,100 1440,95 L1440,200 L0,200 Z"></path>
-            <path fill="#3EB5B0" d="M0,110 C200,130 400,100 600,120 C800,140 1000,100 1200,130 C1350,145 1420,130 1440,120 L1440,200 L0,200 Z"></path>
+          {/* Paw prints over waves */}
+          <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-[0.04] z-10">
+            <PawPrint size={32} className="absolute top-6 left-[18%] rotate-[22deg]" />
+            <PawPrint size={28} className="absolute top-8 right-[28%] rotate-[-18deg]" />
+            <PawPrint size={35} className="absolute bottom-4 left-[45%] rotate-[28deg]" />
+          </div>
+          <svg width="100%" height="100" viewBox="0 0 1440 690" xmlns="http://www.w3.org/2000/svg" className="transition duration-300 ease-in-out delay-150" preserveAspectRatio="none">
+            <defs>
+              <linearGradient id="ctaTopGradient1" x1="0%" y1="50%" x2="100%" y2="50%">
+                <stop offset="5%" stopColor="#2A9D8F"></stop>
+                <stop offset="95%" stopColor="#7ECDC8"></stop>
+              </linearGradient>
+            </defs>
+            <path d="M 0,700 L 0,356 C 67.66923076923078,398.87051282051283 135.33846153846156,441.74102564102566 217,413 C 298.66153846153844,384.25897435897434 394.3153846153846,283.90641025641025 485,231 C 575.6846153846154,178.09358974358975 661.4000000000001,172.63333333333333 743,178 C 824.5999999999999,183.36666666666667 902.0846153846153,199.56025641025641 978,183 C 1053.9153846153847,166.43974358974359 1128.2615384615385,117.12564102564102 1205,78 C 1281.7384615384615,38.87435897435898 1360.8692307692309,9.937179487179488 1440,-19 L 1440,700 L 0,700 Z" stroke="none" strokeWidth="0" fill="url(#ctaTopGradient1)" fillOpacity="0.3" className="transition-all duration-300 ease-in-out delay-150"></path>
+            <defs>
+              <linearGradient id="ctaTopGradient2" x1="0%" y1="50%" x2="100%" y2="50%">
+                <stop offset="5%" stopColor="#2A9D8F"></stop>
+                <stop offset="95%" stopColor="#7ECDC8"></stop>
+              </linearGradient>
+            </defs>
+            <path d="M 0,700 L 0,531 C 53.17435897435897,508.86282051282046 106.34871794871793,486.725641025641 197,497 C 287.65128205128207,507.274358974359 415.7794871794872,549.9602564102564 499,515 C 582.2205128205128,480.0397435897436 620.5333333333334,367.43333333333334 692,325 C 763.4666666666666,282.56666666666666 868.0871794871794,310.30641025641023 964,306 C 1059.9128205128206,301.69358974358977 1147.1179487179488,265.3410256410256 1225,235 C 1302.8820512820512,204.65897435897438 1371.4410256410256,180.3294871794872 1440,156 L 1440,700 L 0,700 Z" stroke="none" strokeWidth="0" fill="url(#ctaTopGradient2)" fillOpacity="0.45" className="transition-all duration-300 ease-in-out delay-150"></path>
+            <defs>
+              <linearGradient id="ctaTopGradient3" x1="0%" y1="50%" x2="100%" y2="50%">
+                <stop offset="5%" stopColor="#3DA99F"></stop>
+                <stop offset="95%" stopColor="#8DD4CF"></stop>
+              </linearGradient>
+            </defs>
+            <path d="M 0,700 L 0,531 C 53.17435897435897,508.86282051282046 106.34871794871793,486.725641025641 197,497 C 287.65128205128207,507.274358974359 415.7794871794872,549.9602564102564 499,515 C 582.2205128205128,480.0397435897436 620.5333333333334,367.43333333333334 692,325 C 763.4666666666666,282.56666666666666 868.0871794871794,310.30641025641023 964,306 C 1059.9128205128206,301.69358974358977 1147.1179487179488,265.3410256410256 1225,235 C 1302.8820512820512,204.65897435897438 1371.4410256410256,180.3294871794872 1440,156 L 1440,700 L 0,700 Z" stroke="none" strokeWidth="0" fill="url(#ctaTopGradient3)" fillOpacity="0.6" className="transition-all duration-300 ease-in-out delay-150"></path>
+            <defs>
+              <linearGradient id="ctaTopGradient4" x1="0%" y1="50%" x2="100%" y2="50%">
+                <stop offset="5%" stopColor="#3EB5B0"></stop>
+                <stop offset="95%" stopColor="#9DD9D5"></stop>
+              </linearGradient>
+            </defs>
+            <path d="M 0,700 L 0,706 C 67.15128205128207,715.6628205128204 134.30256410256413,725.325641025641 221,697 C 307.69743589743587,668.674358974359 413.9410256410257,602.3602564102564 487,578 C 560.0589743589743,553.6397435897436 599.9333333333333,571.2333333333333 676,563 C 752.0666666666667,554.7666666666667 864.3256410256411,520.7064102564103 947,491 C 1029.674358974359,461.2935897435897 1082.7641025641026,435.94102564102565 1160,410 C 1237.2358974358974,384.05897435897435 1338.6179487179488,357.5294871794872 1440,331 L 1440,700 L 0,700 Z" stroke="none" strokeWidth="0" fill="url(#ctaTopGradient4)" fillOpacity="1" className="transition-all duration-300 ease-in-out delay-150"></path>
           </svg>
         </div>
 
         {/* CTA Content */}
         <div className="bg-[#3DA99F] relative overflow-hidden">
           {/* Decorative Elements */}
-          <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-[0.08]">
-            <PawPrint className="absolute top-10 left-20 w-32 h-32 text-white" />
-            <PawPrint className="absolute bottom-10 right-20 w-40 h-40 text-white rotate-[25deg]" />
+          <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-[0.06]">
+            <PawPrint size={60} className="absolute top-10 left-20 rotate-[20deg]" />
+            <PawPrint size={70} className="absolute bottom-10 right-20 rotate-[25deg]" />
+            <PawPrint size={45} className="absolute top-20 right-[40%] rotate-[-30deg]" />
+            <PawPrint size={50} className="absolute bottom-20 left-[35%] rotate-[15deg]" />
           </div>
 
           <div className="px-20 py-24 flex flex-col items-center gap-8 relative z-10">
-            <h2 className="text-[52px] font-black text-white text-center leading-tight">
+            <h2 className="text-[52px] font-nunito font-black text-white text-center leading-tight">
               Ready to Never Miss a Call?
             </h2>
             <p className="text-[20px] text-white/90 text-center max-w-2xl font-medium">
@@ -378,11 +460,34 @@ export default function Home() {
 
         {/* Bottom Wave Layers */}
         <div className="relative bg-[#3EB5B0]">
-          <svg viewBox="0 0 1440 200" className="w-full block" preserveAspectRatio="none" style={{ height: '100px' }}>
-            <path fill="#3EB5B0" d="M0,0 L1440,0 L1440,40 L0,40 Z"></path>
-            <path fill="#5AC4C0" d="M0,30 C200,50 400,20 600,40 C800,60 1000,20 1200,50 C1350,65 1420,50 1440,45 L1440,200 L0,200 Z"></path>
-            <path fill="#8DD4CF" fillOpacity="0.8" d="M0,60 C200,80 400,50 600,70 C800,90 1000,50 1200,80 C1350,95 1420,80 1440,75 L1440,200 L0,200 Z"></path>
-            <path fill="#F5F7F4" d="M0,90 C200,110 400,80 600,100 C800,120 1000,80 1200,110 C1350,125 1420,110 1440,105 L1440,200 L0,200 Z"></path>
+          {/* Paw prints over waves */}
+          <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-[0.04] z-10">
+            <PawPrint size={30} className="absolute top-4 left-[22%] rotate-[25deg]" />
+            <PawPrint size={35} className="absolute top-8 right-[35%] rotate-[-22deg]" />
+            <PawPrint size={28} className="absolute bottom-6 left-[60%] rotate-[32deg]" />
+          </div>
+          <svg width="100%" height="100" viewBox="0 0 1440 690" xmlns="http://www.w3.org/2000/svg" className="transition duration-300 ease-in-out delay-150" preserveAspectRatio="none">
+            <defs>
+              <linearGradient id="ctaBottomGradient1" x1="0%" y1="50%" x2="100%" y2="50%">
+                <stop offset="5%" stopColor="#3EB5B0"></stop>
+                <stop offset="95%" stopColor="#8DD4CF"></stop>
+              </linearGradient>
+            </defs>
+            <path d="M 0,700 L 0,531 C 53.17435897435897,508.86282051282046 106.34871794871793,486.725641025641 197,497 C 287.65128205128207,507.274358974359 415.7794871794872,549.9602564102564 499,515 C 582.2205128205128,480.0397435897436 620.5333333333334,367.43333333333334 692,325 C 763.4666666666666,282.56666666666666 868.0871794871794,310.30641025641023 964,306 C 1059.9128205128206,301.69358974358977 1147.1179487179488,265.3410256410256 1225,235 C 1302.8820512820512,204.65897435897438 1371.4410256410256,180.3294871794872 1440,156 L 1440,700 L 0,700 Z" stroke="none" strokeWidth="0" fill="url(#ctaBottomGradient1)" fillOpacity="0.5" className="transition-all duration-300 ease-in-out delay-150"></path>
+            <defs>
+              <linearGradient id="ctaBottomGradient2" x1="0%" y1="50%" x2="100%" y2="50%">
+                <stop offset="5%" stopColor="#5AC4C0"></stop>
+                <stop offset="95%" stopColor="#9DD9D5"></stop>
+              </linearGradient>
+            </defs>
+            <path d="M 0,700 L 0,706 C 67.15128205128207,715.6628205128204 134.30256410256413,725.325641025641 221,697 C 307.69743589743587,668.674358974359 413.9410256410257,602.3602564102564 487,578 C 560.0589743589743,553.6397435897436 599.9333333333333,571.2333333333333 676,563 C 752.0666666666667,554.7666666666667 864.3256410256411,520.7064102564103 947,491 C 1029.674358974359,461.2935897435897 1082.7641025641026,435.94102564102565 1160,410 C 1237.2358974358974,384.05897435897435 1338.6179487179488,357.5294871794872 1440,331 L 1440,700 L 0,700 Z" stroke="none" strokeWidth="0" fill="url(#ctaBottomGradient2)" fillOpacity="0.7" className="transition-all duration-300 ease-in-out delay-150"></path>
+            <defs>
+              <linearGradient id="ctaBottomGradient3" x1="0%" y1="50%" x2="100%" y2="50%">
+                <stop offset="5%" stopColor="#7ECDC8"></stop>
+                <stop offset="95%" stopColor="#C5E8E6"></stop>
+              </linearGradient>
+            </defs>
+            <path d="M 0,700 L 0,356 C 67.66923076923078,398.87051282051283 135.33846153846156,441.74102564102566 217,413 C 298.66153846153844,384.25897435897434 394.3153846153846,283.90641025641025 485,231 C 575.6846153846154,178.09358974358975 661.4000000000001,172.63333333333333 743,178 C 824.5999999999999,183.36666666666667 902.0846153846153,199.56025641025641 978,183 C 1053.9153846153847,166.43974358974359 1128.2615384615385,117.12564102564102 1205,78 C 1281.7384615384615,38.87435897435898 1360.8692307692309,9.937179487179488 1440,-19 L 1440,700 L 0,700 Z" stroke="none" strokeWidth="0" fill="url(#ctaBottomGradient3)" fillOpacity="1" className="transition-all duration-300 ease-in-out delay-150"></path>
           </svg>
         </div>
       </section>
@@ -427,7 +532,7 @@ export default function Home() {
             {/* Links */}
             <div className="flex flex-wrap gap-16 md:gap-24">
               <div className="flex flex-col gap-5">
-                <h4 className="font-bold text-[#1D3533] text-[16px] uppercase tracking-wider">Product</h4>
+                <h4 className="font-nunito font-bold text-[#1D3533] text-[16px] uppercase tracking-wider">Product</h4>
                 <div className="flex flex-col gap-3">
                   <Link href="/" className="text-[15px] font-medium text-[#718096] hover:text-[#2A9D8F] transition-colors">Home</Link>
                   <Link href="#features" className="text-[15px] font-medium text-[#718096] hover:text-[#2A9D8F] transition-colors">Features</Link>
@@ -437,7 +542,7 @@ export default function Home() {
               </div>
 
               <div className="flex flex-col gap-5">
-                <h4 className="font-bold text-[#1D3533] text-[16px] uppercase tracking-wider">Why PawPoint</h4>
+                <h4 className="font-nunito font-bold text-[#1D3533] text-[16px] uppercase tracking-wider">Why PawPoint</h4>
                 <div className="flex flex-col gap-3">
                   <Link href="#" className="text-[15px] font-medium text-[#718096] hover:text-[#2A9D8F] transition-colors">About Us</Link>
                   <Link href="#" className="text-[15px] font-medium text-[#718096] hover:text-[#2A9D8F] transition-colors">FAQ</Link>
@@ -446,7 +551,7 @@ export default function Home() {
               </div>
 
               <div className="flex flex-col gap-5">
-                <h4 className="font-bold text-[#1D3533] text-[16px] uppercase tracking-wider">Company</h4>
+                <h4 className="font-nunito font-bold text-[#1D3533] text-[16px] uppercase tracking-wider">Company</h4>
                 <div className="flex flex-col gap-3">
                   <Link href="#" className="text-[15px] font-medium text-[#718096] hover:text-[#2A9D8F] transition-colors">Terms of Service</Link>
                   <Link href="#" className="text-[15px] font-medium text-[#718096] hover:text-[#2A9D8F] transition-colors">Privacy Policy</Link>
