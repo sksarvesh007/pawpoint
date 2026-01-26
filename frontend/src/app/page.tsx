@@ -162,7 +162,7 @@ export default function Home() {
       {/* Hero Section */}
       <section className="relative pt-20 overflow-visible">
         {/* Background Paw Prints - biased towards edges */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-[0.14]">
+        <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-[0.04]">
           <PawPrint
             size={50}
             className="absolute top-10 left-6 rotate-[15deg]"
@@ -200,9 +200,9 @@ export default function Home() {
         {/* Decorative Ovals Background - positioned behind waves, near phone */}
         <div className="absolute right-[5%] top-0 w-[500px] h-[150%] pointer-events-none z-[5] overflow-visible">
           {/* Additional decorative circles/ovals - clustered around phone */}
-          <div className="absolute top-[10%] left-[10%] w-[180px] h-[220px] bg-[#7ECDC8]/40 rounded-[50%]"></div>
-          <div className="absolute top-[25%] right-[5%] w-[160px] h-[160px] bg-[#3DA99F]/35 rounded-full"></div>
-          <div className="absolute top-[20%] right-[-10%] w-[220px] h-[180px] bg-[#2A9D8F]/30 rounded-[50%] rotate-[20deg]"></div>
+          <div className="absolute top-[10%] left-[10%] w-[180px] h-[220px] bg-[#7ECDC8]/30 rounded-[50%]"></div>
+          <div className="absolute top-[25%] right-[5%] w-[160px] h-[160px] bg-[#3DA99F]/25 rounded-full"></div>
+          <div className="absolute top-[20%] right-[-10%] w-[220px] h-[180px] bg-[#2A9D8F]/20 rounded-[50%] rotate-[20deg]"></div>
         </div>
 
         {/* Hero Content */}
@@ -389,7 +389,7 @@ export default function Home() {
         {/* Wave section - Text Removed */}
         <div className="relative z-[15] -mt-[160px] pb-[260px]">
           {/* Paw prints over waves */}
-          <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-[0.14] z-10">
+          <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-[0.04] z-10">
             <PawPrint
               size={30}
               className="absolute top-8 left-[15%] rotate-[25deg]"
@@ -573,7 +573,7 @@ export default function Home() {
         {/* Top Wave Layers */}
         <div className="relative">
           {/* Paw prints over waves */}
-          <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-[0.14] z-10">
+          <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-[0.04] z-10">
             <PawPrint
               size={32}
               className="absolute top-6 left-[18%] rotate-[22deg]"
@@ -681,7 +681,7 @@ export default function Home() {
         {/* CTA Content */}
         <div className="bg-[#3DA99F] relative overflow-hidden">
           {/* Decorative Elements */}
-          <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-[0.16]">
+          <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-[0.06]">
             <PawPrint
               size={60}
               className="absolute top-10 left-20 rotate-[20deg]"
@@ -728,7 +728,7 @@ export default function Home() {
         {/* Bottom Wave Layers */}
         <div className="relative bg-[#3EB5B0]">
           {/* Paw prints over waves */}
-          <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-[0.14] z-10">
+          <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-[0.04] z-10">
             <PawPrint
               size={30}
               className="absolute top-4 left-[22%] rotate-[25deg]"
