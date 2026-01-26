@@ -3,6 +3,19 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+
+  /* PawPoint Brand Colors */
+  --pawpoint-teal: #3EB5B0;
+  --pawpoint-teal-dark: #2A9A96;
+  --pawpoint-teal-light: #E8F7F6;
+  --pawpoint-orange: #F5A623;
+  --pawpoint-orange-dark: #E89A1A;
+  --pawpoint-bg-cream: #F8F9F7;
+  --pawpoint-bg-wave: #E5F4F3;
+  --pawpoint-text-dark: #2D3748;
+  --pawpoint-text-gray: #6B7280;
+  --pawpoint-white: #FFFFFF;
+  --pawpoint-border: #E2E8F0;
 }
 
 @theme inline {
@@ -10,6 +23,17 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  /* PawPoint Theme Colors */
+  --color-pawpoint-teal: var(--pawpoint-teal);
+  --color-pawpoint-teal-dark: var(--pawpoint-teal-dark);
+  --color-pawpoint-teal-light: var(--pawpoint-teal-light);
+  --color-pawpoint-orange: var(--pawpoint-orange);
+  --color-pawpoint-orange-dark: var(--pawpoint-orange-dark);
+  --color-pawpoint-bg-cream: var(--pawpoint-bg-cream);
+  --color-pawpoint-text-dark: var(--pawpoint-text-dark);
+  --color-pawpoint-text-gray: var(--pawpoint-text-gray);
+  --color-pawpoint-border: var(--pawpoint-border);
 }
 
 @media (prefers-color-scheme: dark) {
