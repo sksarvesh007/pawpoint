@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Logo, NAVBAR_HEIGHT } from "@/components/Logo";
 import { PawBackground } from "@/components/PawBackground";
+import { FAQAccordion } from "@/components/FAQAccordion";
 
 // Custom Icon Components
 const PawLogo = Logo;
@@ -131,6 +132,12 @@ export default function Home() {
             className="text-[17px] font-medium text-[#4A5568] hover:text-[#2A9D8F] transition-colors"
           >
             Features
+          </Link>
+          <Link
+            href="/faq"
+            className="text-[17px] font-medium text-[#4A5568] hover:text-[#2A9D8F] transition-colors"
+          >
+            FAQ
           </Link>
           <Link
             href="#pricing"
@@ -568,6 +575,204 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Wave Transition to FAQ */}
+      <div className="relative">
+        {/* Paw prints over waves */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-[0.04] z-10">
+          <PawPrint
+            size={30}
+            className="absolute top-8 left-[15%] rotate-[25deg]"
+          />
+          <PawPrint
+            size={35}
+            className="absolute top-16 right-[25%] rotate-[-20deg]"
+          />
+          <PawPrint
+            size={28}
+            className="absolute bottom-10 left-[40%] rotate-[15deg]"
+          />
+        </div>
+        <svg
+          width="100%"
+          height="120"
+          viewBox="0 0 1440 320"
+          xmlns="http://www.w3.org/2000/svg"
+          className="transition duration-300 ease-in-out delay-150"
+          preserveAspectRatio="none"
+        >
+          <defs>
+            <linearGradient
+              id="faqWaveGradient1"
+              x1="0%"
+              y1="50%"
+              x2="100%"
+              y2="50%"
+            >
+              <stop offset="5%" stopColor="#7ECDC8"></stop>
+              <stop offset="95%" stopColor="#B4E2DF"></stop>
+            </linearGradient>
+          </defs>
+          <path
+            d="M0,160L48,170.7C96,181,192,203,288,192C384,181,480,139,576,128C672,117,768,139,864,144C960,149,1056,139,1152,128C1248,117,1344,107,1392,101.3L1440,96L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"
+            fill="url(#faqWaveGradient1)"
+            fillOpacity="0.3"
+          />
+          <defs>
+            <linearGradient
+              id="faqWaveGradient2"
+              x1="0%"
+              y1="50%"
+              x2="100%"
+              y2="50%"
+            >
+              <stop offset="5%" stopColor="#7ECDC8"></stop>
+              <stop offset="95%" stopColor="#A8DCD9"></stop>
+            </linearGradient>
+          </defs>
+          <path
+            d="M0,224L48,213.3C96,203,192,181,288,181.3C384,181,480,203,576,208C672,213,768,203,864,186.7C960,171,1056,149,1152,154.7C1248,160,1344,192,1392,208L1440,224L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"
+            fill="url(#faqWaveGradient2)"
+            fillOpacity="0.5"
+          />
+          <defs>
+            <linearGradient
+              id="faqWaveGradient3"
+              x1="0%"
+              y1="50%"
+              x2="100%"
+              y2="50%"
+            >
+              <stop offset="5%" stopColor="#9DD9D5"></stop>
+              <stop offset="95%" stopColor="#C5E8E6"></stop>
+            </linearGradient>
+          </defs>
+          <path
+            d="M0,256L48,240C96,224,192,192,288,181.3C384,171,480,181,576,197.3C672,213,768,235,864,234.7C960,235,1056,213,1152,197.3C1248,181,1344,171,1392,165.3L1440,160L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"
+            fill="url(#faqWaveGradient3)"
+            fillOpacity="1"
+          />
+        </svg>
+      </div>
+
+      {/* FAQ Section */}
+      <section className="relative py-20 px-20 bg-[#C5E8E6]">
+        {/* Background Paw Prints */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-[0.03]">
+          <PawPrint
+            size={55}
+            className="absolute top-10 left-[8%] rotate-[20deg]"
+          />
+          <PawPrint
+            size={60}
+            className="absolute top-40 right-[12%] rotate-[-25deg]"
+          />
+          <PawPrint
+            size={45}
+            className="absolute bottom-20 left-[15%] rotate-[30deg]"
+          />
+          <PawPrint
+            size={50}
+            className="absolute bottom-10 right-[10%] rotate-[-20deg]"
+          />
+        </div>
+
+        <div className="relative z-10">
+          <div className="text-center mb-16">
+            <h2 className="text-[48px] font-nunito font-black text-[#1D3533] leading-tight mb-4">
+              Frequently Asked{" "}
+              <span className="text-[#3DA99F]">Questions</span>
+            </h2>
+            <p className="text-[18px] text-[#5C6F6C] leading-relaxed font-medium max-w-2xl mx-auto">
+              Everything you need to know about PawPoint and how it can help
+              your clinic.
+            </p>
+          </div>
+          <FAQAccordion />
+        </div>
+      </section>
+
+      {/* Wave Transition from FAQ to CTA */}
+      <div className="relative bg-[#C5E8E6]">
+        {/* Paw prints over waves */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-[0.04] z-10">
+          <PawPrint
+            size={32}
+            className="absolute top-6 left-[20%] rotate-[18deg]"
+          />
+          <PawPrint
+            size={28}
+            className="absolute top-10 right-[30%] rotate-[-22deg]"
+          />
+          <PawPrint
+            size={30}
+            className="absolute bottom-8 left-[50%] rotate-[28deg]"
+          />
+        </div>
+        <svg
+          width="100%"
+          height="120"
+          viewBox="0 0 1440 320"
+          xmlns="http://www.w3.org/2000/svg"
+          className="transition duration-300 ease-in-out delay-150"
+          preserveAspectRatio="none"
+        >
+          <defs>
+            <linearGradient
+              id="faqToCtaGradient1"
+              x1="0%"
+              y1="50%"
+              x2="100%"
+              y2="50%"
+            >
+              <stop offset="5%" stopColor="#C5E8E6"></stop>
+              <stop offset="95%" stopColor="#E8F5F4"></stop>
+            </linearGradient>
+          </defs>
+          <path
+            d="M0,96L48,112C96,128,192,160,288,160C384,160,480,128,576,112C672,96,768,96,864,112C960,128,1056,160,1152,165.3C1248,171,1344,149,1392,138.7L1440,128L1440,0L1392,0C1344,0,1248,0,1152,0C1056,0,960,0,864,0C768,0,672,0,576,0C480,0,384,0,288,0C192,0,96,0,48,0L0,0Z"
+            fill="url(#faqToCtaGradient1)"
+            fillOpacity="0.4"
+            transform="scale(1,-1) translate(0,-320)"
+          />
+          <defs>
+            <linearGradient
+              id="faqToCtaGradient2"
+              x1="0%"
+              y1="50%"
+              x2="100%"
+              y2="50%"
+            >
+              <stop offset="5%" stopColor="#D4EDE6"></stop>
+              <stop offset="95%" stopColor="#F0F9F7"></stop>
+            </linearGradient>
+          </defs>
+          <path
+            d="M0,64L48,74.7C96,85,192,107,288,122.7C384,139,480,149,576,138.7C672,128,768,96,864,85.3C960,75,1056,85,1152,101.3C1248,117,1344,139,1392,149.3L1440,160L1440,0L1392,0C1344,0,1248,0,1152,0C1056,0,960,0,864,0C768,0,672,0,576,0C480,0,384,0,288,0C192,0,96,0,48,0L0,0Z"
+            fill="url(#faqToCtaGradient2)"
+            fillOpacity="0.6"
+            transform="scale(1,-1) translate(0,-320)"
+          />
+          <defs>
+            <linearGradient
+              id="faqToCtaGradient3"
+              x1="0%"
+              y1="50%"
+              x2="100%"
+              y2="50%"
+            >
+              <stop offset="5%" stopColor="#E8F5F4"></stop>
+              <stop offset="95%" stopColor="#FFFFFF"></stop>
+            </linearGradient>
+          </defs>
+          <path
+            d="M0,192L48,186.7C96,181,192,171,288,176C384,181,480,203,576,208C672,213,768,203,864,181.3C960,160,1056,128,1152,122.7C1248,117,1344,139,1392,149.3L1440,160L1440,0L1392,0C1344,0,1248,0,1152,0C1056,0,960,0,864,0C768,0,672,0,576,0C480,0,384,0,288,0C192,0,96,0,48,0L0,0Z"
+            fill="url(#faqToCtaGradient3)"
+            fillOpacity="1"
+            transform="scale(1,-1) translate(0,-320)"
+          />
+        </svg>
+      </div>
+
       {/* CTA Section */}
       <section id="demo" className="relative">
         {/* Top Wave Layers */}
@@ -924,13 +1129,13 @@ export default function Home() {
                 </h4>
                 <div className="flex flex-col gap-3">
                   <Link
-                    href="#"
+                    href="/about"
                     className="text-[15px] font-medium text-[#718096] hover:text-[#2A9D8F] transition-colors"
                   >
                     About Us
                   </Link>
                   <Link
-                    href="#"
+                    href="/faq"
                     className="text-[15px] font-medium text-[#718096] hover:text-[#2A9D8F] transition-colors"
                   >
                     FAQ
