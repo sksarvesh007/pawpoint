@@ -135,14 +135,14 @@ export default function AboutPage() {
         {/* Hero Content */}
         <div className="relative z-10 flex flex-col md:flex-row items-start justify-between px-20 gap-8">
           <div className="flex flex-col gap-6 max-w-[500px] pt-8">
-            <h1 className="text-[42px] font-nunito font-black text-[#1D3533] leading-[1.15] tracking-tight">
+            <h1 className="text-[48px] font-nunito font-black text-[#1D3533] leading-[1.15] tracking-tight">
               About PawPoint:
               <br />
               <span className="text-[#3DA99F]">Pioneering AI for</span>
               <br />
               <span className="text-[#3DA99F]">Veterinary Care</span>
             </h1>
-            <p className="text-[16px] text-[#5C6F6C] leading-relaxed font-medium">
+            <p className="text-[18px] text-[#5C6F6C] leading-relaxed font-medium">
               At PawPoint, we&apos;re transforming how veterinary clinics
               connect with pet owners—making sure pets get the care they need,
               when they need it, while also giving veterinary teams more time to
@@ -151,13 +151,13 @@ export default function AboutPage() {
             <div className="flex gap-4 mt-2">
               <Link
                 href="/signup"
-                className="px-6 py-3 text-[15px] font-bold text-white bg-[#F4A261] rounded-lg hover:bg-[#E78B45] transition-all shadow-[0_4px_14px_rgba(244,162,97,0.3)]"
+                className="px-6 py-3 text-[16px] font-bold text-white bg-[#F4A261] rounded-lg hover:bg-[#E78B45] transition-all shadow-[0_4px_14px_rgba(244,162,97,0.3)]"
               >
                 Request a Demo
               </Link>
               <Link
                 href="#contact"
-                className="px-6 py-3 text-[15px] font-bold text-[#2D3748] bg-white rounded-lg border-2 border-[#E2E8F0] hover:bg-gray-50 transition-all"
+                className="px-6 py-3 text-[16px] font-bold text-[#2D3748] bg-white rounded-lg border-2 border-[#E2E8F0] hover:bg-gray-50 transition-all"
               >
                 Contact Us
               </Link>
@@ -299,14 +299,14 @@ export default function AboutPage() {
         <div className="relative z-10 flex flex-col md:flex-row gap-12 items-start justify-between max-w-7xl mx-auto">
           {/* What We Do */}
           <div className="flex-1 max-w-[300px]">
-            <h2 className="text-[26px] font-nunito font-black text-[#1D3533] mb-4">
+            <h2 className="text-[28px] font-nunito font-black text-[#1D3533] mb-4">
               What We Do
             </h2>
-            <p className="text-[14px] text-[#5C6F6C] leading-relaxed font-medium mb-4">
+            <p className="text-[16px] text-[#5C6F6C] leading-relaxed font-medium mb-4">
               PawPoint is an innovative AI-powered virtual receptionist service
               designed specifically for veterinary clinics.
             </p>
-            <p className="text-[14px] text-[#5C6F6C] leading-relaxed font-medium">
+            <p className="text-[16px] text-[#5C6F6C] leading-relaxed font-medium">
               Our system answers calls 24/7, schedules appointments, and ensures
               no pet care requests are missed.
             </p>
@@ -410,10 +410,10 @@ export default function AboutPage() {
 
           {/* Our Mission */}
           <div className="flex-1 max-w-[380px]">
-            <h2 className="text-[26px] font-nunito font-black text-[#1D3533] mb-4">
+            <h2 className="text-[28px] font-nunito font-black text-[#1D3533] mb-4">
               Our Mission
             </h2>
-            <p className="text-[14px] text-[#5C6F6C] leading-relaxed font-medium">
+            <p className="text-[16px] text-[#5C6F6C] leading-relaxed font-medium">
               At PawPoint, our mission is to enhance the efficiency of
               veterinary clinics by leveraging cutting-edge technology. We
               believe in the power of AI to support and simplify the valuable
@@ -445,7 +445,7 @@ export default function AboutPage() {
         </div>
         <svg
           width="100%"
-          height="60"
+          height="120"
           viewBox="0 0 1440 690"
           xmlns="http://www.w3.org/2000/svg"
           className="transition duration-300 ease-in-out delay-150"
@@ -519,8 +519,8 @@ export default function AboutPage() {
               x2="100%"
               y2="50%"
             >
-              <stop offset="5%" stopColor="#D0F0EE"></stop>
-              <stop offset="95%" stopColor="#F8F9F7"></stop>
+              <stop offset="5%" stopColor="#3DA99F"></stop>
+              <stop offset="95%" stopColor="#3DA99F"></stop>
             </linearGradient>
           </defs>
           <path
@@ -535,8 +535,8 @@ export default function AboutPage() {
       </div>
 
       {/* Why Choose PawPoint Section */}
-      <section className="relative bg-[#F8F9F7] py-16 px-20">
-        <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-[0.03]">
+      <section id="contact" className="relative bg-[#3DA99F] py-16 px-20">
+        <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-[0.05]">
           <PawPrint
             size={50}
             className="absolute top-10 left-20 rotate-[-20deg]"
@@ -552,22 +552,30 @@ export default function AboutPage() {
         </div>
 
         <div className="relative z-10 flex flex-col items-center gap-6 max-w-3xl mx-auto text-center">
-          <h2 className="text-[36px] font-nunito font-black text-[#1D3533]">
+          <h2 className="text-[40px] font-nunito font-black text-white">
             Why Choose PawPoint?
           </h2>
-          <p className="text-[16px] text-[#5C6F6C] font-medium">
-            Experience the future of veterinary care scheduling
+          <p className="text-[18px] text-white/90 font-medium max-w-2xl leading-relaxed">
+            PawPoint is a purpose-built AI receptionist designed exclusively for
+            veterinary practices to capture every call, every lead, and every
+            opportunity without adding to staff workload. It answers calls
+            instantly, schedules appointments, handles common questions, and
+            ensures no client ever reaches voicemail again. By reducing missed
+            calls and front-desk overload, PawPoint helps practices increase
+            revenue, improve client satisfaction, and operate more efficiently,
+            all while delivering a professional, compassionate experience pet
+            owners trust.
           </p>
           <div className="flex gap-4 mt-4">
             <Link
               href="/signup"
-              className="px-8 py-3 text-[15px] font-bold text-white bg-[#F4A261] rounded-lg hover:bg-[#E78B45] transition-all shadow-[0_4px_14px_rgba(244,162,97,0.3)]"
+              className="px-8 py-3 text-[16px] font-bold text-white bg-[#F4A261] rounded-lg hover:bg-[#E78B45] transition-all shadow-[0_6px_20px_rgba(244,162,97,0.4)]"
             >
               Request a Demo
             </Link>
             <Link
               href="#contact"
-              className="px-8 py-3 text-[15px] font-bold text-[#2D3748] bg-white rounded-lg border-2 border-[#E2E8F0] hover:bg-gray-50 transition-all"
+              className="px-8 py-3 text-[16px] font-bold text-[#1D3533] bg-white rounded-lg hover:bg-gray-50 transition-all shadow-lg"
             >
               Contact Us
             </Link>
@@ -575,213 +583,55 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* Get Started CTA Section */}
-      <section id="contact" className="relative">
-        {/* Top Wave Layers */}
-        <div className="relative">
-          {/* Paw prints over waves */}
-          <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-[0.04] z-10">
-            <PawPrint
-              size={30}
-              className="absolute top-5 left-[15%] rotate-[20deg]"
-            />
-            <PawPrint
-              size={32}
-              className="absolute top-7 right-[25%] rotate-[-25deg]"
-            />
-            <PawPrint
-              size={28}
-              className="absolute bottom-3 left-[48%] rotate-[30deg]"
-            />
-          </div>
-          <svg
-            width="100%"
-            height="80"
-            viewBox="0 0 1440 690"
-            xmlns="http://www.w3.org/2000/svg"
-            className="transition duration-300 ease-in-out delay-150"
-            preserveAspectRatio="none"
-          >
-            <defs>
-              <linearGradient
-                id="aboutCtaTopGradient1"
-                x1="0%"
-                y1="50%"
-                x2="100%"
-                y2="50%"
-              >
-                <stop offset="5%" stopColor="#2A9D8F"></stop>
-                <stop offset="95%" stopColor="#7ECDC8"></stop>
-              </linearGradient>
-            </defs>
-            <path
-              d="M 0,700 L 0,356 C 67.66923076923078,398.87051282051283 135.33846153846156,441.74102564102566 217,413 C 298.66153846153844,384.25897435897434 394.3153846153846,283.90641025641025 485,231 C 575.6846153846154,178.09358974358975 661.4000000000001,172.63333333333333 743,178 C 824.5999999999999,183.36666666666667 902.0846153846153,199.56025641025641 978,183 C 1053.9153846153847,166.43974358974359 1128.2615384615385,117.12564102564102 1205,78 C 1281.7384615384615,38.87435897435898 1360.8692307692309,9.937179487179488 1440,-19 L 1440,700 L 0,700 Z"
-              stroke="none"
-              strokeWidth="0"
-              fill="url(#aboutCtaTopGradient1)"
-              fillOpacity="0.35"
-              className="transition-all duration-300 ease-in-out delay-150"
-            ></path>
-            <defs>
-              <linearGradient
-                id="aboutCtaTopGradient2"
-                x1="0%"
-                y1="50%"
-                x2="100%"
-                y2="50%"
-              >
-                <stop offset="5%" stopColor="#3DA99F"></stop>
-                <stop offset="95%" stopColor="#8DD4CF"></stop>
-              </linearGradient>
-            </defs>
-            <path
-              d="M 0,700 L 0,531 C 53.17435897435897,508.86282051282046 106.34871794871793,486.725641025641 197,497 C 287.65128205128207,507.274358974359 415.7794871794872,549.9602564102564 499,515 C 582.2205128205128,480.0397435897436 620.5333333333334,367.43333333333334 692,325 C 763.4666666666666,282.56666666666666 868.0871794871794,310.30641025641023 964,306 C 1059.9128205128206,301.69358974358977 1147.1179487179488,265.3410256410256 1225,235 C 1302.8820512820512,204.65897435897438 1371.4410256410256,180.3294871794872 1440,156 L 1440,700 L 0,700 Z"
-              stroke="none"
-              strokeWidth="0"
-              fill="url(#aboutCtaTopGradient2)"
-              fillOpacity="0.55"
-              className="transition-all duration-300 ease-in-out delay-150"
-            ></path>
-            <defs>
-              <linearGradient
-                id="aboutCtaTopGradient3"
-                x1="0%"
-                y1="50%"
-                x2="100%"
-                y2="50%"
-              >
-                <stop offset="5%" stopColor="#3EB5B0"></stop>
-                <stop offset="95%" stopColor="#9DD9D5"></stop>
-              </linearGradient>
-            </defs>
-            <path
-              d="M 0,700 L 0,706 C 67.15128205128207,715.6628205128204 134.30256410256413,725.325641025641 221,697 C 307.69743589743587,668.674358974359 413.9410256410257,602.3602564102564 487,578 C 560.0589743589743,553.6397435897436 599.9333333333333,571.2333333333333 676,563 C 752.0666666666667,554.7666666666667 864.3256410256411,520.7064102564103 947,491 C 1029.674358974359,461.2935897435897 1082.7641025641026,435.94102564102565 1160,410 C 1237.2358974358974,384.05897435897435 1338.6179487179488,357.5294871794872 1440,331 L 1440,700 L 0,700 Z"
-              stroke="none"
-              strokeWidth="0"
-              fill="url(#aboutCtaTopGradient3)"
-              fillOpacity="1"
-              className="transition-all duration-300 ease-in-out delay-150"
-            ></path>
-          </svg>
+      {/* Wave Divider from Why Choose to Footer */}
+      <div className="relative bg-[#3DA99F]">
+        {/* Paw prints over waves */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-[0.04] z-10">
+          <PawPrint
+            size={30}
+            className="absolute top-4 left-[25%] rotate-[20deg]"
+          />
+          <PawPrint
+            size={26}
+            className="absolute top-8 right-[35%] rotate-[-22deg]"
+          />
+          <PawPrint
+            size={28}
+            className="absolute bottom-4 left-[60%] rotate-[35deg]"
+          />
         </div>
-
-        {/* CTA Content */}
-        <div className="bg-[#3DA99F] relative overflow-hidden">
-          {/* Decorative Elements */}
-          <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-[0.05]">
-            <PawPrint
-              size={55}
-              className="absolute top-6 left-20 rotate-[18deg]"
-            />
-            <PawPrint
-              size={65}
-              className="absolute bottom-6 right-20 rotate-[25deg]"
-            />
-            <PawPrint
-              size={40}
-              className="absolute top-12 right-[40%] rotate-[-30deg]"
-            />
-            <PawPrint
-              size={45}
-              className="absolute bottom-12 left-[35%] rotate-[35deg]"
-            />
-          </div>
-
-          <div className="px-20 py-16 flex flex-col items-center gap-6 relative z-10">
-            <h2 className="text-[36px] font-nunito font-black text-white text-center leading-tight">
-              Get Started with PawPoint
-            </h2>
-            <p className="text-[16px] text-white/90 text-center max-w-xl font-medium">
-              Experience the future of veterinary care scheduling.
-            </p>
-            <div className="flex gap-4 mt-2">
-              <Link
-                href="/signup"
-                className="px-8 py-3 text-[15px] font-bold text-white bg-[#F4A261] rounded-lg hover:bg-[#E78B45] transition-all shadow-[0_6px_20px_rgba(244,162,97,0.4)]"
-              >
-                Request a Demo
-              </Link>
-              <Link
-                href="#contact"
-                className="px-8 py-3 text-[15px] font-bold text-[#1D3533] bg-white rounded-lg hover:bg-gray-50 transition-all shadow-lg"
-              >
-                Contact Us
-              </Link>
-            </div>
-          </div>
-        </div>
-
-        {/* Bottom Wave Layers */}
-        <div className="relative bg-[#3EB5B0]">
-          {/* Paw prints over waves */}
-          <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-[0.04] z-10">
-            <PawPrint
-              size={28}
-              className="absolute top-4 left-[20%] rotate-[22deg]"
-            />
-            <PawPrint
-              size={32}
-              className="absolute top-6 right-[32%] rotate-[-28deg]"
-            />
-            <PawPrint
-              size={26}
-              className="absolute bottom-5 left-[55%] rotate-[35deg]"
-            />
-          </div>
-          <svg
-            width="100%"
-            height="80"
-            viewBox="0 0 1440 690"
-            xmlns="http://www.w3.org/2000/svg"
-            className="transition duration-300 ease-in-out delay-150"
-            preserveAspectRatio="none"
-          >
-            <defs>
-              <linearGradient
-                id="aboutCtaBottomGradient1"
-                x1="0%"
-                y1="50%"
-                x2="100%"
-                y2="50%"
-              >
-                <stop offset="5%" stopColor="#5AC4C0"></stop>
-                <stop offset="95%" stopColor="#9DD9D5"></stop>
-              </linearGradient>
-            </defs>
-            <path
-              d="M 0,700 L 0,356 C 67.66923076923078,398.87051282051283 135.33846153846156,441.74102564102566 217,413 C 298.66153846153844,384.25897435897434 394.3153846153846,283.90641025641025 485,231 C 575.6846153846154,178.09358974358975 661.4000000000001,172.63333333333333 743,178 C 824.5999999999999,183.36666666666667 902.0846153846153,199.56025641025641 978,183 C 1053.9153846153847,166.43974358974359 1128.2615384615385,117.12564102564102 1205,78 C 1281.7384615384615,38.87435897435898 1360.8692307692309,9.937179487179488 1440,-19 L 1440,700 L 0,700 Z"
-              stroke="none"
-              strokeWidth="0"
-              fill="url(#aboutCtaBottomGradient1)"
-              fillOpacity="0.4"
-              className="transition-all duration-300 ease-in-out delay-150"
-            ></path>
-            <defs>
-              <linearGradient
-                id="aboutCtaBottomGradient2"
-                x1="0%"
-                y1="50%"
-                x2="100%"
-                y2="50%"
-              >
-                <stop offset="5%" stopColor="#8DD4CF"></stop>
-                <stop offset="95%" stopColor="#D0F0EE"></stop>
-              </linearGradient>
-            </defs>
-            <path
-              d="M 0,700 L 0,706 C 67.15128205128207,715.6628205128204 134.30256410256413,725.325641025641 221,697 C 307.69743589743587,668.674358974359 413.9410256410257,602.3602564102564 487,578 C 560.0589743589743,553.6397435897436 599.9333333333333,571.2333333333333 676,563 C 752.0666666666667,554.7666666666667 864.3256410256411,520.7064102564103 947,491 C 1029.674358974359,461.2935897435897 1082.7641025641026,435.94102564102565 1160,410 C 1237.2358974358974,384.05897435897435 1338.6179487179488,357.5294871794872 1440,331 L 1440,700 L 0,700 Z"
-              stroke="none"
-              strokeWidth="0"
-              fill="url(#aboutCtaBottomGradient2)"
-              fillOpacity="1"
-              className="transition-all duration-300 ease-in-out delay-150"
-            ></path>
-          </svg>
-        </div>
-      </section>
+        <svg
+          width="100%"
+          height="120"
+          viewBox="0 0 1440 320"
+          xmlns="http://www.w3.org/2000/svg"
+          preserveAspectRatio="none"
+        >
+          <path
+            d="M0,64L48,80C96,96,192,128,288,128C384,128,480,96,576,90.7C672,85,768,107,864,128C960,149,1056,171,1152,165.3C1248,160,1344,128,1392,112L1440,96L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"
+            fill="#3DA99F"
+            fillOpacity="1"
+          />
+          <path
+            d="M0,128L48,138.7C96,149,192,171,288,165.3C384,160,480,128,576,117.3C672,107,768,117,864,138.7C960,160,1056,192,1152,186.7C1248,181,1344,139,1392,117.3L1440,96L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"
+            fill="#7ECDC8"
+            fillOpacity="0.5"
+          />
+          <path
+            d="M0,192L48,186.7C96,181,192,171,288,176C384,181,480,203,576,208C672,213,768,203,864,181.3C960,160,1056,128,1152,122.7C1248,117,1344,139,1392,149.3L1440,160L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"
+            fill="#C5E8E6"
+            fillOpacity="0.7"
+          />
+          <path
+            d="M0,256L48,261.3C96,267,192,277,288,272C384,267,480,245,576,234.7C672,224,768,224,864,234.7C960,245,1056,267,1152,266.7C1248,267,1344,245,1392,234.7L1440,224L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"
+            fill="white"
+            fillOpacity="1"
+          />
+        </svg>
+      </div>
 
       {/* Footer */}
-      <footer className="bg-white border-t border-gray-100">
+      <footer className="bg-white border-t-0">
         <div className="px-20 py-16">
           <div className="flex flex-col md:flex-row justify-between items-start gap-12">
             {/* Logo and tagline */}
