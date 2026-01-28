@@ -91,9 +91,56 @@ export default function FAQPage() {
         </div>
       </section>
 
+      {/* Wave Transition to FAQ */}
+      <div className="relative -mt-4">
+        <svg
+          width="100%"
+          height="120"
+          viewBox="0 0 1440 320"
+          xmlns="http://www.w3.org/2000/svg"
+          preserveAspectRatio="none"
+        >
+          <path
+            d="M0,160L48,170.7C96,181,192,203,288,192C384,181,480,139,576,128C672,117,768,139,864,144C960,149,1056,139,1152,128C1248,117,1344,107,1392,101.3L1440,96L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"
+            fill="#7ECDC8"
+            fillOpacity="0.15"
+          />
+          <path
+            d="M0,224L48,213.3C96,203,192,181,288,181.3C384,181,480,203,576,208C672,213,768,203,864,186.7C960,171,1056,149,1152,154.7C1248,160,1344,192,1392,208L1440,224L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"
+            fill="#3DA99F"
+            fillOpacity="0.2"
+          />
+          <path
+            d="M0,256L48,240C96,224,192,192,288,181.3C384,171,480,181,576,197.3C672,213,768,235,864,234.7C960,235,1056,213,1152,197.3C1248,181,1344,171,1392,165.3L1440,160L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"
+            fill="#C5E8E6"
+            fillOpacity="1"
+          />
+        </svg>
+      </div>
+
       {/* FAQ Content */}
-      <section className="relative py-16 px-20 bg-white">
-        <div className="max-w-4xl mx-auto">
+      <section className="relative py-16 px-20 bg-[#C5E8E6]">
+        {/* Background wave pattern behind FAQs */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <svg
+            className="absolute top-0 left-0 w-full h-full opacity-30"
+            viewBox="0 0 1440 800"
+            preserveAspectRatio="none"
+          >
+            <path
+              d="M0,400L60,380C120,360,240,320,360,330C480,340,600,400,720,420C840,440,960,420,1080,380C1200,340,1320,280,1380,250L1440,220L1440,800L0,800Z"
+              fill="#7ECDC8"
+              fillOpacity="0.3"
+            />
+            <path
+              d="M0,500L60,520C120,540,240,580,360,570C480,560,600,500,720,480C840,460,960,480,1080,510C1200,540,1320,580,1380,600L1440,620L1440,800L0,800Z"
+              fill="#3DA99F"
+              fillOpacity="0.2"
+            />
+          </svg>
+        </div>
+
+        <div className="max-w-4xl mx-auto relative z-10">
           <div className="space-y-6">
             {faqData.map((faq, index) => (
               <div
@@ -114,6 +161,28 @@ export default function FAQPage() {
           </div>
         </div>
       </section>
+
+      {/* Wave Transition from FAQ */}
+      <div className="relative bg-[#C5E8E6]">
+        <svg
+          width="100%"
+          height="120"
+          viewBox="0 0 1440 320"
+          xmlns="http://www.w3.org/2000/svg"
+          preserveAspectRatio="none"
+        >
+          <path
+            d="M0,64L48,80C96,96,192,128,288,128C384,128,480,96,576,90.7C672,85,768,107,864,128C960,149,1056,171,1152,165.3C1248,160,1344,128,1392,112L1440,96L1440,0L1392,0C1344,0,1248,0,1152,0C1056,0,960,0,864,0C768,0,672,0,576,0C480,0,384,0,288,0C192,0,96,0,48,0L0,0Z"
+            fill="#C5E8E6"
+            fillOpacity="1"
+          />
+          <path
+            d="M0,128L48,138.7C96,149,192,171,288,165.3C384,160,480,128,576,117.3C672,107,768,117,864,138.7C960,160,1056,192,1152,186.7C1248,181,1344,139,1392,117.3L1440,96L1440,0L1392,0C1344,0,1248,0,1152,0C1056,0,960,0,864,0C768,0,672,0,576,0C480,0,384,0,288,0C192,0,96,0,48,0L0,0Z"
+            fill="#7ECDC8"
+            fillOpacity="0.3"
+          />
+        </svg>
+      </div>
 
       {/* CTA Section */}
       <section className="relative py-20 bg-gradient-to-b from-white to-[#7ECDC8]/10">
