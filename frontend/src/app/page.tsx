@@ -1,7 +1,7 @@
 import Link from "next/link";
-import Image from "next/image";
 import { Logo, NAVBAR_HEIGHT } from "@/components/Logo";
 import { PawBackground } from "@/components/PawBackground";
+import { PawPrint } from "@/components/PawPrint";
 import { FAQAccordion } from "@/components/FAQAccordion";
 
 // Custom Icon Components
@@ -97,22 +97,6 @@ const DashboardIcon = () => (
     <rect x="26" y="20" width="4" height="8" fill="#F5A623" />
     <rect x="32" y="16" width="4" height="12" fill="#3EB5B0" />
   </svg>
-);
-
-const PawPrint = ({
-  className = "",
-  size = 40,
-}: {
-  className?: string;
-  size?: number;
-}) => (
-  <Image
-    src="/paws.png"
-    alt="Paw print"
-    width={size}
-    height={size}
-    className={className}
-  />
 );
 
 export default function Home() {
@@ -679,8 +663,7 @@ export default function Home() {
         <div className="relative z-10">
           <div className="text-center mb-16">
             <h2 className="text-[48px] font-nunito font-black text-[#1D3533] leading-tight mb-4">
-              Frequently Asked{" "}
-              <span className="text-[#3DA99F]">Questions</span>
+              Frequently Asked <span className="text-[#3DA99F]">Questions</span>
             </h2>
             <p className="text-[18px] text-[#5C6F6C] leading-relaxed font-medium max-w-2xl mx-auto">
               Everything you need to know about PawPoint and how it can help
