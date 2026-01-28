@@ -7,7 +7,7 @@ on:
       - "backend/**/*.py"
       - "backend/pyproject.toml"
       - "backend/uv.lock"
-      - ".github/workflows/ruff.yml"
+      - ".github/workflows/backend-lint.yml"
       - ".pre-commit-config.yaml"
   pull_request:
     branches: [main, develop]
@@ -15,7 +15,7 @@ on:
       - "backend/**/*.py"
       - "backend/pyproject.toml"
       - "backend/uv.lock"
-      - ".github/workflows/ruff.yml"
+      - ".github/workflows/backend-lint.yml"
       - ".pre-commit-config.yaml"
 
 jobs:
