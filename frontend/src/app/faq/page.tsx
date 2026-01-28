@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { Logo, NAVBAR_HEIGHT } from "@/components/Logo";
+import { Logo } from "@/components/Logo";
 import { PawPrint } from "@/components/PawPrint";
 import { faqData } from "@/data/faqData";
+import { Navbar } from "@/components/Navbar";
 
 const PawLogo = Logo;
 
@@ -9,52 +10,7 @@ export default function FAQPage() {
   return (
     <div className="flex min-h-screen flex-col bg-white overflow-x-hidden">
       {/* Header */}
-      <header
-        className="flex items-center justify-between px-20 bg-white relative z-20 border-b border-white shadow-sm"
-        style={{ height: `${NAVBAR_HEIGHT}px` }}
-      >
-        <div className="flex items-center gap-2">
-          <PawLogo />
-        </div>
-        <nav className="flex items-center gap-10">
-          <Link
-            href="/#features"
-            className="text-[17px] font-medium text-[#4A5568] hover:text-[#2A9D8F] transition-colors"
-          >
-            Features
-          </Link>
-          <Link
-            href="/faq"
-            className="text-[17px] font-medium text-[#3DA99F] transition-colors"
-          >
-            FAQ
-          </Link>
-          <Link
-            href="/#pricing"
-            className="text-[17px] font-medium text-[#4A5568] hover:text-[#2A9D8F] transition-colors"
-          >
-            Pricing
-          </Link>
-          <Link
-            href="/#demo"
-            className="text-[17px] font-medium text-[#4A5568] hover:text-[#2A9D8F] transition-colors"
-          >
-            Demo
-          </Link>
-          <Link
-            href="/about"
-            className="text-[17px] font-medium text-[#4A5568] hover:text-[#2A9D8F] transition-colors"
-          >
-            About Us
-          </Link>
-          <Link
-            href="/signup"
-            className="px-8 py-3 text-[16px] font-bold text-white bg-[#3DA99F] rounded-lg hover:bg-[#2A9D8F] transition-all shadow-[0_4px_14px_0_rgba(61,169,159,0.3)]"
-          >
-            Request a Demo
-          </Link>
-        </nav>
-      </header>
+      <Navbar />
 
       {/* Hero Section */}
       <section className="relative pt-16 pb-12 overflow-visible bg-gradient-to-b from-[#7ECDC8]/10 to-white">

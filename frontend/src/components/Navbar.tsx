@@ -1,0 +1,67 @@
+"use client";
+
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { Logo, NAVBAR_HEIGHT } from "@/components/Logo";
+
+interface NavItem {
+  href: string;
+  label: string;
+  isHashLink?: boolean;
+}
+
+const navItems: NavItem[] = [
+  { href: "/#features", label: "Features", isHashLink: true },
+  { href: "/faq", label: "FAQ" },
+  { href: "/#pricing", label: "Pricing", isHashLink: true },
+  { href: "/#demo", label: "Demo", isHashLink: true },
+  { href: "/about", label: "About Us" },
+];
+
+export function Navbar() {
+  const pathname = usePathname();
+
+  const isActive = (item: NavItem) => {
+    if (item.isHashLink) {
+      return false;
+    }
+    return pathname === item.href;
+  };
+
+  return (
+    <header
+      className="flex items-center justify-between px-20 bg-white relative z-20 border-b border-white shadow-sm"
+      style={{ height: `${NAVBAR_HEIGHT}px` }}
+    >
+      <div className="flex items-center gap-2">
+        <Link href="/">
+          <Logo />
+        </Link>
+      </div>
+      <nav className="flex items-center gap-8">
+        {navItems.map((item) => {
+          const active = isActive(item);
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`relative text-[17px] font-medium transition-colors px-4 py-2 rounded-full ${
+                active
+                  ? "text-[#2A9D8F] bg-[#E0F2F1]"
+                  : "text-[#4A5568] hover:text-[#2A9D8F]"
+              }`}
+            >
+              {item.label}
+            </Link>
+          );
+        })}
+        <Link
+          href="/signup"
+          className="px-8 py-3 text-[16px] font-bold text-white bg-[#3DA99F] rounded-lg hover:bg-[#2A9D8F] transition-all shadow-[0_4px_14px_0_rgba(61,169,159,0.3)]"
+        >
+          Request a Demo
+        </Link>
+      </nav>
+    </header>
+  );
+}
