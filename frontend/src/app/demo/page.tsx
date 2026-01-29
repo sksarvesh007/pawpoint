@@ -904,8 +904,14 @@ function CallsContent() {
 
       {/* Transcript Modal - Chat Interface */}
       {selectedCall && selectedCall.transcript && (
-        <div className="fixed inset-0 bg-black/50 flex items-start justify-center z-[100] pt-32 pb-4 px-4">
-          <div className="bg-white rounded-3xl shadow-2xl max-w-4xl w-full max-h-[75vh] flex flex-col">
+        <div
+          className="fixed inset-0 bg-black/50 flex items-start justify-center z-[100] pt-32 pb-4 px-4"
+          onClick={() => setSelectedCall(null)}
+        >
+          <div
+            className="bg-white rounded-3xl shadow-2xl max-w-4xl w-full max-h-[75vh] flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
             {/* Modal Header */}
             <div className="flex items-center justify-between p-6 border-b border-zinc-200 bg-gradient-to-r from-teal-50 to-teal-100/50 rounded-t-3xl">
               <div className="flex items-center gap-3">
@@ -1215,7 +1221,7 @@ export default function DemoPage() {
                   Clinic
                 </p>
                 <p className="text-sm font-bold text-[#1D3533] truncate">
-                  Demo Clinic
+                  Pawpoint Clinic
                 </p>
               </div>
             </div>

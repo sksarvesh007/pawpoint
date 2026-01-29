@@ -591,16 +591,18 @@ export default function AboutPage() {
       </div>
 
       {/* Footer */}
-      <footer className="bg-white border-t-0">
+      <footer className="bg-white border-t border-gray-100">
         <div className="px-20 py-16">
           <div className="flex flex-col md:flex-row justify-between items-start gap-12">
             {/* Logo and tagline */}
             <div className="flex flex-col items-start gap-6 max-w-[300px]">
-              <div className="flex items-center gap-2">
-                <Link href="/">
-                  <PawLogo />
-                </Link>
-              </div>
+              <PawLogo
+                height={150}
+                paddingTop="0px"
+                cropTop={42}
+                cropBottom={62}
+                cropLeft={32}
+              />
               <p className="text-[15px] text-[#5C6F6C] font-medium leading-relaxed">
                 The #1 AI Receptionist tool built exclusively for veterinary
                 practices.
@@ -704,7 +706,7 @@ export default function AboutPage() {
                     About Us
                   </Link>
                   <Link
-                    href="#"
+                    href="/faq"
                     className="text-[15px] font-medium text-[#718096] hover:text-[#2A9D8F] transition-colors"
                   >
                     FAQ
