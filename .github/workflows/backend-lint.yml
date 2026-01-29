@@ -69,4 +69,4 @@ jobs:
         run: uv sync
 
       - name: Run ty type checker
-        run: uv run ty check --output-format github --error-on-warning
+        run: uvx ty check --python .venv --output-format github --error-on-warning .

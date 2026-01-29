@@ -9,7 +9,7 @@ const PawLogo = Logo;
 
 export default function AboutPage() {
   return (
-    <div className="flex min-h-screen flex-col bg-white overflow-x-hidden">
+    <div className="flex min-h-screen flex-col bg-white">
       {/* Header */}
       <Navbar />
 

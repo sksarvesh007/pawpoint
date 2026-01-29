@@ -14,7 +14,7 @@ const navItems: NavItem[] = [
   { href: "/#features", label: "Features", isHashLink: true },
   { href: "/faq", label: "FAQ" },
   { href: "/#pricing", label: "Pricing", isHashLink: true },
-  { href: "/#demo", label: "Demo", isHashLink: true },
+  { href: "/demo", label: "Demo" },
   { href: "/about", label: "About Us" },
 ];
 
@@ -25,12 +25,13 @@ export function Navbar() {
     if (item.isHashLink) {
       return false;
     }
-    return pathname === item.href;
+    // Match exact path or if pathname starts with item.href for nested routes
+    return pathname === item.href || pathname.startsWith(item.href + "/");
   };
 
   return (
     <header
-      className="flex items-center justify-between px-20 bg-white relative z-20 border-b border-white shadow-sm"
+      className="flex items-center justify-between px-20 bg-white sticky top-0 z-50 border-b border-zinc-100 shadow-sm"
       style={{ height: `${NAVBAR_HEIGHT}px` }}
     >
       <div className="flex items-center gap-2">

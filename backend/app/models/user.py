@@ -122,7 +122,7 @@ class User(Base, TimestampMixin, SoftDeleteMixin):
         """Check if user has access to a specific clinic."""
         if self.role == UserRole.SUPER_ADMIN:
             return True
-        return any(c.id == clinic_id for c in self.clinics)
+        return any(str(c.id) == clinic_id for c in self.clinics)
 
     def __repr__(self) -> str:
         return f"<User(id={self.id}, email={self.email}, role={self.role})>"

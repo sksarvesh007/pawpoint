@@ -19,7 +19,7 @@ repos:
     hooks:
       - id: ty
         name: ty type checker
-        entry: bash -c 'cd backend && ty check'
+        entry: uvx ty check --python backend/.venv backend
         language: system
         types: [python]
         pass_filenames: false

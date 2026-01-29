@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface PawBackgroundProps {
   /** Number of paw prints to show */
@@ -121,11 +121,29 @@ export const PawBackground = ({
   circleSizeRange = [100, 400],
   className = "",
 }: PawBackgroundProps) => {
-  // Use useState with lazy initializer to generate random values only once
-  const [paws] = useState(() => generatePaws(pawCount, pawSizeRange));
-  const [circles] = useState(() =>
-    generateCircles(circleCount, circleSizeRange),
+  // Initialize with empty arrays to avoid hydration mismatch
+  // Random values are generated only on the client after mount
+  const [paws, setPaws] = useState<ReturnType<typeof generatePaws>>([]);
+  const [circles, setCircles] = useState<ReturnType<typeof generateCircles>>(
+    [],
   );
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    // Generate random values only on client side to avoid hydration mismatch
+    setPaws(generatePaws(pawCount, pawSizeRange));
+    setCircles(generateCircles(circleCount, circleSizeRange));
+    setMounted(true);
+  }, [pawCount, circleCount, pawSizeRange, circleSizeRange]);
+
+  // Don't render anything until mounted to avoid hydration issues
+  if (!mounted) {
+    return (
+      <div
+        className={`absolute inset-0 overflow-hidden pointer-events-none ${className}`}
+      />
+    );
+  }
 
   return (
     <div

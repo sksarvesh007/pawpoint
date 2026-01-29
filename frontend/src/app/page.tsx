@@ -101,7 +101,7 @@ const DashboardIcon = () => (
 
 export default function Home() {
   return (
-    <div className="flex min-h-screen flex-col bg-white overflow-x-hidden">
+    <div className="flex min-h-screen flex-col bg-white">
       {/* Header */}
       <Navbar />
 
@@ -166,7 +166,7 @@ export default function Home() {
             </p>
             <div className="flex gap-4 mt-2">
               <Link
-                href="#demo"
+                href="/demo"
                 className="px-8 py-4 text-[18px] font-bold text-white bg-[#3DA99F] rounded-xl hover:bg-[#2A9D8F] transition-all shadow-[0_6px_20px_rgba(61,169,159,0.4)]"
               >
                 See PawPoint in Action
@@ -859,10 +859,10 @@ export default function Home() {
                 Test the AI
               </Link>
               <Link
-                href="/signup"
+                href="/demo"
                 className="px-10 py-5 text-[18px] font-black text-[#1D3533] bg-white rounded-xl hover:bg-gray-50 transition-all shadow-lg"
               >
-                Book a Demo
+                View Live Demo
               </Link>
             </div>
           </div>
