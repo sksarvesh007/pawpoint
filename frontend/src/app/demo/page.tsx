@@ -962,7 +962,7 @@ function CallsContent() {
                     >
                       {/* Speaker label - only for first message or speaker change */}
                       {(index === 0 ||
-                        selectedCall.transcript[index - 1].speaker !==
+                        selectedCall.transcript?.[index - 1]?.speaker !==
                           message.speaker) && (
                         <span className="text-xs font-semibold text-zinc-500 mb-1 px-1">
                           {message.speaker === "ai"
