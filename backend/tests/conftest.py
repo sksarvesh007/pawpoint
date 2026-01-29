@@ -70,6 +70,7 @@ async def test_engine() -> AsyncGenerator[AsyncEngine]:
     This avoids event loop issues caused by reusing the app's singleton engine,
     which gets bound to a different event loop at import time.
     """
+    assert settings.database_url is not None, "DATABASE_URL must be set for tests"
     engine = create_async_engine(
         settings.database_url,
         echo=False,

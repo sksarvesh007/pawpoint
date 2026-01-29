@@ -32,7 +32,9 @@ class AnalyticsService:
     ) -> CallAnalytics:
         """Aggregate call metrics for the past N days."""
         cutoff_date = datetime.now(UTC) - timedelta(days=days)
-        today_start = datetime.now(UTC).replace(hour=0, minute=0, second=0, microsecond=0)
+        today_start = datetime.now(UTC).replace(
+            hour=0, minute=0, second=0, microsecond=0
+        )
 
         # Total calls in period
         total_result = await self.db.execute(
@@ -74,7 +76,7 @@ class AnalyticsService:
             )
             .group_by(CallLog.direction)
         )
-        direction_counts = dict(direction_result.all())
+        direction_counts = {k: v for k, v in direction_result.all()}  # noqa: C416
         inbound_calls = direction_counts.get("inbound", 0)
         outbound_calls = direction_counts.get("outbound", 0)
 
@@ -263,7 +265,7 @@ class AnalyticsService:
             )
             .group_by(Appointment.source)
         )
-        source_counts = dict(source_result.all())
+        source_counts = {k: v for k, v in source_result.all()}  # noqa: C416
         bookings_via_ai = source_counts.get(AppointmentSource.VOICE_AI, 0)
         bookings_via_dashboard = source_counts.get(AppointmentSource.DASHBOARD, 0)
 
@@ -279,10 +281,12 @@ class AnalyticsService:
             )
             .group_by(Appointment.status)
         )
-        status_counts = dict(status_result.all())
+        status_counts = {k: v for k, v in status_result.all()}  # noqa: C416
         no_shows = status_counts.get(AppointmentStatus.NO_SHOW, 0)
         cancelled = status_counts.get(AppointmentStatus.CANCELLED, 0)
-        no_show_rate = (no_shows / total_appointments * 100) if total_appointments > 0 else 0.0
+        no_show_rate = (
+            (no_shows / total_appointments * 100) if total_appointments > 0 else 0.0
+        )
         cancellation_rate = (
             (cancelled / total_appointments * 100) if total_appointments > 0 else 0.0
         )
@@ -391,7 +395,9 @@ class AnalyticsService:
 
     async def get_pims_analytics(self, clinic_id: UUID) -> PIMSSyncAnalytics:
         """Get PIMS sync health."""
-        today_start = datetime.now(UTC).replace(hour=0, minute=0, second=0, microsecond=0)
+        today_start = datetime.now(UTC).replace(
+            hour=0, minute=0, second=0, microsecond=0
+        )
 
         # Get clinic PIMS status
         from app.models.clinic import Clinic
@@ -426,7 +432,11 @@ class AnalyticsService:
                     PIMSSyncLog.clinic_id == str(clinic_id),
                     PIMSSyncLog.started_at >= today_start,
                     PIMSSyncLog.status.in_(
-                        [SyncJobStatus.COMPLETED, SyncJobStatus.PARTIAL, SyncJobStatus.FAILED]
+                        [
+                            SyncJobStatus.COMPLETED,
+                            SyncJobStatus.PARTIAL,
+                            SyncJobStatus.FAILED,
+                        ]
                     ),
                 )
             )
@@ -462,7 +472,11 @@ class AnalyticsService:
                     PIMSSyncLog.clinic_id == str(clinic_id),
                     PIMSSyncLog.started_at >= cutoff_date,
                     PIMSSyncLog.status.in_(
-                        [SyncJobStatus.COMPLETED, SyncJobStatus.PARTIAL, SyncJobStatus.FAILED]
+                        [
+                            SyncJobStatus.COMPLETED,
+                            SyncJobStatus.PARTIAL,
+                            SyncJobStatus.FAILED,
+                        ]
                     ),
                 )
             )
@@ -488,8 +502,7 @@ class AnalyticsService:
 
         # Query calls with sentiment data
         result = await self.db.execute(
-            select(CallLog.key_points)
-            .where(
+            select(CallLog.key_points).where(
                 and_(
                     CallLog.clinic_id == str(clinic_id),
                     CallLog.started_at >= cutoff_date,
@@ -523,9 +536,7 @@ class AnalyticsService:
                 sentiment_scores.append(float(score))
 
         avg_sentiment_score = (
-            sum(sentiment_scores) / len(sentiment_scores)
-            if sentiment_scores
-            else 0.0
+            sum(sentiment_scores) / len(sentiment_scores) if sentiment_scores else 0.0
         )
 
         return SentimentData(
@@ -561,9 +572,7 @@ class AnalyticsService:
 
             # Determine caller phone based on direction
             caller_phone = (
-                call.from_phone
-                if call.direction.value == "inbound"
-                else call.to_phone
+                call.from_phone if call.direction.value == "inbound" else call.to_phone
             )
 
             summaries.append(

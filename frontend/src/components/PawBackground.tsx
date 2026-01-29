@@ -123,21 +123,25 @@ export const PawBackground = ({
 }: PawBackgroundProps) => {
   // Initialize with empty arrays to avoid hydration mismatch
   // Random values are generated only on the client after mount
-  const [paws, setPaws] = useState<ReturnType<typeof generatePaws>>([]);
-  const [circles, setCircles] = useState<ReturnType<typeof generateCircles>>(
-    [],
-  );
-  const [mounted, setMounted] = useState(false);
+  const [isClient, setIsClient] = useState(false);
+  const [paws] = useState<ReturnType<typeof generatePaws>>([]);
+  const [circles] = useState<ReturnType<typeof generateCircles>>([]);
+
+  // Initialize on client only to avoid hydration mismatch
+  const clientPaws =
+    isClient && paws.length === 0 ? generatePaws(pawCount, pawSizeRange) : paws;
+  const clientCircles =
+    isClient && circles.length === 0
+      ? generateCircles(circleCount, circleSizeRange)
+      : circles;
 
   useEffect(() => {
-    // Generate random values only on client side to avoid hydration mismatch
-    setPaws(generatePaws(pawCount, pawSizeRange));
-    setCircles(generateCircles(circleCount, circleSizeRange));
-    setMounted(true);
-  }, [pawCount, circleCount, pawSizeRange, circleSizeRange]);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setIsClient(true);
+  }, []);
 
-  // Don't render anything until mounted to avoid hydration issues
-  if (!mounted) {
+  // Don't render anything until client-side to avoid hydration issues
+  if (!isClient) {
     return (
       <div
         className={`absolute inset-0 overflow-hidden pointer-events-none ${className}`}
@@ -150,7 +154,7 @@ export const PawBackground = ({
       className={`absolute inset-0 overflow-hidden pointer-events-none ${className}`}
     >
       {/* Translucent circles */}
-      {circles.map((circle) => (
+      {clientCircles.map((circle) => (
         <div
           key={`circle-${circle.id}`}
           className="absolute rounded-full bg-gradient-to-br from-[#C5E8E6] to-[#7ECDC8] animate-pulse"
@@ -168,7 +172,7 @@ export const PawBackground = ({
       ))}
 
       {/* Paw prints */}
-      {paws.map((paw) => (
+      {clientPaws.map((paw) => (
         <div
           key={`paw-${paw.id}`}
           className="absolute"

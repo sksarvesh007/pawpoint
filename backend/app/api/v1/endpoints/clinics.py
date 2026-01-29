@@ -55,17 +55,13 @@ async def get_clinic_info(
         401: {
             "description": "Not authenticated",
             "content": {
-                "application/json": {
-                    "example": {"detail": "Not authenticated"}
-                }
+                "application/json": {"example": {"detail": "Not authenticated"}}
             },
         },
         404: {
             "description": "Clinic not found",
             "content": {
-                "application/json": {
-                    "example": {"detail": "Clinic not found"}
-                }
+                "application/json": {"example": {"detail": "Clinic not found"}}
             },
         },
     },
@@ -127,9 +123,7 @@ async def get_chatbot_settings(
         401: {
             "description": "Not authenticated",
             "content": {
-                "application/json": {
-                    "example": {"detail": "Not authenticated"}
-                }
+                "application/json": {"example": {"detail": "Not authenticated"}}
             },
         },
         403: {

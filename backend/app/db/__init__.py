@@ -13,6 +13,10 @@ from app.core.config import get_settings
 
 settings = get_settings()
 
+# Validate database URL is configured
+if not settings.database_url:
+    raise ValueError("DATABASE_URL must be set in environment")
+
 # Create async engine
 engine = create_async_engine(
     settings.database_url,

@@ -28,7 +28,9 @@ async def get_dashboard_analytics(
     sentiment analysis, and recent call logs.
     """
     service = AnalyticsService(db)
-    analytics: DashboardAnalytics = await service.get_dashboard_analytics(current_clinic.id)
+    analytics: DashboardAnalytics = await service.get_dashboard_analytics(
+        current_clinic.id
+    )
     return analytics
 
 

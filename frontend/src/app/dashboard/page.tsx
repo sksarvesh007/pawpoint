@@ -65,7 +65,7 @@ export default function DashboardPage() {
       });
 
       // Handle errors
-      eventSource.addEventListener("error", (event: any) => {
+      eventSource.addEventListener("error", (event: Event) => {
         if (!mounted) return;
 
         setConnectionStatus("error");

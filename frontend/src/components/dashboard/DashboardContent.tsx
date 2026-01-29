@@ -7,8 +7,6 @@ import {
   Phone,
   Calendar,
   PawPrint,
-  Users,
-  TrendingUp,
   Clock,
   AlertTriangle,
   CheckCircle,

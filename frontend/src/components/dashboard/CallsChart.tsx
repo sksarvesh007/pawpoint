@@ -6,7 +6,7 @@
 "use client";
 
 import { Activity } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { useRef } from "react";
 import {
   Chart as ChartJS,
   CategoryScale,

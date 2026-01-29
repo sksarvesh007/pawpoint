@@ -43,19 +43,27 @@ export function Sidebar({
   disableLinks = false,
 }: SidebarProps = {}) {
   const pathname = usePathname();
-  const [clinicName, setClinicName] = useState<string>(
-    propClinicName || "Loading...",
-  );
+  const [clinicName, setClinicName] = useState<string>("Loading...");
 
   useEffect(() => {
     if (propClinicName) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setClinicName(propClinicName);
       return;
     }
 
+    let mounted = true;
     getClinicInfo()
-      .then((info) => setClinicName(info.name))
-      .catch(() => setClinicName("My Clinic"));
+      .then((info) => {
+        if (mounted) setClinicName(info.name);
+      })
+      .catch(() => {
+        if (mounted) setClinicName("My Clinic");
+      });
+
+    return () => {
+      mounted = false;
+    };
   }, [propClinicName]);
 
   return (

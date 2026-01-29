@@ -6,11 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.clinic import Clinic
-from app.schemas.clinic import (
-    AppointmentPreferences,
-    EmergencyHandlingSettings,
-    UpdateChatbotSettingsRequest,
-)
+from app.schemas.clinic import UpdateChatbotSettingsRequest
 
 # Default chatbot settings initialized on clinic registration
 DEFAULT_VOICE_SETTINGS = {

@@ -149,6 +149,6 @@ class ClinicInfoResponse(BaseModel):
 
     id: str
     name: str
-    email: str
+    email: str | None
 
     model_config = {"from_attributes": True}

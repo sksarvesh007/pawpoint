@@ -29,8 +29,12 @@ export class ErrorBoundary extends Component<Props, State> {
       console.error("Dashboard error occurred");
 
       // Send to error tracking service (Sentry, etc.)
-      if (typeof window !== "undefined" && (window as any).Sentry) {
-        (window as any).Sentry.captureException(error, {
+      if (
+        typeof window !== "undefined" &&
+        "Sentry" in window &&
+        typeof (window as { Sentry?: { captureException: (error: Error, options?: Record<string, unknown>) => void } }).Sentry?.captureException === "function"
+      ) {
+        (window as { Sentry: { captureException: (error: Error, options?: Record<string, unknown>) => void } }).Sentry.captureException(error, {
           contexts: { react: errorInfo },
         });
       }

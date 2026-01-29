@@ -24,6 +24,8 @@ from opentelemetry.sdk.trace.export import BatchSpanProcessor
 if TYPE_CHECKING:
     from fastapi import FastAPI
 
+    from app.core.config import Settings
+
 
 def create_resource(
     service_name: str, service_version: str, environment: str
@@ -127,12 +129,12 @@ def parse_otlp_headers(headers_str: str | None) -> dict[str, str]:
     return headers
 
 
-def init_telemetry(app: "FastAPI", settings: "TelemetrySettings") -> None:
+def init_telemetry(app: "FastAPI", settings: "Settings") -> None:
     """Initialize OpenTelemetry instrumentation for FastAPI app.
 
     Args:
         app: FastAPI application instance
-        settings: Telemetry configuration settings
+        settings: Application configuration settings
     """
     if not settings.otel_enabled:
         logger.info("OpenTelemetry is disabled")
@@ -179,12 +181,12 @@ def shutdown_telemetry(app: "FastAPI") -> None:
         FastAPIInstrumentor.uninstrument_app(app)
 
         tracer_provider = trace.get_tracer_provider()
-        if hasattr(tracer_provider, "shutdown"):
-            tracer_provider.shutdown()
+        if hasattr(tracer_provider, "shutdown") and callable(tracer_provider.shutdown):
+            tracer_provider.shutdown()  # type: ignore[misc]
 
         meter_provider = metrics.get_meter_provider()
-        if hasattr(meter_provider, "shutdown"):
-            meter_provider.shutdown()
+        if hasattr(meter_provider, "shutdown") and callable(meter_provider.shutdown):
+            meter_provider.shutdown()  # type: ignore[misc]
 
         logger.info("OpenTelemetry shutdown complete")
     except Exception as e:
