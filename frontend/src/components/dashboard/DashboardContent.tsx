@@ -248,14 +248,14 @@ export function DashboardContent({
         <StatsCard
           title="Calls Answered"
           value={`${analytics.calls.total_calls}`}
-          subtitle={`+${analytics.calls.calls_today} last 7 days`}
+          subtitle={`+${analytics.calls.calls_today} today`}
           icon={Phone}
           color="orange"
         />
         <StatsCard
           title="Appointments"
           value={analytics.appointments.total_appointments}
-          subtitle={`+${analytics.appointments.appointments_this_week} last 7 days`}
+          subtitle={`+${analytics.appointments.appointments_this_week} this week`}
           icon={Calendar}
           color="blue"
         />

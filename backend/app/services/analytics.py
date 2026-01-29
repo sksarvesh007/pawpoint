@@ -572,7 +572,9 @@ class AnalyticsService:
 
             # Determine caller phone based on direction
             caller_phone = (
-                call.from_phone if call.direction.value == "inbound" else call.to_phone
+                call.from_phone
+                if call.direction and call.direction.value == "inbound"
+                else call.to_phone
             )
 
             summaries.append(
@@ -584,7 +586,9 @@ class AnalyticsService:
                     outcome=str(call.outcome.value) if call.outcome else "unknown",
                     sentiment=sentiment,
                     ai_confidence_score=call.ai_confidence_score,
-                    direction=str(call.direction.value),
+                    direction=str(call.direction.value)
+                    if call.direction
+                    else "unknown",
                 )
             )
 
