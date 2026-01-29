@@ -16,6 +16,8 @@ import {
   PawPrint,
   Phone,
   Settings,
+  FileText,
+  X,
 } from "lucide-react";
 
 type DemoTab = "dashboard" | "appointments" | "patients" | "calls" | "settings";
@@ -144,8 +146,27 @@ const MOCK_PATIENTS = [
   },
 ];
 
+// Structured transcript format
+type TranscriptMessage = {
+  speaker: "ai" | "caller" | "system";
+  text: string;
+  timestamp: string;
+};
+
+type CallWithTranscript = {
+  id: number;
+  phone: string;
+  caller: string;
+  duration: string;
+  outcome: string;
+  sentiment: string;
+  time: string;
+  aiReceptionist?: string;
+  transcript?: TranscriptMessage[];
+};
+
 // Mock call logs data
-const MOCK_CALLS = [
+const MOCK_CALLS: CallWithTranscript[] = [
   {
     id: 1,
     phone: "+1 (555) 123-4567",
@@ -154,6 +175,104 @@ const MOCK_CALLS = [
     outcome: "Appointment Booked",
     sentiment: "positive",
     time: "12 min ago",
+    aiReceptionist: "Megan",
+    transcript: [
+      {
+        speaker: "ai",
+        text: "Thank you for calling PawPoint Animal Hospital. This is Megan, the virtual receptionist. How can I help you today?",
+        timestamp: "0:00",
+      },
+      {
+        speaker: "caller",
+        text: "Hi, I'd like to schedule a check-up appointment for my dog.",
+        timestamp: "0:08",
+      },
+      {
+        speaker: "ai",
+        text: "I'd be happy to help with that. May I have your name, please?",
+        timestamp: "0:12",
+      },
+      {
+        speaker: "caller",
+        text: "Sure, it's Sarah Johnson.",
+        timestamp: "0:18",
+      },
+      {
+        speaker: "ai",
+        text: "Thank you, Sarah. And what is your dog's name?",
+        timestamp: "0:21",
+      },
+      {
+        speaker: "caller",
+        text: "His name is Buddy.",
+        timestamp: "0:25",
+      },
+      {
+        speaker: "ai",
+        text: "Buddy — what a great name. And this visit is for a routine check-up, correct?",
+        timestamp: "0:28",
+      },
+      {
+        speaker: "caller",
+        text: "Yes, just a regular check-up.",
+        timestamp: "0:35",
+      },
+      {
+        speaker: "ai",
+        text: "Perfect. Do you have a preferred date and time for Buddy's appointment?",
+        timestamp: "0:38",
+      },
+      {
+        speaker: "caller",
+        text: "Yes, I was hoping for March 3rd at 10:00 a.m.",
+        timestamp: "0:45",
+      },
+      {
+        speaker: "ai",
+        text: "Let me check on that for you… Great news — March 3rd at 10:00 a.m. is available.",
+        timestamp: "0:51",
+      },
+      {
+        speaker: "caller",
+        text: "That's perfect.",
+        timestamp: "1:00",
+      },
+      {
+        speaker: "ai",
+        text: "Wonderful. I've scheduled Buddy's check-up for March 3rd at 10:00 a.m. at PawPoint Animal Hospital. Before we finish, I can send you a confirmation by text message and email. Would you like me to do that?",
+        timestamp: "1:03",
+      },
+      {
+        speaker: "caller",
+        text: "Yes, that would be great.",
+        timestamp: "1:18",
+      },
+      {
+        speaker: "ai",
+        text: "Perfect. I've just sent a confirmation text message and email with Buddy's appointment details. You'll also receive reminders as the appointment gets closer.",
+        timestamp: "1:21",
+      },
+      {
+        speaker: "caller",
+        text: "Awesome, thank you.",
+        timestamp: "1:34",
+      },
+      {
+        speaker: "ai",
+        text: "You're very welcome, Sarah. If you need to make any changes or have questions before your visit, just give us a call. We look forward to seeing you and Buddy soon. Have a great day!",
+        timestamp: "1:37",
+      },
+      {
+        speaker: "caller",
+        text: "You too. Goodbye.",
+        timestamp: "1:52",
+      },
+      {
+        speaker: "ai",
+        text: "Goodbye!",
+        timestamp: "1:55",
+      },
+    ],
   },
   {
     id: 2,
@@ -163,15 +282,146 @@ const MOCK_CALLS = [
     outcome: "Information Provided",
     sentiment: "neutral",
     time: "28 min ago",
+    aiReceptionist: "Ashley",
+    transcript: [
+      {
+        speaker: "ai",
+        text: "Thank you for calling PawPoint Animal Hospital. This is Ashley, the virtual receptionist. How can I help you today?",
+        timestamp: "0:00",
+      },
+      {
+        speaker: "caller",
+        text: "Hi, I'm new to the area and just wanted to confirm your business hours and location.",
+        timestamp: "0:08",
+      },
+      {
+        speaker: "ai",
+        text: "Welcome to the area — I'd be happy to help with that. Before we continue, may I have your name?",
+        timestamp: "0:15",
+      },
+      {
+        speaker: "caller",
+        text: "Sure, it's Mike Chen.",
+        timestamp: "0:22",
+      },
+      {
+        speaker: "ai",
+        text: "Thank you, Mike. And do you have a pet you'll be bringing in?",
+        timestamp: "0:25",
+      },
+      {
+        speaker: "caller",
+        text: "Yes, I have a cat named Whiskers.",
+        timestamp: "0:30",
+      },
+      {
+        speaker: "ai",
+        text: "Whiskers — that's a great name. Here are our details: PawPoint Animal Hospital is located at 123 8th Ave in Sarasota, Florida. Our regular business hours are Monday through Friday from 8am to 5pm, with lunch from 12pm to 1pm daily. We are closed on Saturday and Sunday. If you ever need help outside of those hours, our phone system can still assist with general information and appointment requests.",
+        timestamp: "0:35",
+      },
+      {
+        speaker: "caller",
+        text: "That's really helpful, thank you.",
+        timestamp: "0:55",
+      },
+      {
+        speaker: "ai",
+        text: "You're very welcome. Would you like me to send you our hours and location by text message or email for easy reference?",
+        timestamp: "0:58",
+      },
+      {
+        speaker: "caller",
+        text: "Yes, that would be great.",
+        timestamp: "1:05",
+      },
+      {
+        speaker: "ai",
+        text: "Great! May I have your email address?",
+        timestamp: "1:08",
+      },
+      {
+        speaker: "caller",
+        text: "Sure, it's mikechen@email.com",
+        timestamp: "1:12",
+      },
+      {
+        speaker: "ai",
+        text: "Perfect — I've just sent you a text message and email with our address, hours, and contact information. If you'd like, I can also help you schedule an appointment for Whiskers or answer any other questions you may have.",
+        timestamp: "1:15",
+      },
+      {
+        speaker: "caller",
+        text: "I'll do that another time, but thanks again.",
+        timestamp: "1:28",
+      },
+      {
+        speaker: "ai",
+        text: "Of course, Mike. We're happy to have you in the area and look forward to meeting you and Whiskers whenever you're ready. Have a great day!",
+        timestamp: "1:32",
+      },
+      {
+        speaker: "caller",
+        text: "You too. Goodbye.",
+        timestamp: "1:36",
+      },
+      {
+        speaker: "ai",
+        text: "Goodbye!",
+        timestamp: "1:38",
+      },
+    ],
   },
   {
     id: 3,
     phone: "+1 (555) 345-6789",
     caller: "Emily Davis",
-    duration: "5:12",
+    duration: "1:00",
     outcome: "Emergency Transfer",
     sentiment: "negative",
     time: "45 min ago",
+    aiReceptionist: "Becky",
+    transcript: [
+      {
+        speaker: "ai",
+        text: "Thank you for calling PawPoint Animal Hospital. This is Becky, the virtual receptionist. How can I help you?",
+        timestamp: "0:00",
+      },
+      {
+        speaker: "caller",
+        text: "Oh my god—my dog is vomiting blood. I don't know what to do. Please help.",
+        timestamp: "0:08",
+      },
+      {
+        speaker: "ai",
+        text: "I'm so sorry this is happening, Emily. Just to confirm, your dog is actively vomiting blood, correct?",
+        timestamp: "0:15",
+      },
+      {
+        speaker: "caller",
+        text: "Yes—he's thrown up blood twice already.",
+        timestamp: "0:22",
+      },
+      {
+        speaker: "ai",
+        text: "Thank you for telling me. Based on what you've described, this is a medical emergency and your dog needs immediate attention. I'm going to transfer you right now to a live member of our veterinary team so they can assist you. Please stay on the line.",
+        timestamp: "0:26",
+      },
+      {
+        speaker: "caller",
+        text: "Okay—please hurry.",
+        timestamp: "0:42",
+      },
+      {
+        speaker: "ai",
+        text: "I'm transferring your call now. If for any reason the call disconnects, please come directly to PawPoint Animal Hospital or proceed to the nearest emergency veterinary clinic right away. One moment while I connect you.",
+        timestamp: "0:45",
+      },
+      {
+        speaker: "system",
+        text: "— Call transferred to live hospital staff —",
+        timestamp: "0:58",
+      },
+    ],
   },
   {
     id: 4,
@@ -181,6 +431,114 @@ const MOCK_CALLS = [
     outcome: "Appointment Booked",
     sentiment: "positive",
     time: "1 hr ago",
+    aiReceptionist: "Mary",
+    transcript: [
+      {
+        speaker: "ai",
+        text: "Thank you for calling PawPoint Animal Hospital. This is Mary, the virtual receptionist. How can I help you today?",
+        timestamp: "0:00",
+      },
+      {
+        speaker: "caller",
+        text: "Hi, my dog has been limping, and I'd like to schedule an appointment.",
+        timestamp: "0:08",
+      },
+      {
+        speaker: "ai",
+        text: "I'm sorry to hear that your pet isn't feeling well, James. I'll help get that scheduled for you. May I have your full name, please?",
+        timestamp: "0:13",
+      },
+      {
+        speaker: "caller",
+        text: "Sure, it's James Wilson.",
+        timestamp: "0:20",
+      },
+      {
+        speaker: "ai",
+        text: "Thank you, James. And your dog's name is Luna, correct?",
+        timestamp: "0:23",
+      },
+      {
+        speaker: "caller",
+        text: "Yes, that's right.",
+        timestamp: "0:28",
+      },
+      {
+        speaker: "ai",
+        text: "Thank you. You mentioned Luna is limping — is she eating and drinking normally otherwise?",
+        timestamp: "0:30",
+      },
+      {
+        speaker: "caller",
+        text: "Yes, everything else seems normal.",
+        timestamp: "0:37",
+      },
+      {
+        speaker: "ai",
+        text: "Okay, thank you for letting me know. Do you have a preferred doctor, date, or time?",
+        timestamp: "0:40",
+      },
+      {
+        speaker: "caller",
+        text: "Yes, I'd like to see Dr. Mike on February 27th at 1:30 p.m. If that's not available, my second choice would be February 26th at 1:30 p.m.",
+        timestamp: "0:46",
+      },
+      {
+        speaker: "ai",
+        text: "Thank you for providing a backup option — let me check availability for you. Unfortunately, Dr. Mike is not available on February 27th at 1:30 p.m. However, I do have availability with Dr. Mike on February 26th at 1:30 p.m. Would that work for you?",
+        timestamp: "0:58",
+      },
+      {
+        speaker: "caller",
+        text: "Yes, that works.",
+        timestamp: "1:15",
+      },
+      {
+        speaker: "ai",
+        text: "Great. I've scheduled Luna's appointment with Dr. Mike for February 26th at 1:30 p.m. at PawPoint Animal Hospital. Before I send your appointment reminders, I just want to confirm your contact information. Is your phone number 850-555-4321?",
+        timestamp: "1:18",
+      },
+      {
+        speaker: "caller",
+        text: "Yes, that's correct.",
+        timestamp: "1:35",
+      },
+      {
+        speaker: "ai",
+        text: "And your email address is james@ppihospital.com?",
+        timestamp: "1:38",
+      },
+      {
+        speaker: "caller",
+        text: "Yes, that's right.",
+        timestamp: "1:43",
+      },
+      {
+        speaker: "ai",
+        text: "Perfect. I've sent your appointment confirmation and reminders by text message and email. If Luna's limping worsens or she has trouble putting weight on her leg before the appointment, please give us a call right away.",
+        timestamp: "1:46",
+      },
+      {
+        speaker: "caller",
+        text: "I will. Thank you for your help.",
+        timestamp: "2:05",
+      },
+      {
+        speaker: "ai",
+        text: "You're very welcome, James. We look forward to seeing you and Luna on February 26th at 1:30 p.m. Have a great day!",
+        timestamp: "2:08",
+      },
+      {
+        speaker: "caller",
+        text: "You too. Goodbye.",
+        timestamp: "2:25",
+      },
+      {
+        speaker: "ai",
+        text: "Goodbye!",
+        timestamp: "2:28",
+      },
+    ],
   },
   {
     id: 5,
@@ -190,6 +548,126 @@ const MOCK_CALLS = [
     outcome: "Message Taken",
     sentiment: "neutral",
     time: "1.5 hr ago",
+    aiReceptionist: "Emma",
+    transcript: [
+      {
+        speaker: "ai",
+        text: "Thank you for calling PawPoint Animal Hospital. This is Emma, the virtual receptionist. How can I help you today?",
+        timestamp: "0:00",
+      },
+      {
+        speaker: "caller",
+        text: "Hi, I'm calling to order flea and tick medication for my dog.",
+        timestamp: "0:10",
+      },
+      {
+        speaker: "ai",
+        text: "I can help with that. May I have your name, please?",
+        timestamp: "0:18",
+      },
+      {
+        speaker: "caller",
+        text: "It's Lisa Brown.",
+        timestamp: "0:25",
+      },
+      {
+        speaker: "ai",
+        text: "Thank you, Lisa. And your dog's name?",
+        timestamp: "0:28",
+      },
+      {
+        speaker: "caller",
+        text: "Rocky.",
+        timestamp: "0:35",
+      },
+      {
+        speaker: "ai",
+        text: "Got it — Rocky. I've noted your request for flea and tick medication. I'll forward this request to our medical staff so they can prepare the medication for you.",
+        timestamp: "0:38",
+      },
+      {
+        speaker: "caller",
+        text: "Okay, great.",
+        timestamp: "0:55",
+      },
+      {
+        speaker: "ai",
+        text: "Once it's ready, you can stop by the office during our regular business hours to pick it up and take care of payment at that time. If the staff has any questions or needs approval from the doctor before dispensing the medication, they'll reach out to you directly.",
+        timestamp: "1:00",
+      },
+      {
+        speaker: "caller",
+        text: "Perfect, thank you.",
+        timestamp: "1:30",
+      },
+      {
+        speaker: "ai",
+        text: "You're very welcome, Lisa. We'll see you soon, and please don't hesitate to call if you have any other questions. Have a great day!",
+        timestamp: "1:35",
+      },
+      {
+        speaker: "caller",
+        text: "You too. Goodbye.",
+        timestamp: "3:10",
+      },
+      {
+        speaker: "ai",
+        text: "Goodbye!",
+        timestamp: "3:15",
+      },
+    ],
+  },
+  {
+    id: 6,
+    phone: "+1 (555) 678-9012",
+    caller: "Anna Martinez",
+    duration: "1:10",
+    outcome: "Emergency Transfer",
+    sentiment: "negative",
+    time: "2 hr ago",
+    aiReceptionist: "Bethany",
+    transcript: [
+      {
+        speaker: "ai",
+        text: "Thank you for calling PawPoint Animal Hospital. This is Bethany, the virtual receptionist. How can I help you?",
+        timestamp: "0:00",
+      },
+      {
+        speaker: "caller",
+        text: "Please help—my dog was bitten by a rattlesnake. I don't know what to do.",
+        timestamp: "0:08",
+      },
+      {
+        speaker: "ai",
+        text: "I'm so sorry this is happening, Anna. Just to confirm, your dog was bitten by a rattlesnake, correct?",
+        timestamp: "0:15",
+      },
+      {
+        speaker: "caller",
+        text: "Yes—her name is Coco. She was bitten on the leg and it's already swelling.",
+        timestamp: "0:22",
+      },
+      {
+        speaker: "ai",
+        text: "Thank you for telling me, Anna. Based on what you've described, this is a life-threatening medical emergency and Coco needs immediate treatment. Because you're calling after hours, PawPoint Animal Hospital is currently closed. I'm going to transfer your call right now to the emergency hospital designated by our medical team: Southpaw Emergency Veterinary Hospital. Please stay on the line while I connect you. If the call disconnects for any reason, go immediately to Southpaw Emergency Veterinary Hospital or the nearest emergency veterinary clinic.",
+        timestamp: "0:30",
+      },
+      {
+        speaker: "caller",
+        text: "Okay—please hurry.",
+        timestamp: "0:55",
+      },
+      {
+        speaker: "ai",
+        text: "I understand, Anna. I'm transferring you now.",
+        timestamp: "0:58",
+      },
+      {
+        speaker: "system",
+        text: "— Call transferred to Southpaw Emergency Veterinary Hospital —",
+        timestamp: "1:05",
+      },
+    ],
   },
 ];
 
@@ -320,6 +798,10 @@ function PatientsContent() {
 }
 
 function CallsContent() {
+  const [selectedCall, setSelectedCall] = useState<CallWithTranscript | null>(
+    null,
+  );
+
   return (
     <div className="space-y-6">
       <div>
@@ -348,6 +830,9 @@ function CallsContent() {
               </th>
               <th className="text-left px-6 py-4 text-xs font-bold text-zinc-600 uppercase tracking-wide">
                 Time
+              </th>
+              <th className="text-left px-6 py-4 text-xs font-bold text-zinc-600 uppercase tracking-wide">
+                Actions
               </th>
             </tr>
           </thead>
@@ -398,11 +883,137 @@ function CallsContent() {
                   </span>
                 </td>
                 <td className="px-6 py-4 text-zinc-500 text-sm">{call.time}</td>
+                <td className="px-6 py-4">
+                  {call.transcript ? (
+                    <button
+                      onClick={() => setSelectedCall(call)}
+                      className="inline-flex items-center gap-2 px-3 py-1.5 bg-teal-50 hover:bg-teal-100 text-teal-700 rounded-lg text-xs font-medium transition-colors"
+                    >
+                      <FileText className="w-4 h-4" />
+                      View Transcript
+                    </button>
+                  ) : (
+                    <span className="text-xs text-zinc-400">No transcript</span>
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
+
+      {/* Transcript Modal - Chat Interface */}
+      {selectedCall && selectedCall.transcript && (
+        <div className="fixed inset-0 bg-black/50 flex items-start justify-center z-[100] pt-32 pb-4 px-4">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-4xl w-full max-h-[75vh] flex flex-col">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-6 border-b border-zinc-200 bg-gradient-to-r from-teal-50 to-teal-100/50 rounded-t-3xl">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-teal-600 rounded-xl shadow-sm">
+                  <Phone className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-zinc-900">
+                    Call Transcript
+                  </h2>
+                  <p className="text-sm text-zinc-600">
+                    AI Receptionist ({selectedCall.aiReceptionist}) ↔{" "}
+                    {selectedCall.caller}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setSelectedCall(null)}
+                className="p-2 hover:bg-white/60 rounded-xl transition-colors"
+              >
+                <X className="w-5 h-5 text-zinc-600" />
+              </button>
+            </div>
+
+            {/* Chat Messages */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-zinc-50">
+              {selectedCall.transcript.map((message, index) => {
+                // System message (e.g., call transfer)
+                if (message.speaker === "system") {
+                  return (
+                    <div key={index} className="flex justify-center my-6">
+                      <div className="flex flex-col items-center max-w-md">
+                        <div className="px-6 py-3 bg-red-50 border-2 border-red-200 rounded-2xl">
+                          <p className="text-sm font-semibold text-red-700 text-center">
+                            {message.text}
+                          </p>
+                        </div>
+                        <span className="text-xs text-zinc-400 mt-1 font-mono">
+                          {message.timestamp}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                }
+
+                // Regular AI or caller messages
+                return (
+                  <div
+                    key={index}
+                    className={`flex ${message.speaker === "ai" ? "justify-start" : "justify-end"}`}
+                  >
+                    <div
+                      className={`flex flex-col max-w-[75%] ${message.speaker === "ai" ? "items-start" : "items-end"}`}
+                    >
+                      {/* Speaker label - only for first message or speaker change */}
+                      {(index === 0 ||
+                        selectedCall.transcript[index - 1].speaker !==
+                          message.speaker) && (
+                        <span className="text-xs font-semibold text-zinc-500 mb-1 px-1">
+                          {message.speaker === "ai"
+                            ? selectedCall.aiReceptionist
+                            : selectedCall.caller.split(" ")[0]}
+                        </span>
+                      )}
+
+                      {/* Message bubble */}
+                      <div
+                        className={`px-4 py-3 rounded-3xl ${
+                          message.speaker === "ai"
+                            ? "bg-white border border-zinc-200 text-zinc-800 rounded-tl-md"
+                            : "bg-teal-600 text-white rounded-tr-md"
+                        }`}
+                      >
+                        <p className="text-sm leading-relaxed">
+                          {message.text}
+                        </p>
+                      </div>
+
+                      {/* Timestamp */}
+                      <span className="text-xs text-zinc-400 mt-1 px-1 font-mono">
+                        {message.timestamp}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 border-t border-zinc-200 bg-white rounded-b-3xl">
+              <div className="flex items-center justify-between">
+                <div className="text-sm text-zinc-500">
+                  Duration:{" "}
+                  <span className="font-mono font-semibold">
+                    {selectedCall.duration}
+                  </span>
+                </div>
+                <button
+                  onClick={() => setSelectedCall(null)}
+                  className="px-6 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-xl font-medium transition-colors"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
