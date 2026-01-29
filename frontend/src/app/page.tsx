@@ -1,4 +1,8 @@
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
+import { X } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { PawBackground } from "@/components/PawBackground";
 import { PawPrint } from "@/components/PawPrint";
@@ -100,6 +104,27 @@ const DashboardIcon = () => (
 );
 
 export default function Home() {
+  const [showContactForm, setShowContactForm] = useState(false);
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    clinicName: "",
+    phone: "",
+  });
+  const [formSubmitted, setFormSubmitted] = useState(false);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    // In a real app, this would send the data to a backend
+    console.log("Form submitted:", formData);
+    setFormSubmitted(true);
+    setTimeout(() => {
+      setShowContactForm(false);
+      setFormSubmitted(false);
+      setFormData({ name: "", email: "", clinicName: "", phone: "" });
+    }, 2000);
+  };
+
   return (
     <div className="flex min-h-screen flex-col bg-white">
       {/* Header */}
@@ -171,12 +196,12 @@ export default function Home() {
               >
                 See PawPoint in Action
               </Link>
-              <Link
-                href="/signup"
-                className="px-8 py-4 text-[18px] font-bold text-[#2D3748] bg-white rounded-xl border-2 border-[#E2E8F0] hover:bg-gray-50 transition-all"
+              <button
+                onClick={() => setShowContactForm(true)}
+                className="px-8 py-4 text-[18px] font-bold text-white bg-[#F5A623] rounded-xl hover:bg-[#E09000] transition-all shadow-[0_6px_20px_rgba(245,166,35,0.4)]"
               >
                 Request a Demo
-              </Link>
+              </button>
             </div>
             <p className="text-[15px] font-bold text-[#718096] flex items-center gap-2">
               <span className="text-[#3DA99F] text-lg">▶</span> Setup in days •
@@ -458,7 +483,7 @@ export default function Home() {
           {/* Feature 3 */}
           <div className="w-[280px] p-8 bg-[#FFF9F0] rounded-[24px] flex flex-col gap-4 shadow-sm border border-orange-100/50">
             <CalendarCheckIcon />
-            <h3 className="text-[19px] font-nunito font-black text-[#3DA99F] leading-tight">
+            <h3 className="text-[19px] font-nunito font-black text-[#1D3533] leading-tight">
               Appointment
               <br />
               Requests Captured
@@ -469,7 +494,7 @@ export default function Home() {
           </div>
 
           {/* Feature 4 */}
-          <div className="w-[280px] p-8 bg-[#E0F2F1]/50 rounded-[24px] flex flex-col gap-4 shadow-sm border border-teal-100/50">
+          <div className="w-[280px] p-8 bg-[#FFF9F0] rounded-[24px] flex flex-col gap-4 shadow-sm border border-orange-100/50">
             <DashboardIcon />
             <h3 className="text-[19px] font-nunito font-black text-[#1D3533] leading-tight">
               Staff
@@ -1113,6 +1138,130 @@ export default function Home() {
           </div>
         </div>
       </footer>
+
+      {/* Contact Form Modal */}
+      {showContactForm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-6 border-b border-zinc-200 bg-gradient-to-r from-teal-50 to-teal-100/50">
+              <div>
+                <h2 className="text-xl font-bold text-zinc-900">
+                  Request a Demo
+                </h2>
+                <p className="text-sm text-zinc-600">
+                  We&apos;ll get back to you within 24 hours
+                </p>
+              </div>
+              <button
+                onClick={() => setShowContactForm(false)}
+                className="p-2 hover:bg-white/60 rounded-xl transition-colors"
+              >
+                <X className="w-5 h-5 text-zinc-600" />
+              </button>
+            </div>
+
+            {/* Form Content */}
+            <div className="p-6">
+              {formSubmitted ? (
+                <div className="text-center py-8">
+                  <div className="w-16 h-16 bg-teal-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg
+                      className="w-8 h-8 text-teal-600"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M5 13l4 4L19 7"
+                      />
+                    </svg>
+                  </div>
+                  <h3 className="text-lg font-semibold text-zinc-900 mb-2">
+                    Thank you!
+                  </h3>
+                  <p className="text-zinc-600">We&apos;ll be in touch soon.</p>
+                </div>
+              ) : (
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-zinc-700 mb-1">
+                      Your Name *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={formData.name}
+                      onChange={(e) =>
+                        setFormData({ ...formData, name: e.target.value })
+                      }
+                      className="w-full px-4 py-3 border border-zinc-300 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition-all"
+                      placeholder="John Doe"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-zinc-700 mb-1">
+                      Email Address *
+                    </label>
+                    <input
+                      type="email"
+                      required
+                      value={formData.email}
+                      onChange={(e) =>
+                        setFormData({ ...formData, email: e.target.value })
+                      }
+                      className="w-full px-4 py-3 border border-zinc-300 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition-all"
+                      placeholder="john@clinic.com"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-zinc-700 mb-1">
+                      Clinic Name *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={formData.clinicName}
+                      onChange={(e) =>
+                        setFormData({ ...formData, clinicName: e.target.value })
+                      }
+                      className="w-full px-4 py-3 border border-zinc-300 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition-all"
+                      placeholder="PawPoint Animal Hospital"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-zinc-700 mb-1">
+                      Phone Number
+                    </label>
+                    <input
+                      type="tel"
+                      value={formData.phone}
+                      onChange={(e) =>
+                        setFormData({ ...formData, phone: e.target.value })
+                      }
+                      className="w-full px-4 py-3 border border-zinc-300 rounded-xl focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition-all"
+                      placeholder="+1 (555) 123-4567"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="w-full py-3 bg-[#3DA99F] hover:bg-[#2A9D8F] text-white font-bold rounded-xl transition-colors shadow-[0_4px_14px_0_rgba(61,169,159,0.3)]"
+                  >
+                    Submit Request
+                  </button>
+                </form>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

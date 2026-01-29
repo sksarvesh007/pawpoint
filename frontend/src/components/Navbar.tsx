@@ -57,10 +57,16 @@ export function Navbar() {
           );
         })}
         <Link
-          href="/signup"
-          className="px-8 py-3 text-[16px] font-bold text-white bg-[#3DA99F] rounded-lg hover:bg-[#2A9D8F] transition-all shadow-[0_4px_14px_0_rgba(61,169,159,0.3)]"
+          href="/login"
+          className="px-6 py-3 text-[16px] font-bold text-[#3DA99F] border-2 border-[#3DA99F] rounded-lg hover:bg-[#E0F2F1] transition-all"
         >
-          Request a Demo
+          Login as Hospital
+        </Link>
+        <Link
+          href="/signup"
+          className="px-6 py-3 text-[16px] font-bold text-white bg-[#3DA99F] rounded-lg hover:bg-[#2A9D8F] transition-all shadow-[0_4px_14px_0_rgba(61,169,159,0.3)]"
+        >
+          Signup as Hospital
         </Link>
       </nav>
     </header>
