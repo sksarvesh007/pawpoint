@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface PawBackgroundProps {
   /** Number of paw prints to show */
@@ -121,18 +121,40 @@ export const PawBackground = ({
   circleSizeRange = [100, 400],
   className = "",
 }: PawBackgroundProps) => {
-  // Use useState with lazy initializer to generate random values only once
-  const [paws] = useState(() => generatePaws(pawCount, pawSizeRange));
-  const [circles] = useState(() =>
-    generateCircles(circleCount, circleSizeRange),
-  );
+  // Initialize with empty arrays to avoid hydration mismatch
+  // Random values are generated only on the client after mount
+  const [isClient, setIsClient] = useState(false);
+  const [paws] = useState<ReturnType<typeof generatePaws>>([]);
+  const [circles] = useState<ReturnType<typeof generateCircles>>([]);
+
+  // Initialize on client only to avoid hydration mismatch
+  const clientPaws =
+    isClient && paws.length === 0 ? generatePaws(pawCount, pawSizeRange) : paws;
+  const clientCircles =
+    isClient && circles.length === 0
+      ? generateCircles(circleCount, circleSizeRange)
+      : circles;
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setIsClient(true);
+  }, []);
+
+  // Don't render anything until client-side to avoid hydration issues
+  if (!isClient) {
+    return (
+      <div
+        className={`absolute inset-0 overflow-hidden pointer-events-none ${className}`}
+      />
+    );
+  }
 
   return (
     <div
       className={`absolute inset-0 overflow-hidden pointer-events-none ${className}`}
     >
       {/* Translucent circles */}
-      {circles.map((circle) => (
+      {clientCircles.map((circle) => (
         <div
           key={`circle-${circle.id}`}
           className="absolute rounded-full bg-gradient-to-br from-[#C5E8E6] to-[#7ECDC8] animate-pulse"
@@ -150,7 +172,7 @@ export const PawBackground = ({
       ))}
 
       {/* Paw prints */}
-      {paws.map((paw) => (
+      {clientPaws.map((paw) => (
         <div
           key={`paw-${paw.id}`}
           className="absolute"

@@ -7,12 +7,16 @@ Users can belong to multiple clinics through the UserClinic association.
 
 import enum
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 from sqlalchemy import Boolean, Column, Enum, ForeignKey, String, Table, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, SoftDeleteMixin, TimestampMixin
+
+if TYPE_CHECKING:
+    from app.models.clinic import Clinic
 
 
 class UserRole(str, enum.Enum):
@@ -107,7 +111,7 @@ class User(Base, TimestampMixin, SoftDeleteMixin):
     last_login_at: Mapped[datetime | None] = mapped_column(nullable=True)
 
     # Relationships
-    clinics: Mapped[list["Clinic"]] = relationship(  # noqa: F821
+    clinics: Mapped[list["Clinic"]] = relationship(
         secondary=user_clinic_association,
         back_populates="users",
         lazy="selectin",
@@ -122,7 +126,7 @@ class User(Base, TimestampMixin, SoftDeleteMixin):
         """Check if user has access to a specific clinic."""
         if self.role == UserRole.SUPER_ADMIN:
             return True
-        return any(c.id == clinic_id for c in self.clinics)
+        return any(str(c.id) == clinic_id for c in self.clinics)
 
     def __repr__(self) -> str:
         return f"<User(id={self.id}, email={self.email}, role={self.role})>"

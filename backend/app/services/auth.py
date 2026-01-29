@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.security import create_access_token, hash_password, verify_password
 from app.models.clinic import Clinic
 from app.models.user import User, UserRole, user_clinic_association
+from app.services.clinic import DEFAULT_VOICE_SETTINGS
 
 
 class AuthService:
@@ -58,11 +59,12 @@ class AuthService:
         # Check if slug already exists and make it unique
         slug = await self._ensure_unique_slug(slug)
 
-        # Create the clinic
+        # Create the clinic with default chatbot settings
         clinic = Clinic(
             name=clinic_name,
             slug=slug,
             email=email,
+            voice_settings=DEFAULT_VOICE_SETTINGS.copy(),  # Initialize with defaults
         )
         self.db.add(clinic)
         await self.db.flush()

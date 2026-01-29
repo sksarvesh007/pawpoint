@@ -6,8 +6,6 @@ const LOGO_HEIGHT = 180; // in pixels (h-16 = 64px)
 // Aspect ratio based on actual image dimensions (280:62 ≈ 4.5:1)
 const ASPECT_RATIO = 4.5;
 
-const LOGO_WIDTH = LOGO_HEIGHT * ASPECT_RATIO;
-
 // Change NAVBAR_HEIGHT to adjust navbar height across entire site
 export const NAVBAR_HEIGHT = 100; // in pixels - controls the fixed navbar height
 
