@@ -1,5 +1,6 @@
 """Authentication and authorization dependencies."""
 
+from typing import Any
 from uuid import UUID
 
 from fastapi import Depends, HTTPException, Request, status
@@ -10,6 +11,61 @@ from app.core.security import decode_access_token
 from app.db import get_db
 from app.models.clinic import Clinic
 from app.models.user import User
+
+
+def extract_token_from_request(request: Request) -> str:
+    """Extract JWT token from request cookies or Authorization header.
+
+    Tries httpOnly cookie first, then falls back to Authorization header.
+
+    Args:
+        request: FastAPI request object
+
+    Returns:
+        JWT token string
+
+    Raises:
+        HTTPException: 401 if no token found
+    """
+    # Try to get token from httpOnly cookie first
+    token = request.cookies.get("access_token")
+
+    # Fallback to Authorization header if cookie not found
+    if not token:
+        auth_header = request.headers.get("Authorization")
+        if auth_header and auth_header.startswith("Bearer "):
+            token = auth_header.replace("Bearer ", "")
+
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    return token
+
+
+def validate_token_payload(token: str) -> dict[str, Any]:
+    """Decode and validate JWT token payload.
+
+    Args:
+        token: JWT token string
+
+    Returns:
+        Decoded token payload
+
+    Raises:
+        HTTPException: 401 if token is invalid or expired
+    """
+    payload = decode_access_token(token)
+    if not payload:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired token",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    return payload
 
 
 async def get_current_user(
@@ -32,30 +88,8 @@ async def get_current_user(
     Raises:
         HTTPException: 401 if token is invalid or user not found
     """
-    # Try to get token from httpOnly cookie first
-    token = request.cookies.get("access_token")
-
-    # Fallback to Authorization header if cookie not found
-    if not token:
-        auth_header = request.headers.get("Authorization")
-        if auth_header and auth_header.startswith("Bearer "):
-            token = auth_header.replace("Bearer ", "")
-
-    if not token:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Not authenticated",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-
-    # Decode and validate token
-    payload = decode_access_token(token)
-    if not payload:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired token",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+    token = extract_token_from_request(request)
+    payload = validate_token_payload(token)
 
     # Extract user_id from token payload
     user_id_str = payload.get("sub")
@@ -117,28 +151,8 @@ async def get_current_clinic(
     Raises:
         HTTPException: 401 if token invalid, 403 if no access to clinic
     """
-    # Get token (same logic as get_current_user)
-    token = request.cookies.get("access_token")
-    if not token:
-        auth_header = request.headers.get("Authorization")
-        if auth_header and auth_header.startswith("Bearer "):
-            token = auth_header.replace("Bearer ", "")
-
-    if not token:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Not authenticated",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-
-    # Decode token to get clinic_id
-    payload = decode_access_token(token)
-    if not payload:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired token",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+    token = extract_token_from_request(request)
+    payload = validate_token_payload(token)
 
     clinic_id_str = payload.get("clinic_id")
     if not clinic_id_str:

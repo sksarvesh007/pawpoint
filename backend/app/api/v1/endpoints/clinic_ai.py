@@ -57,7 +57,7 @@ class ChatResponse(BaseModel):
     tokens_used: int | None = None
 
 
-def build_clinic_data(clinic: Clinic) -> dict:
+def build_clinic_data(clinic: Clinic) -> dict[str, object]:
     """Build clinic data dictionary for AI agents.
 
     Args:
@@ -131,12 +131,16 @@ async def clinic_chat(
     # Get or create conversation
     if request.conversation_id:
         # Resume existing conversation
-        logger.info(f"[POST /api/v1/{clinic.slug}/chat] Resuming conversation: {request.conversation_id}")
+        logger.info(
+            f"[POST /api/v1/{clinic.slug}/chat] Resuming conversation: {request.conversation_id}"
+        )
         session = await session_manager.get_session(request.conversation_id)
 
         if not session:
             # Session expired in Redis, fetch from DB
-            logger.warning(f"[POST /api/v1/{clinic.slug}/chat] Session {request.conversation_id} expired in Redis, loading from database")
+            logger.warning(
+                f"[POST /api/v1/{clinic.slug}/chat] Session {request.conversation_id} expired in Redis, loading from database"
+            )
             conversation = await history_manager.get_conversation(
                 request.conversation_id
             )
@@ -189,7 +193,9 @@ async def clinic_chat(
         conversation_id = session.conversation_id
     else:
         # Create new conversation
-        logger.info(f"[POST /api/v1/{clinic.slug}/chat] Creating new conversation for user: {request.user_identifier}")
+        logger.info(
+            f"[POST /api/v1/{clinic.slug}/chat] Creating new conversation for user: {request.user_identifier}"
+        )
         conversation = await history_manager.create_conversation(
             clinic_id=clinic.id,
             channel="chat",
@@ -246,7 +252,9 @@ async def clinic_chat(
 
     try:
         # Run agent with full session history (up to conversation_max_history messages)
-        logger.info(f"[POST /api/v1/{clinic.slug}/chat] Running FAQ agent - History: {len(session.message_history)} messages, Conversation: {conversation_id}")
+        logger.info(
+            f"[POST /api/v1/{clinic.slug}/chat] Running FAQ agent - History: {len(session.message_history)} messages, Conversation: {conversation_id}"
+        )
         result = await faq_agent.run(
             user_input=request.message,
             deps=deps,
@@ -342,15 +350,15 @@ async def get_clinic_chat_history(
         HTTPException 400: If limit exceeds maximum
     """
     # Validate limit
-    if limit > 200:
+    if limit > settings.message_history_max_limit:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Limit cannot exceed 200 messages",
+            detail=f"Limit cannot exceed {settings.message_history_max_limit} messages",
         )
-    if limit < 1:
+    if limit < settings.message_history_min_limit:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Limit must be at least 1",
+            detail=f"Limit must be at least {settings.message_history_min_limit}",
         )
 
     history_manager = HistoryManager(db)
@@ -431,7 +439,8 @@ async def get_clinic_ai_info(
             "Pet care advice",
         ],
         "personality": voice_settings.get(
-            "chatbot_persona", voice_settings.get("personality", "friendly and professional")
+            "chatbot_persona",
+            voice_settings.get("personality", "friendly and professional"),
         ),
         "available_channels": ["chat", "voice"] if clinic.voice_enabled else ["chat"],
         # Contact information

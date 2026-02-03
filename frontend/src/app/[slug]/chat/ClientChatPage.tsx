@@ -1,12 +1,31 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Chatbot from "@/components/Chatbot";
 import type { ClinicPublicInfo } from "@/types/chat";
 
 interface ClientChatPageProps {
   slug: string;
   clinicInfo: ClinicPublicInfo;
+}
+
+/**
+ * Get or create a unique user identifier for anonymous users
+ */
+function getOrCreateUserIdentifier(slug: string): string {
+  if (typeof window === "undefined") {
+    return "";
+  }
+
+  const storageKey = `pawpoint_user_${slug}`;
+  let identifier = localStorage.getItem(storageKey);
+
+  if (!identifier) {
+    identifier = `anon_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+    localStorage.setItem(storageKey, identifier);
+  }
+
+  return identifier;
 }
 
 /**
@@ -17,21 +36,8 @@ export default function ClientChatPage({
   slug,
   clinicInfo,
 }: ClientChatPageProps) {
-  const [userIdentifier, setUserIdentifier] = useState<string>("");
-
-  useEffect(() => {
-    // Generate or retrieve a unique identifier for this user
-    const storageKey = `pawpoint_user_${slug}`;
-    let identifier = localStorage.getItem(storageKey);
-
-    if (!identifier) {
-      // Generate a new unique identifier
-      identifier = `anon_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-      localStorage.setItem(storageKey, identifier);
-    }
-
-    setUserIdentifier(identifier);
-  }, [slug]);
+  // Initialize state lazily to avoid useEffect + setState pattern
+  const [userIdentifier] = useState(() => getOrCreateUserIdentifier(slug));
 
   // Don't render until we have a user identifier
   if (!userIdentifier) {

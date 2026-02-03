@@ -11,7 +11,7 @@ export default function NotFound() {
           Clinic not found
         </p>
         <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-500">
-          The clinic you're looking for doesn't exist or is no longer active.
+          The clinic you&apos;re looking for doesn&apos;t exist or is no longer active.
         </p>
         <Link
           href="/"

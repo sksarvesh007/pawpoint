@@ -31,7 +31,9 @@ class SessionManager:
         """
         self.redis = redis_client
         self.ttl_seconds = settings.conversation_session_ttl_seconds
-        self.key_prefix = "conversation:session:"
+        self.ttl_extension = settings.conversation_session_ttl_extension
+        self.key_prefix = settings.redis_key_prefix_session
+        self.clinic_sessions_prefix = settings.redis_key_prefix_clinic_sessions
 
     def _get_key(self, conversation_id: UUID | str) -> str:
         """Generate Redis key for a conversation session.
@@ -43,6 +45,17 @@ class SessionManager:
             Redis key string
         """
         return f"{self.key_prefix}{conversation_id}"
+
+    def _get_clinic_sessions_key(self, clinic_id: UUID | str) -> str:
+        """Generate Redis key for a clinic's active sessions set.
+
+        Args:
+            clinic_id: Clinic UUID
+
+        Returns:
+            Redis key string
+        """
+        return self.clinic_sessions_prefix.format(clinic_id=clinic_id)
 
     async def create_session(self, session: ConversationSession) -> None:
         """Create a new conversation session in Redis.
@@ -64,10 +77,10 @@ class SessionManager:
         )
 
         # Add to clinic's active sessions set for fast counting
-        clinic_set_key = f"clinic:{session.context.clinic_id}:active_sessions"
+        clinic_set_key = self._get_clinic_sessions_key(session.context.clinic_id)
         await self.redis.sadd(clinic_set_key, str(session.conversation_id))  # type: ignore[misc]
         # Set expiration on the set (slightly longer than session TTL)
-        await self.redis.expire(clinic_set_key, self.ttl_seconds + 300)
+        await self.redis.expire(clinic_set_key, self.ttl_seconds + self.ttl_extension)
 
     async def get_session(
         self, conversation_id: UUID | str
@@ -88,10 +101,6 @@ class SessionManager:
 
         if not session_json:
             return None
-
-        # Decode bytes to string if needed
-        if isinstance(session_json, bytes):
-            session_json = session_json.decode("utf-8")
 
         return ConversationSession.model_validate_json(session_json)
 
@@ -168,7 +177,7 @@ class SessionManager:
 
         # Remove from clinic's active sessions set
         if session:
-            clinic_set_key = f"clinic:{session.context.clinic_id}:active_sessions"
+            clinic_set_key = self._get_clinic_sessions_key(session.context.clinic_id)
             await self.redis.srem(clinic_set_key, str(conversation_id))  # type: ignore[misc]
 
         return deleted_count > 0
@@ -198,7 +207,7 @@ class SessionManager:
     async def get_active_sessions_count(self, clinic_id: UUID | str) -> int:
         """Get count of active sessions for a clinic.
 
-        Uses Redis sets for O(1) counting instead of scanning all keys.
+        Validates each session in the set still exists, removing stale entries.
 
         Args:
             clinic_id: Clinic UUID
@@ -209,9 +218,29 @@ class SessionManager:
         Raises:
             Redis connection errors
         """
-        clinic_set_key = f"clinic:{clinic_id}:active_sessions"
-        count = await self.redis.scard(clinic_set_key)  # type: ignore[misc]
-        return count or 0
+        clinic_set_key = self._get_clinic_sessions_key(clinic_id)
+        session_ids = await self.redis.smembers(clinic_set_key)  # type: ignore[misc]
+
+        if not session_ids:
+            return 0
+
+        # Validate each session still exists and remove stale entries
+        active_count = 0
+        stale_ids: list[str] = []
+
+        for session_id in session_ids:
+            key = self._get_key(session_id)
+            exists = await self.redis.exists(key)
+            if exists:
+                active_count += 1
+            else:
+                stale_ids.append(session_id)
+
+        # Remove stale session IDs from the set
+        if stale_ids:
+            await self.redis.srem(clinic_set_key, *stale_ids)  # type: ignore[misc]
+
+        return active_count
 
     async def cleanup_expired_sessions(self) -> int:
         """Clean up any expired sessions (Redis handles this automatically).

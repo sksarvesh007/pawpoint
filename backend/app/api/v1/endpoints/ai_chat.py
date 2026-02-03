@@ -4,7 +4,8 @@ Simple REST endpoint to test FAQ agent and conversation flow.
 """
 
 from datetime import UTC, datetime, timedelta
-from uuid import UUID, uuid4
+from typing import Any
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
@@ -147,8 +148,9 @@ async def send_chat_message(
     session.add_message(user_message)
 
     # Fetch clinic data for dynamic prompt
-    from app.models.clinic import Clinic
     from sqlalchemy import select
+
+    from app.models.clinic import Clinic
 
     stmt = select(Clinic).where(Clinic.id == request.clinic_id)
     result = await db.execute(stmt)
@@ -166,7 +168,9 @@ async def send_chat_message(
         "phone": clinic.phone,
         "email": clinic.email,
         "website": clinic.website,
-        "address": f"{clinic.address_line1 or ''}, {clinic.city or ''}, {clinic.state or ''} {clinic.postal_code or ''}".strip(", "),
+        "address": f"{clinic.address_line1 or ''}, {clinic.city or ''}, {clinic.state or ''} {clinic.postal_code or ''}".strip(
+            ", "
+        ),
         "city": clinic.city,
         "state": clinic.state,
         "timezone": clinic.timezone,
@@ -200,7 +204,9 @@ async def send_chat_message(
         )
 
         # Extract response
-        assistant_response = str(result.output) if hasattr(result, "output") else str(result)
+        assistant_response = (
+            str(result.output) if hasattr(result, "output") else str(result)
+        )
 
         # Get usage info if available
         tokens_used = None
@@ -237,19 +243,19 @@ async def send_chat_message(
         await db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error processing chat: {str(e)}",
+            detail=f"Error processing chat: {e!s}",
         ) from e
 
 
 @router.get(
     "/history/{conversation_id}",
-    response_model=list[dict],
+    response_model=list[dict[str, Any]],
     status_code=status.HTTP_200_OK,
 )
 async def get_chat_history(
     conversation_id: UUID,
     db: AsyncSession = Depends(get_session),
-) -> list[dict]:
+) -> list[dict[str, Any]]:
     """Get conversation history.
 
     Args:

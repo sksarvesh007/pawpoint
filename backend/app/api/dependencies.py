@@ -3,21 +3,14 @@
 Provides reusable dependencies for extracting clinic context from URL slugs.
 """
 
-from functools import lru_cache
 from typing import Annotated
 
 from fastapi import Depends, HTTPException, Path, status
-from redis.asyncio import Redis
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.redis import get_redis
 from app.db import get_db as get_session
 from app.models.clinic import Clinic
-
-
-# Cache clinic slugs to reduce database queries
-_clinic_slug_cache: dict[str, Clinic] = {}
 
 
 async def get_clinic_by_slug(
@@ -55,13 +48,6 @@ async def get_clinic_by_slug(
             # clinic is automatically loaded from slug
             return {"clinic": clinic.name}
     """
-    # Check cache first (optional optimization) - DISABLED due to detached instance issues
-    # if clinic_slug in _clinic_slug_cache:
-    #     cached_clinic = _clinic_slug_cache[clinic_slug]
-    #     if cached_clinic.is_active:
-    #         return cached_clinic
-
-    # Query database
     stmt = select(Clinic).where(
         Clinic.slug == clinic_slug,
         Clinic.is_active == True,  # noqa: E712
@@ -77,27 +63,7 @@ async def get_clinic_by_slug(
             detail=f"Clinic '{clinic_slug}' not found or inactive",
         )
 
-    # Cache for future requests (DISABLED - causes detached instance issues)
-    # _clinic_slug_cache[clinic_slug] = clinic
-
     return clinic
-
-
-def invalidate_clinic_cache(clinic_slug: str) -> None:
-    """Invalidate cached clinic data.
-
-    Call this when a clinic is updated.
-
-    Args:
-        clinic_slug: Clinic slug to invalidate
-    """
-    if clinic_slug in _clinic_slug_cache:
-        del _clinic_slug_cache[clinic_slug]
-
-
-def clear_clinic_cache() -> None:
-    """Clear entire clinic cache."""
-    _clinic_slug_cache.clear()
 
 
 # Type alias for cleaner annotations

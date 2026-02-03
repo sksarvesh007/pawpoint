@@ -12,6 +12,8 @@ Usage:
     PYTHONPATH=. uv run python scripts/regenerate_clinic_slugs.py --dry-run  # Preview changes
 """
 
+# ruff: noqa: T201, S311 - CLI script uses print and non-crypto random for slug generation
+
 import argparse
 import asyncio
 import random
@@ -30,19 +32,77 @@ def generate_random_slug() -> str:
     Example: sunny-dolphin-482
     """
     adjectives = [
-        "sunny", "happy", "bright", "swift", "calm", "gentle", "lucky",
-        "clever", "noble", "brave", "kind", "wise", "warm", "cool",
-        "fresh", "pure", "true", "bold", "fair", "keen", "active",
-        "quiet", "golden", "silver", "cosmic", "ocean", "sky", "royal",
-        "elegant", "modern", "classic", "prime", "stellar", "vibrant",
+        "sunny",
+        "happy",
+        "bright",
+        "swift",
+        "calm",
+        "gentle",
+        "lucky",
+        "clever",
+        "noble",
+        "brave",
+        "kind",
+        "wise",
+        "warm",
+        "cool",
+        "fresh",
+        "pure",
+        "true",
+        "bold",
+        "fair",
+        "keen",
+        "active",
+        "quiet",
+        "golden",
+        "silver",
+        "cosmic",
+        "ocean",
+        "sky",
+        "royal",
+        "elegant",
+        "modern",
+        "classic",
+        "prime",
+        "stellar",
+        "vibrant",
     ]
 
     nouns = [
-        "dolphin", "eagle", "fox", "owl", "wolf", "hawk", "lion",
-        "tiger", "bear", "deer", "swan", "dove", "falcon", "raven",
-        "phoenix", "dragon", "unicorn", "pegasus", "griffin", "lotus",
-        "willow", "maple", "cedar", "oak", "pine", "river", "mountain",
-        "valley", "meadow", "forest", "ocean", "harbor", "summit", "peak",
+        "dolphin",
+        "eagle",
+        "fox",
+        "owl",
+        "wolf",
+        "hawk",
+        "lion",
+        "tiger",
+        "bear",
+        "deer",
+        "swan",
+        "dove",
+        "falcon",
+        "raven",
+        "phoenix",
+        "dragon",
+        "unicorn",
+        "pegasus",
+        "griffin",
+        "lotus",
+        "willow",
+        "maple",
+        "cedar",
+        "oak",
+        "pine",
+        "river",
+        "mountain",
+        "valley",
+        "meadow",
+        "forest",
+        "ocean",
+        "harbor",
+        "summit",
+        "peak",
     ]
 
     adjective = random.choice(adjectives)
@@ -116,15 +176,13 @@ async def regenerate_all_slugs(dry_run: bool = False) -> None:
             return
 
         # Confirm before proceeding
-        response = input(
-            f"\nUpdate {len(updates)} clinic slug(s)? (yes/no): "
-        ).lower()
+        response = input(f"\nUpdate {len(updates)} clinic slug(s)? (yes/no): ").lower()
         if response != "yes":
             print("Cancelled.")
             return
 
         # Apply updates
-        for clinic, old_slug, new_slug in updates:
+        for clinic, _old_slug, new_slug in updates:
             clinic.slug = new_slug
 
         await db.commit()

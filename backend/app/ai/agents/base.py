@@ -4,10 +4,8 @@ All specialized agents inherit from this base to get consistent setup.
 """
 
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Protocol
 from uuid import UUID
-
-from typing import Protocol
 
 from pydantic_ai import Agent, RunContext
 from redis.asyncio import Redis
@@ -18,9 +16,22 @@ from app.ai.state import HistoryManager, SessionManager
 
 # Simple PIMS adapter protocol (actual implementation in Phase 2)
 class IPIMSAdapter(Protocol):
-    """Protocol for PIMS adapter interface."""
+    """Protocol for PIMS adapter interface.
 
-    pass
+    This is a placeholder protocol for PIMS (Practice Information Management System)
+    integration. Concrete implementations will be added in Phase 2 for:
+    - ezyVet
+    - Vetspire
+    - Other PIMS providers
+
+    Methods to be added:
+    - get_patient(patient_id: str) -> Patient
+    - get_appointment(appointment_id: str) -> Appointment
+    - create_appointment(...) -> Appointment
+    - get_available_slots(...) -> list[TimeSlot]
+    """
+
+    ...
 
 
 @dataclass
@@ -98,14 +109,14 @@ class BaseAgent:
         self,
         user_input: str,
         deps: AgentDependencies,
-        message_history: list | None = None,
+        message_history: Any = None,
     ) -> Any:
         """Run the agent with user input.
 
         Args:
             user_input: User message/query
             deps: Agent dependencies
-            message_history: Optional conversation history
+            message_history: Optional conversation history (list of message dicts or ModelMessage objects)
 
         Returns:
             Agent result
@@ -113,21 +124,21 @@ class BaseAgent:
         return await self.agent.run(
             user_input,
             deps=deps,
-            message_history=message_history or [],
+            message_history=message_history,
         )
 
     async def run_sync_wrapper(
         self,
         user_input: str,
         deps: AgentDependencies,
-        message_history: list | None = None,
+        message_history: Any = None,
     ) -> Any:
         """Synchronous wrapper for running agent (for testing).
 
         Args:
             user_input: User message/query
             deps: Agent dependencies
-            message_history: Optional conversation history
+            message_history: Optional conversation history (list of message dicts or ModelMessage objects)
 
         Returns:
             Agent result
@@ -135,7 +146,7 @@ class BaseAgent:
         return self.agent.run_sync(
             user_input,
             deps=deps,
-            message_history=message_history or [],
+            message_history=message_history,
         )
 
 
@@ -153,8 +164,9 @@ async def get_clinic_info(ctx: RunContext[AgentDependencies]) -> dict[str, Any]:
     Returns:
         Dictionary with clinic information
     """
-    from app.models.clinic import Clinic
     from sqlalchemy import select
+
+    from app.models.clinic import Clinic
 
     stmt = select(Clinic).where(Clinic.id == ctx.deps.clinic_id)
     result = await ctx.deps.db_session.execute(stmt)
@@ -174,7 +186,9 @@ async def get_clinic_info(ctx: RunContext[AgentDependencies]) -> dict[str, Any]:
     }
 
 
-async def get_conversation_context(ctx: RunContext[AgentDependencies]) -> dict:
+async def get_conversation_context(
+    ctx: RunContext[AgentDependencies],
+) -> dict[str, Any]:
     """Get current conversation context from Redis.
 
     Args:
@@ -192,7 +206,7 @@ async def get_conversation_context(ctx: RunContext[AgentDependencies]) -> dict:
 
 
 async def update_conversation_context(
-    ctx: RunContext[AgentDependencies], context_updates: dict
+    ctx: RunContext[AgentDependencies], context_updates: dict[str, Any]
 ) -> bool:
     """Update conversation context.
 
@@ -211,8 +225,19 @@ async def update_conversation_context(
     # Update in Redis session
     session = await ctx.deps.session_manager.get_session(ctx.deps.conversation_id)
     if session:
+        # Only update known fields on ConversationContext, store others in metadata
+        known_fields = {
+            "current_agent",
+            "intent",
+            "patient_id",
+            "appointment_id",
+        }
         for key, value in context_updates.items():
-            setattr(session.context, key, value)
+            if key in known_fields:
+                setattr(session.context, key, value)
+            else:
+                # Store unknown keys in metadata
+                session.context.metadata[key] = value
         await ctx.deps.session_manager.update_session(session)
 
     return True

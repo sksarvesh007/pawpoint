@@ -5,10 +5,11 @@ require a real clinic in the database. Uses hardcoded demo clinic data.
 """
 
 import json
-from typing import AsyncIterator
+from collections.abc import AsyncIterator
 
 from fastapi import APIRouter, status
 from fastapi.responses import StreamingResponse
+from httpx import HTTPStatusError
 from pydantic import BaseModel, Field
 
 from app.ai.models.factory import ModelFactory
@@ -106,11 +107,24 @@ async def stream_demo_response(
         # Send completion
         yield f"data: {json.dumps({'type': 'done', 'tokens_used': 0})}\n\n"
 
+    except HTTPStatusError as e:
+        # HTTP errors (429 rate limit, etc.)
+        if e.response.status_code == 429:
+            friendly_message = (
+                "Our AI assistant is currently busy. Please try again in a minute! 🐾"
+            )
+            yield f"data: {json.dumps({'type': 'token', 'content': friendly_message})}\n\n"
+            yield f"data: {json.dumps({'type': 'done', 'tokens_used': 0})}\n\n"
+        else:
+            yield f"data: {json.dumps({'type': 'error', 'message': 'Something went wrong. Please try again later.'})}\n\n"
+
     except Exception as e:
-        error_str = str(e).lower()
-        # Handle rate limit / quota exceeded errors gracefully
-        if "429" in str(e) or "quota" in error_str or "rate" in error_str or "resource_exhausted" in error_str:
-            friendly_message = "Our AI assistant is currently busy. Please try again in a minute! 🐾"
+        # Check for rate limit indicators in exception (Google API, OpenAI, etc.)
+        error_type = type(e).__name__
+        if error_type == "ResourceExhausted" or "rate" in error_type.lower():
+            friendly_message = (
+                "Our AI assistant is currently busy. Please try again in a minute! 🐾"
+            )
             yield f"data: {json.dumps({'type': 'token', 'content': friendly_message})}\n\n"
             yield f"data: {json.dumps({'type': 'done', 'tokens_used': 0})}\n\n"
         else:

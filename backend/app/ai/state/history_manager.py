@@ -184,15 +184,13 @@ class HistoryManager:
         Raises:
             SQLAlchemy errors
         """
-        stmt = (
-            select(Conversation)
-            .where(Conversation.clinic_id == clinic_id)
-            .order_by(Conversation.updated_at.desc())
-            .limit(limit)
-        )
+        stmt = select(Conversation).where(Conversation.clinic_id == clinic_id)
 
+        # Apply channel filter before ordering and limiting
         if channel:
             stmt = stmt.where(Conversation.channel == channel)
+
+        stmt = stmt.order_by(Conversation.updated_at.desc()).limit(limit)
 
         result = await self.db.execute(stmt)
         return result.scalars().all()

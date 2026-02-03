@@ -128,9 +128,8 @@ class Message(Base, TimestampMixin):
     def __repr__(self) -> str:
         """String representation of message."""
         content_preview = (
-            self.content[:50] + "..." if self.content and len(self.content) > 50 else self.content
+            self.content[:50] + "..."
+            if self.content and len(self.content) > 50
+            else self.content
         )
-        return (
-            f"<Message(id={self.id}, role={self.role}, "
-            f"content='{content_preview}')>"
-        )
+        return f"<Message(id={self.id}, role={self.role}, content='{content_preview}')>"

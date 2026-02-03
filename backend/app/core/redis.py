@@ -28,8 +28,8 @@ async def init_redis() -> None:
             settings.redis_url,
             encoding="utf-8",
             decode_responses=True,
-            socket_connect_timeout=5,
-            socket_timeout=5,
+            socket_connect_timeout=settings.redis_socket_connect_timeout,
+            socket_timeout=settings.redis_socket_timeout,
         )
         # Test connection
         try:
@@ -60,7 +60,7 @@ async def close_redis() -> None:
         _redis_client = None
 
 
-async def get_redis() -> AsyncGenerator[Redis, None]:
+async def get_redis() -> AsyncGenerator[Redis]:
     """Get Redis client for dependency injection.
 
     Usage:
@@ -76,8 +76,7 @@ async def get_redis() -> AsyncGenerator[Redis, None]:
     """
     if _redis_client is None:
         raise RuntimeError(
-            "Redis client not initialized. "
-            "Call init_redis() on application startup."
+            "Redis client not initialized. Call init_redis() on application startup."
         )
 
     yield _redis_client

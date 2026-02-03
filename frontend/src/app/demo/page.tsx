@@ -26,6 +26,7 @@ import {
   LogOut,
   X,
   ArrowLeft,
+  type LucideIcon,
 } from "lucide-react";
 
 type DemoTab =
@@ -37,6 +38,18 @@ type DemoTab =
   | "chat"
   | "reports"
   | "settings";
+
+interface NavItem {
+  id: DemoTab | null;
+  label: string;
+  icon: LucideIcon;
+  disabled?: boolean;
+}
+
+interface NavSection {
+  title: string | null;
+  items: NavItem[];
+}
 
 // Mock appointment requests data
 const MOCK_APPOINTMENTS = [
@@ -754,14 +767,20 @@ function ChatContent() {
       const decoder = new TextDecoder();
       let assistantMessage = "";
       let assistantMessageIndex = -1;
+      let buffer = ""; // Buffer for incomplete lines across chunks
 
       if (reader) {
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
 
-          const chunk = decoder.decode(value);
-          const lines = chunk.split("\n");
+          // Append decoded chunk to buffer
+          buffer += decoder.decode(value, { stream: true });
+
+          // Process complete lines (ending with \n)
+          const lines = buffer.split("\n");
+          // Keep the last incomplete line in the buffer
+          buffer = lines.pop() || "";
 
           for (const line of lines) {
             if (line.startsWith("data: ")) {
@@ -806,6 +825,18 @@ function ChatContent() {
                 throw parseErr;
               }
             }
+          }
+        }
+
+        // Process any remaining data in buffer after stream ends
+        if (buffer.startsWith("data: ")) {
+          try {
+            const data = JSON.parse(buffer.slice(6));
+            if (data.type === "error") {
+              throw new Error(data.message);
+            }
+          } catch {
+            // Ignore parse errors on final buffer
           }
         }
       }
@@ -1377,38 +1408,38 @@ function DemoSidebar({
   activeTab: DemoTab;
   onTabChange: (tab: DemoTab) => void;
 }) {
-  const navSections = [
+  const navSections: NavSection[] = [
     {
       title: null,
       items: [
-        { id: "dashboard" as DemoTab, label: "Home", icon: LayoutDashboard },
-        { id: "inbox" as DemoTab, label: "Inbox", icon: Inbox },
+        { id: "dashboard", label: "Home", icon: LayoutDashboard },
+        { id: "inbox", label: "Inbox", icon: Inbox },
       ],
     },
     {
       title: "APPLICATIONS",
       items: [
         {
-          id: "appointments" as DemoTab,
+          id: "appointments",
           label: "Appointments",
           icon: Calendar,
         },
-        { id: "patients" as DemoTab, label: "Patients", icon: PawPrint },
-        { id: "calls" as DemoTab, label: "Call Log", icon: Phone },
-        { id: "chat" as DemoTab, label: "Chat", icon: MessageCircle },
+        { id: "patients", label: "Patients", icon: PawPrint },
+        { id: "calls", label: "Call Log", icon: Phone },
+        { id: "chat", label: "Chat", icon: MessageCircle },
       ],
     },
     {
       title: "OTHERS",
       items: [
-        { id: "reports" as DemoTab, label: "Reports", icon: FileText },
+        { id: "reports", label: "Reports", icon: FileText },
         { id: null, label: "Widgets", icon: LayoutGrid, disabled: true },
       ],
     },
     {
       title: "SUPPORT",
       items: [
-        { id: "settings" as DemoTab, label: "Settings", icon: Settings },
+        { id: "settings", label: "Settings", icon: Settings },
         { id: null, label: "Security", icon: Shield, disabled: true },
         { id: null, label: "Help", icon: HelpCircle, disabled: true },
       ],

@@ -81,7 +81,9 @@ export default function DashboardPage() {
         // Reconnect after 5 seconds
         reconnectTimeoutRef.current = setTimeout(() => {
           if (mounted) {
-            console.log("Attempting to reconnect...");
+            if (process.env.NODE_ENV === "development") {
+              console.log("Attempting to reconnect...");
+            }
             connectToStream();
           }
         }, 5000);

@@ -16,16 +16,11 @@ import {
   MessageCircle,
   LogOut,
   Inbox,
-  Users,
-  Building2,
-  CalendarCheck,
   FileText,
-  CreditCard,
   LayoutGrid,
   HelpCircle,
   Shield,
 } from "lucide-react";
-import { Logo } from "@/components/Logo";
 import { getClinicInfo } from "@/lib/api/clinic";
 import { logout } from "@/lib/api/auth";
 
@@ -47,6 +42,7 @@ export function Sidebar({
   const [clinicName, setClinicName] = useState<string>("Loading...");
   const [clinicSlug, setClinicSlug] = useState<string>("");
   const [loggingOut, setLoggingOut] = useState(false);
+  const [logoutError, setLogoutError] = useState<string | null>(null);
 
   useEffect(() => {
     if (propClinicName) {
@@ -74,11 +70,13 @@ export function Sidebar({
 
   const handleLogout = async () => {
     setLoggingOut(true);
+    setLogoutError(null);
     try {
       await logout();
       router.push("/");
     } catch (error) {
       console.error("Logout failed:", error);
+      setLogoutError("Failed to log out. Please try again.");
       setLoggingOut(false);
     }
   };
@@ -234,6 +232,11 @@ export function Sidebar({
 
         {/* Bottom section - logout */}
         <div className="p-4 border-t border-white/30">
+          {logoutError && (
+            <div className="mb-2 px-3 py-2 bg-red-100 border border-red-200 rounded-lg">
+              <p className="text-xs text-red-700">{logoutError}</p>
+            </div>
+          )}
           <button
             onClick={handleLogout}
             disabled={loggingOut}

@@ -7,7 +7,7 @@ from datetime import UTC, datetime
 from typing import Any, Literal
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class ConversationContext(BaseModel):
@@ -32,14 +32,6 @@ class ConversationContext(BaseModel):
     # Flexible metadata
     metadata: dict[str, Any] = Field(default_factory=dict)
 
-    class Config:
-        """Pydantic config."""
-
-        json_encoders = {
-            UUID: str,
-            datetime: lambda v: v.isoformat(),
-        }
-
 
 class MessageData(BaseModel):
     """Individual message data for session cache."""
@@ -51,13 +43,6 @@ class MessageData(BaseModel):
     tool_calls: list[dict[str, Any]] | None = None
     tool_call_id: str | None = None
     timestamp: datetime = Field(default_factory=lambda: datetime.now(UTC))
-
-    class Config:
-        """Pydantic config."""
-
-        json_encoders = {
-            datetime: lambda v: v.isoformat(),
-        }
 
 
 class ConversationSession(BaseModel):
@@ -77,14 +62,6 @@ class ConversationSession(BaseModel):
     # Usage tracking
     total_messages: int = 0
     total_tokens: int = 0
-
-    class Config:
-        """Pydantic config."""
-
-        json_encoders = {
-            UUID: str,
-            datetime: lambda v: v.isoformat(),
-        }
 
     def add_message(self, message: MessageData, max_history: int = 20) -> None:
         """Add a message to the session history.
@@ -108,11 +85,8 @@ class ConversationSession(BaseModel):
 class UsageMetrics(BaseModel):
     """Token usage metrics for an LLM interaction."""
 
+    model_config = ConfigDict(frozen=True)
+
     prompt_tokens: int = 0
     completion_tokens: int = 0
     total_tokens: int = 0
-
-    class Config:
-        """Pydantic config."""
-
-        frozen = True

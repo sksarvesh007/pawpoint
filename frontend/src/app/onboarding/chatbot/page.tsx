@@ -66,7 +66,7 @@ export default function ChatbotOnboardingPage() {
     "hit by car",
   ]);
   const [newKeyword, setNewKeyword] = useState("");
-  const [emergencyMessage, setEmergencyMessage] = useState(
+  const [emergencyMessage, _setEmergencyMessage] = useState(
     "I'm transferring you to our emergency line right away."
   );
   const [allowBooking, setAllowBooking] = useState(true);
@@ -338,7 +338,7 @@ export default function ChatbotOnboardingPage() {
                 Set Up Your AI Assistant
               </h1>
               <p className="mt-2 text-sm text-zinc-600">
-                Let's configure your chatbot to provide the best experience for your clients
+                Let&apos;s configure your chatbot to provide the best experience for your clients
               </p>
             </div>
 
@@ -613,7 +613,7 @@ export default function ChatbotOnboardingPage() {
                 <div className="space-y-6 animate-fadeIn">
                   <div>
                     <h2 className="text-lg font-semibold text-[#1D3533] mb-2">
-                      Choose Your Chatbot's Personality
+                      Choose Your Chatbot&apos;s Personality
                     </h2>
                     <p className="text-sm text-zinc-600 mb-6">
                       Select the tone and style for your AI assistant

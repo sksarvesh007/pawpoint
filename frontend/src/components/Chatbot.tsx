@@ -4,6 +4,17 @@ import { useState, useEffect, useRef } from "react";
 import Markdown from "markdown-to-jsx";
 import type { ChatMessage } from "@/types/chat";
 import { env } from "@/lib/env";
+import {
+  FALLBACK_CLINIC_INFO,
+  DEFAULT_BUSINESS_HOURS,
+} from "@/lib/constants";
+
+/** Schedule entry for a single day's business hours */
+interface DaySchedule {
+  open?: string;
+  close?: string;
+  closed?: boolean;
+}
 
 interface ChatbotProps {
   clinicSlug: string;
@@ -17,7 +28,7 @@ interface ChatbotProps {
     city?: string;
     state?: string;
     zip_code?: string;
-    business_hours?: Record<string, any>;
+    business_hours?: Record<string, unknown>;
   };
 }
 
@@ -90,6 +101,7 @@ export default function Chatbot({
       const reader = response.body?.getReader();
       const decoder = new TextDecoder();
       let assistantMessage = "";
+      let buffer = ""; // Buffer for incomplete lines across chunks
       assistantMessageIndexRef.current = -1;
 
       if (reader) {
@@ -97,8 +109,13 @@ export default function Chatbot({
           const { done, value } = await reader.read();
           if (done) break;
 
-          const chunk = decoder.decode(value);
-          const lines = chunk.split("\n");
+          // Append decoded chunk to buffer
+          buffer += decoder.decode(value, { stream: true });
+
+          // Process complete lines (ending with \n)
+          const lines = buffer.split("\n");
+          // Keep the last incomplete line in the buffer
+          buffer = lines.pop() || "";
 
           for (const line of lines) {
             if (line.startsWith("data: ")) {
@@ -142,6 +159,18 @@ export default function Chatbot({
                 throw parseErr;
               }
             }
+          }
+        }
+
+        // Process any remaining data in buffer after stream ends
+        if (buffer.startsWith("data: ")) {
+          try {
+            const data = JSON.parse(buffer.slice(6));
+            if (data.type === "error") {
+              throw new Error(data.message);
+            }
+          } catch {
+            // Ignore parse errors on final buffer
           }
         }
       }
@@ -200,7 +229,7 @@ export default function Chatbot({
               About This Chat
             </h2>
             <p className="text-sm text-zinc-600 leading-relaxed">
-              Chat with our AI assistant to schedule appointments, get information about our services, or ask questions about your pet's care.
+              Chat with our AI assistant to schedule appointments, get information about our services, or ask questions about your pet&apos;s care.
             </p>
           </div>
 
@@ -240,7 +269,7 @@ export default function Chatbot({
                 <div>
                   <p className="text-xs text-zinc-500 mb-0.5">Phone</p>
                   <p className="text-sm font-medium text-zinc-900">
-                    {clinicInfo?.phone || "(555) 123-4567"}
+                    {clinicInfo?.phone || FALLBACK_CLINIC_INFO.phone}
                   </p>
                 </div>
               </div>
@@ -262,7 +291,7 @@ export default function Chatbot({
                 <div>
                   <p className="text-xs text-zinc-500 mb-0.5">Email</p>
                   <p className="text-sm font-medium text-zinc-900">
-                    {clinicInfo?.email || "contact@clinic.com"}
+                    {clinicInfo?.email || FALLBACK_CLINIC_INFO.email}
                   </p>
                 </div>
               </div>
@@ -296,7 +325,7 @@ export default function Chatbot({
                         {clinicInfo.city}, {clinicInfo.state} {clinicInfo.zip_code}
                       </>
                     ) : (
-                      <>123 Main Street<br />City, State 12345</>
+                      <>{FALLBACK_CLINIC_INFO.address}<br />{FALLBACK_CLINIC_INFO.city}, {FALLBACK_CLINIC_INFO.state} {FALLBACK_CLINIC_INFO.zipCode}</>
                     )}
                   </p>
                 </div>
@@ -324,33 +353,36 @@ export default function Chatbot({
             </h2>
             <div className="space-y-2 p-3 rounded-lg bg-white/80 border border-zinc-200/60">
               {clinicInfo?.business_hours ? (
-                Object.entries(clinicInfo.business_hours).map(([day, schedule]: [string, any]) => (
-                  <div key={day} className="flex justify-between text-sm">
-                    <span className="text-zinc-600 capitalize">{day}</span>
-                    <span className="font-medium text-zinc-900">
-                      {schedule.closed ? (
-                        "Closed"
-                      ) : (
-                        <>
-                          {schedule.open} - {schedule.close}
-                        </>
-                      )}
-                    </span>
-                  </div>
-                ))
+                Object.entries(clinicInfo.business_hours).map(([day, scheduleRaw]) => {
+                  const schedule = scheduleRaw as DaySchedule;
+                  return (
+                    <div key={day} className="flex justify-between text-sm">
+                      <span className="text-zinc-600 capitalize">{day}</span>
+                      <span className="font-medium text-zinc-900">
+                        {schedule.closed ? (
+                          "Closed"
+                        ) : (
+                          <>
+                            {schedule.open} - {schedule.close}
+                          </>
+                        )}
+                      </span>
+                    </div>
+                  );
+                })
               ) : (
                 <>
                   <div className="flex justify-between text-sm">
                     <span className="text-zinc-600">Mon - Fri</span>
-                    <span className="font-medium text-zinc-900">8:00 AM - 6:00 PM</span>
+                    <span className="font-medium text-zinc-900">{DEFAULT_BUSINESS_HOURS.weekdays}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-zinc-600">Saturday</span>
-                    <span className="font-medium text-zinc-900">9:00 AM - 4:00 PM</span>
+                    <span className="font-medium text-zinc-900">{DEFAULT_BUSINESS_HOURS.saturday}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-zinc-600">Sunday</span>
-                    <span className="font-medium text-zinc-900">Closed</span>
+                    <span className="font-medium text-zinc-900">{DEFAULT_BUSINESS_HOURS.sunday}</span>
                   </div>
                 </>
               )}

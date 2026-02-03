@@ -7,8 +7,6 @@ using the OpenAI Python client (Gemini via OpenAI-compatible API).
 from enum import Enum
 from typing import Literal
 
-from typing import Any
-
 from app.core.config import settings
 
 
@@ -81,7 +79,9 @@ class ModelFactory:
                 "Google API key not configured. Set GOOGLE_API_KEY in your .env file"
             )
 
-        model_name = model_name or settings.llm_voice_model or settings.llm_default_model
+        model_name = (
+            model_name or settings.llm_voice_model or settings.llm_default_model
+        )
         return f"google-gla:{model_name}"
 
     @classmethod
@@ -153,4 +153,3 @@ class ModelFactory:
 
         # Default: Use Gemini
         return cls.get_gemini_model(settings.llm_default_model)
-

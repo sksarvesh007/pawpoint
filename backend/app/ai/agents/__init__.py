@@ -4,8 +4,8 @@ from app.ai.agents.base import AgentDependencies, BaseAgent
 from app.ai.agents.faq_agent import FAQAgent, create_faq_agent
 
 __all__ = [
-    "BaseAgent",
     "AgentDependencies",
+    "BaseAgent",
     "FAQAgent",
     "create_faq_agent",
 ]

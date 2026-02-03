@@ -4,6 +4,8 @@ This shows how to set up voice_settings for a clinic, which will be used
 to generate dynamic system prompts for AI agents.
 """
 
+# ruff: noqa: T201 - CLI scripts need print statements for user output
+
 import asyncio
 from uuid import UUID
 
@@ -85,8 +87,9 @@ async def get_clinic_ai_settings(clinic_id: UUID | str) -> dict | None:
 # Example usage
 async def main() -> None:
     """Example: Configure AI settings for first clinic."""
-    from app.models.clinic import Clinic
     from sqlalchemy import select
+
+    from app.models.clinic import Clinic
 
     async with get_db_session() as db:
         # Get first clinic
