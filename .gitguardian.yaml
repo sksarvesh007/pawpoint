@@ -1,0 +1,10 @@
+# GitGuardian Configuration
+# https://docs.gitguardian.com/ggshield-docs/reference/gitguardian-yaml
+
+# Paths to ignore from scanning
+paths-ignore:
+  - "**/dev.env"
+  - "**/prod.env"
+  - "**/test.env"
+  - "**/*.env"
+  - "!**/*.env.example"
