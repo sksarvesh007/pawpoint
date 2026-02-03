@@ -1,6 +1,7 @@
 """Authentication endpoints for clinic registration and login."""
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
+from loguru import logger
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -67,6 +68,9 @@ async def register(
     Creates a new clinic and an admin user associated with it.
     Returns an access token for immediate authentication.
     """
+    logger.info(
+        f"[POST /api/v1/auth/register] Registration attempt for email: {body.email}, clinic: {body.clinic_name}"
+    )
     auth_service = AuthService(db)
 
     try:
@@ -77,7 +81,13 @@ async def register(
             admin_first_name=body.admin_first_name,
             admin_last_name=body.admin_last_name,
         )
+        logger.info(
+            f"[POST /api/v1/auth/register] Registration successful - Email: {body.email}, Clinic: {clinic.name}, Slug: {clinic.slug}"
+        )
     except ValueError as e:
+        logger.warning(
+            f"[POST /api/v1/auth/register] Registration failed - Email: {body.email}, Reason: {e!s}"
+        )
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e),
@@ -160,6 +170,7 @@ async def login(
 
     Validates credentials and returns an access token.
     """
+    logger.info(f"[POST /api/v1/auth/login] Login attempt - Email: {body.email}")
     auth_service = AuthService(db)
 
     try:
@@ -167,7 +178,13 @@ async def login(
             email=body.email,
             password=body.password,
         )
+        logger.info(
+            f"[POST /api/v1/auth/login] Login successful - Email: {body.email}, User: {user.first_name} {user.last_name}, Clinic: {clinic.name}"
+        )
     except ValueError as e:
+        logger.warning(
+            f"[POST /api/v1/auth/login] Login failed - Email: {body.email}, Reason: {e!s}"
+        )
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=str(e),
@@ -216,6 +233,9 @@ async def logout(response: Response) -> None:
 
     Clears the access token cookie.
     """
+    logger.info(
+        "[POST /api/v1/auth/logout] User logout - clearing authentication cookie"
+    )
     response.delete_cookie(
         key="access_token",
         httponly=True,

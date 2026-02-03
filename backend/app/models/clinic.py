@@ -18,6 +18,7 @@ from app.models.base import Base, SoftDeleteMixin, TimestampMixin
 if TYPE_CHECKING:
     from app.models.appointment import Appointment
     from app.models.call_log import CallLog
+    from app.models.conversation import Conversation
     from app.models.patient import Patient
     from app.models.pims_sync_log import PIMSSyncLog
     from app.models.provider import Provider
@@ -180,6 +181,11 @@ class Clinic(Base, TimestampMixin, SoftDeleteMixin):
         cascade="all, delete-orphan",
     )
     sync_logs: Mapped[list["PIMSSyncLog"]] = relationship(
+        back_populates="clinic",
+        lazy="noload",  # Large collection - load explicitly with filters
+        cascade="all, delete-orphan",
+    )
+    conversations: Mapped[list["Conversation"]] = relationship(
         back_populates="clinic",
         lazy="noload",  # Large collection - load explicitly with filters
         cascade="all, delete-orphan",

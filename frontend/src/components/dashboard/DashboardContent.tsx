@@ -170,7 +170,7 @@ function PIMSStatusCard({
         {pims.last_sync_at && (
           <div className="pt-4 border-t border-zinc-200">
             <p className="text-xs text-zinc-500 font-medium">Last Sync</p>
-            <p className="text-sm font-bold text-zinc-900 mt-1">
+            <p className="text-sm font-bold text-zinc-900 mt-1" suppressHydrationWarning>
               {new Date(pims.last_sync_at).toLocaleString("en-US", {
                 month: "short",
                 day: "numeric",

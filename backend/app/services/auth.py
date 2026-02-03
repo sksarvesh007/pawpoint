@@ -1,11 +1,10 @@
 """Authentication service for clinic registration and login."""
 
 import asyncio
-import random
-import re
-import uuid
+import secrets
 from uuid import UUID
 
+from loguru import logger
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -48,6 +47,7 @@ class AuthService:
         # Check if email already exists
         existing_user = await self.db.execute(select(User).where(User.email == email))
         if existing_user.scalar_one_or_none():
+            logger.warning(f"Registration attempt with existing email: {email}")
             # Generic error message to prevent username enumeration
             raise ValueError(
                 "Registration failed. Please check your information and try again."
@@ -135,11 +135,16 @@ class AuthService:
         # Check all conditions together at the end
         if not user or not user.password_hash or not password_valid:
             # Add a small random delay to further mask timing differences
-            await asyncio.sleep(random.uniform(0.05, 0.15))  # noqa: S311
+            await asyncio.sleep(secrets.SystemRandom().uniform(0.05, 0.15))
+            if not user:
+                logger.warning(f"Login failed: User not found for email {email}")
+            elif not password_valid:
+                logger.warning(f"Login failed: Invalid password for email {email}")
             raise ValueError("Invalid email or password")
 
         # Get user's clinic (first one for now)
         if not user.clinics:
+            logger.error(f"Login failed: User {email} has no associated clinic")
             raise ValueError("User has no associated clinic")
 
         clinic = user.clinics[0]
@@ -164,21 +169,95 @@ class AuthService:
         return result.scalar_one_or_none()
 
     def _generate_slug(self, name: str) -> str:
-        """Generate a URL-friendly slug from a name."""
-        # Convert to lowercase and replace spaces with hyphens
-        slug = name.lower().strip()
-        # Remove special characters
-        slug = re.sub(r"[^a-z0-9\s-]", "", slug)
-        # Replace spaces with hyphens
-        slug = re.sub(r"\s+", "-", slug)
-        # Remove multiple consecutive hyphens
-        slug = re.sub(r"-+", "-", slug)
-        # Remove leading/trailing hyphens
-        slug = slug.strip("-")
+        """Generate a unique, random slug (not based on clinic name).
 
-        # If slug is empty or too short after processing, generate a default
-        if not slug or len(slug) < 2:
-            slug = f"clinic-{str(uuid.uuid4())[:8]}"
+        Format: {adjective}-{noun}-{3-digit-number}
+        Example: sunny-dolphin-482
+
+        This creates memorable but unpredictable slugs that don't reveal
+        the clinic name, improving privacy and professionalism.
+        """
+        # Word lists for generating memorable slugs
+        adjectives = [
+            "sunny",
+            "happy",
+            "bright",
+            "swift",
+            "calm",
+            "gentle",
+            "lucky",
+            "clever",
+            "noble",
+            "brave",
+            "kind",
+            "wise",
+            "warm",
+            "cool",
+            "fresh",
+            "pure",
+            "true",
+            "bold",
+            "fair",
+            "keen",
+            "active",
+            "quiet",
+            "golden",
+            "silver",
+            "cosmic",
+            "ocean",
+            "sky",
+            "royal",
+            "elegant",
+            "modern",
+            "classic",
+            "prime",
+            "stellar",
+            "vibrant",
+        ]
+
+        nouns = [
+            "dolphin",
+            "eagle",
+            "fox",
+            "owl",
+            "wolf",
+            "hawk",
+            "lion",
+            "tiger",
+            "bear",
+            "deer",
+            "swan",
+            "dove",
+            "falcon",
+            "raven",
+            "phoenix",
+            "dragon",
+            "unicorn",
+            "pegasus",
+            "griffin",
+            "lotus",
+            "willow",
+            "maple",
+            "cedar",
+            "oak",
+            "pine",
+            "river",
+            "mountain",
+            "valley",
+            "meadow",
+            "forest",
+            "ocean",
+            "harbor",
+            "summit",
+            "peak",
+        ]
+
+        # Generate random slug: adjective-noun-number
+        adjective = secrets.choice(adjectives)
+        noun = secrets.choice(nouns)
+        number = secrets.randbelow(900) + 100  # Random number between 100-999
+
+        slug = f"{adjective}-{noun}-{number}"
 
         return slug
 

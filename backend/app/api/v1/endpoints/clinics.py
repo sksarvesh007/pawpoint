@@ -42,6 +42,7 @@ async def get_clinic_info(
         id=str(current_clinic.id),
         name=current_clinic.name,
         email=current_clinic.email,
+        slug=current_clinic.slug,
     )
 
 
@@ -89,11 +90,13 @@ async def get_chatbot_settings(
 
     # Build response from settings dict
     return ChatbotSettingsResponse(
+        chatbot_name=settings.get("chatbot_name"),
         chatbot_persona=settings.get("chatbot_persona", "professional"),
         greeting_message=settings.get(
             "greeting_message",
             f"Thank you for calling {current_clinic.name}. How can I help you today?",
         ),
+        additional_context=settings.get("additional_context"),
         voice_enabled=settings.get("voice_enabled", False),
         emergency_handling=EmergencyHandlingSettings(
             **settings.get("emergency_handling", {})
@@ -102,6 +105,14 @@ async def get_chatbot_settings(
             **settings.get("appointment_preferences", {})
         ),
         clinic_name=settings.get("clinic_name", current_clinic.name),
+        # Contact information
+        phone=settings.get("phone"),
+        email=settings.get("email"),
+        address=settings.get("address"),
+        city=settings.get("city"),
+        state=settings.get("state"),
+        zip_code=settings.get("zip_code"),
+        business_hours=settings.get("business_hours"),
     )
 
 
@@ -192,11 +203,13 @@ async def update_chatbot_settings(
     settings = await clinic_service.get_chatbot_settings(updated_clinic.id)
 
     return ChatbotSettingsResponse(
+        chatbot_name=settings.get("chatbot_name"),
         chatbot_persona=settings.get("chatbot_persona", "professional"),
         greeting_message=settings.get(
             "greeting_message",
             f"Thank you for calling {updated_clinic.name}. How can I help you today?",
         ),
+        additional_context=settings.get("additional_context"),
         voice_enabled=settings.get("voice_enabled", False),
         emergency_handling=EmergencyHandlingSettings(
             **settings.get("emergency_handling", {})
@@ -205,4 +218,12 @@ async def update_chatbot_settings(
             **settings.get("appointment_preferences", {})
         ),
         clinic_name=settings.get("clinic_name", updated_clinic.name),
+        # Contact information
+        phone=settings.get("phone"),
+        email=settings.get("email"),
+        address=settings.get("address"),
+        city=settings.get("city"),
+        state=settings.get("state"),
+        zip_code=settings.get("zip_code"),
+        business_hours=settings.get("business_hours"),
     )

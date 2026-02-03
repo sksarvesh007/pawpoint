@@ -19,6 +19,7 @@ export default function AISettingsPage() {
   const [greetingMessage, setGreetingMessage] = useState(
     "Thank you for calling our clinic. How can I help you and your pet today?"
   );
+  const [additionalContext, setAdditionalContext] = useState("");
   const [transferImmediately, setTransferImmediately] = useState(true);
   const [emergencyKeywords, setEmergencyKeywords] = useState<string[]>([
     "emergency",
@@ -80,6 +81,9 @@ export default function AISettingsPage() {
         }
         if (settings.greeting_message) {
           setGreetingMessage(settings.greeting_message);
+        }
+        if (settings.additional_context) {
+          setAdditionalContext(settings.additional_context);
         }
         if (settings.emergency_handling) {
           setTransferImmediately(
@@ -153,6 +157,7 @@ export default function AISettingsPage() {
       const settings: UpdateChatbotSettingsRequest = {
         chatbot_persona: chatbotPersona,
         greeting_message: greetingMessage.trim(),
+        additional_context: additionalContext.trim() || undefined,
         emergency_handling: {
           transfer_immediately: transferImmediately,
           keywords: emergencyKeywords,
@@ -282,6 +287,30 @@ export default function AISettingsPage() {
             <div className="mt-1 flex justify-between text-xs text-zinc-500">
               <span>This will be the first thing clients hear</span>
               <span>{greetingMessage.length}/500</span>
+            </div>
+          </div>
+
+          {/* Additional Context */}
+          <div>
+            <label
+              htmlFor="additionalContext"
+              className="block text-sm font-medium text-zinc-700"
+            >
+              Additional Information (Optional)
+            </label>
+            <textarea
+              id="additionalContext"
+              name="additionalContext"
+              value={additionalContext}
+              onChange={(e) => setAdditionalContext(e.target.value)}
+              rows={6}
+              maxLength={2000}
+              className="mt-2 block w-full rounded-lg border border-zinc-300 px-4 py-3 text-zinc-900 placeholder-zinc-400 focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
+              placeholder="Add any additional information about your clinic: specialties, policies, specific services, etc. This will help the AI provide more accurate responses."
+            />
+            <div className="mt-1 flex justify-between text-xs text-zinc-500">
+              <span>Include clinic-specific details for better AI responses</span>
+              <span>{additionalContext.length}/2000</span>
             </div>
           </div>
 

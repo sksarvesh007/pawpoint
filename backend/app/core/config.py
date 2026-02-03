@@ -181,8 +181,29 @@ class Settings(BaseSettings):
     # External APIs (Optional)
     # -------------------------------------------------------------------------
     openai_api_key: SecretStr | None = None
+    google_api_key: SecretStr | None = None  # For Gemini via Google AI Studio
+    google_vertex_project_id: str | None = None  # For Gemini via Vertex AI
+    google_vertex_region: str = "us-central1"  # Vertex AI region
     twilio_account_sid: str | None = None
     twilio_auth_token: SecretStr | None = None
+
+    # -------------------------------------------------------------------------
+    # AI / LLM Configuration
+    # -------------------------------------------------------------------------
+    # Default models for different tasks (Gemini-only setup)
+    llm_voice_model: str = "gemini-2.5-flash"  # Fast model for voice
+    llm_reasoning_model: str = "gemini-2.5-flash"  # Complex reasoning tasks
+    llm_default_model: str = "gemini-2.5-flash"  # Default for chat/email
+    llm_use_gemini_only: bool = True  # Set to False if using OpenAI too
+
+    # LLM Usage limits
+    llm_max_tokens: int = 4096  # Max tokens per request
+    llm_temperature: float = 0.7  # Default temperature
+    llm_timeout_seconds: int = 30  # Request timeout
+
+    # Conversation settings
+    conversation_session_ttl_seconds: int = 1800  # 30 minutes in Redis
+    conversation_max_history: int = 20  # Max messages to keep in active session
 
     # -------------------------------------------------------------------------
     # PIMS Integration (Optional)

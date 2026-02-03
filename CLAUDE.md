@@ -51,11 +51,25 @@ bun run lint                         # ESLint
 ### Docker & Observability
 
 ```bash
-docker compose up                    # Start all services (db, backend, observability)
-docker compose up backend            # Start backend + db
+# Start services
+docker compose up                    # Start all services (db, backend, frontend, observability)
+docker compose up backend frontend   # Start backend + frontend (app services only)
+docker compose up backend            # Start backend + db only
 docker compose up db                 # Start PostgreSQL only
-# PostgreSQL: localhost:5434, Grafana: localhost:3001 (admin/admin), Prometheus: localhost:9090
+
+# View logs with Lazydocker (recommended)
+lazydocker                           # Interactive TUI for all services
+# Install: brew install lazydocker
+
+# Service URLs
+# Backend API: http://localhost:8000
+# Frontend: http://localhost:3000
+# PostgreSQL: localhost:5434
+# Grafana: http://localhost:3001 (admin/admin)
+# Prometheus: http://localhost:9090
 ```
+
+**Lazydocker**: Interactive terminal UI for viewing logs, stats, and managing containers. Much easier than `docker compose logs -f`. Navigate with keyboard: ↑/↓ to select service, Enter to view logs, Ctrl+C to exit.
 
 ## Architecture
 

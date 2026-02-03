@@ -98,6 +98,49 @@ class AppointmentPreferences(BaseModel):
 class UpdateChatbotSettingsRequest(BaseModel):
     """Request schema for updating chatbot settings."""
 
+    # Contact Information
+    phone: str | None = Field(
+        None,
+        max_length=20,
+        description="Clinic phone number",
+    )
+    email: str | None = Field(
+        None,
+        max_length=255,
+        description="Clinic email address",
+    )
+    address: str | None = Field(
+        None,
+        max_length=255,
+        description="Street address",
+    )
+    city: str | None = Field(
+        None,
+        max_length=100,
+        description="City",
+    )
+    state: str | None = Field(
+        None,
+        max_length=100,
+        description="State",
+    )
+    zip_code: str | None = Field(
+        None,
+        max_length=20,
+        description="ZIP/Postal code",
+    )
+    business_hours: dict | None = Field(
+        None,
+        description="Business hours by day of week",
+    )
+
+    # Chatbot Settings
+    chatbot_name: str | None = Field(
+        None,
+        min_length=2,
+        max_length=50,
+        description="The name of the AI chatbot assistant",
+    )
     chatbot_persona: Literal["professional", "friendly", "empathetic", "warm"] = Field(
         ...,
         description="The personality/tone of the chatbot",
@@ -108,6 +151,11 @@ class UpdateChatbotSettingsRequest(BaseModel):
         max_length=500,
         description="Custom greeting message when chatbot answers calls",
     )
+    additional_context: str | None = Field(
+        None,
+        max_length=2000,
+        description="Extra information about the clinic to include in AI context (services, specialties, policies, etc.)",
+    )
     emergency_handling: EmergencyHandlingSettings | None = Field(
         None,
         description="Emergency detection and handling settings",
@@ -116,6 +164,28 @@ class UpdateChatbotSettingsRequest(BaseModel):
         None,
         description="Appointment booking preferences",
     )
+
+    @field_validator("chatbot_name")
+    @classmethod
+    def validate_chatbot_name(cls, v: str | None) -> str | None:
+        """Validate chatbot name for security and formatting."""
+        if v is None:
+            return v
+
+        # Strip excessive whitespace
+        v = " ".join(v.split())
+
+        # Check for HTML/script tags
+        if re.search(r"<[^>]+>", v):
+            raise ValueError("Chatbot name cannot contain HTML tags")
+
+        # Only allow safe characters (letters, spaces, hyphens)
+        if not re.match(r"^[A-Za-z\s\-]+$", v):
+            raise ValueError(
+                "Chatbot name can only contain letters, spaces, and hyphens"
+            )
+
+        return v if v else None
 
     @field_validator("greeting_message")
     @classmethod
@@ -130,16 +200,42 @@ class UpdateChatbotSettingsRequest(BaseModel):
 
         return v
 
+    @field_validator("additional_context")
+    @classmethod
+    def validate_additional_context(cls, v: str | None) -> str | None:
+        """Validate additional context for security."""
+        if v is None:
+            return v
+
+        # Strip excessive whitespace
+        v = " ".join(v.split())
+
+        # Check for HTML/script tags
+        if re.search(r"<[^>]+>", v):
+            raise ValueError("Additional context cannot contain HTML tags")
+
+        return v if v else None
+
 
 class ChatbotSettingsResponse(BaseModel):
     """Response schema for chatbot settings."""
 
+    chatbot_name: str | None = None
     chatbot_persona: str
     greeting_message: str
+    additional_context: str | None
     voice_enabled: bool
     emergency_handling: EmergencyHandlingSettings
     appointment_preferences: AppointmentPreferences
     clinic_name: str
+    # Contact information
+    phone: str | None = None
+    email: str | None = None
+    address: str | None = None
+    city: str | None = None
+    state: str | None = None
+    zip_code: str | None = None
+    business_hours: dict | None = None
 
     model_config = {"from_attributes": True}
 
@@ -150,5 +246,6 @@ class ClinicInfoResponse(BaseModel):
     id: str
     name: str
     email: str | None
+    slug: str
 
     model_config = {"from_attributes": True}

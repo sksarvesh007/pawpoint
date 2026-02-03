@@ -1,38 +1,42 @@
 /**
  * Demo dashboard page with mock data.
  * No authentication required - public showcase.
+ * Mirrors the exact same UI as the real dashboard with clickable tabs.
  */
 
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
+import Link from "next/link";
 import { DashboardContent } from "@/components/dashboard/DashboardContent";
 import { MOCK_ANALYTICS } from "@/components/dashboard/mockData";
-import { Navbar } from "@/components/Navbar";
-import { NAVBAR_HEIGHT } from "@/components/Logo";
+import { env } from "@/lib/env";
 import {
   LayoutDashboard,
   Calendar,
   PawPrint,
   Phone,
   Settings,
+  Inbox,
+  MessageCircle,
   FileText,
+  LayoutGrid,
+  Shield,
+  HelpCircle,
+  LogOut,
   X,
+  ArrowLeft,
 } from "lucide-react";
 
-type DemoTab = "dashboard" | "appointments" | "patients" | "calls" | "settings";
-
-const navItems = [
-  { id: "dashboard" as DemoTab, label: "Dashboard", icon: LayoutDashboard },
-  {
-    id: "appointments" as DemoTab,
-    label: "Appointment Requests",
-    icon: Calendar,
-  },
-  { id: "patients" as DemoTab, label: "Patients", icon: PawPrint },
-  { id: "calls" as DemoTab, label: "Call Log", icon: Phone },
-  { id: "settings" as DemoTab, label: "Settings", icon: Settings },
-];
+type DemoTab =
+  | "dashboard"
+  | "inbox"
+  | "appointments"
+  | "patients"
+  | "calls"
+  | "chat"
+  | "reports"
+  | "settings";
 
 // Mock appointment requests data
 const MOCK_APPOINTMENTS = [
@@ -146,13 +150,12 @@ const MOCK_PATIENTS = [
   },
 ];
 
-// Structured transcript format
+// Transcript type
 type TranscriptMessage = {
   speaker: "ai" | "caller" | "system";
   text: string;
   timestamp: string;
 };
-
 type CallWithTranscript = {
   id: number;
   phone: string;
@@ -161,11 +164,11 @@ type CallWithTranscript = {
   outcome: string;
   sentiment: string;
   time: string;
-  aiReceptionist?: string;
-  transcript?: TranscriptMessage[];
+  aiReceptionist: string;
+  transcript: TranscriptMessage[];
 };
 
-// Mock call logs data
+// Mock call logs data with transcripts
 const MOCK_CALLS: CallWithTranscript[] = [
   {
     id: 1,
@@ -202,75 +205,21 @@ const MOCK_CALLS: CallWithTranscript[] = [
         text: "Thank you, Sarah. And what is your dog's name?",
         timestamp: "0:21",
       },
-      {
-        speaker: "caller",
-        text: "His name is Buddy.",
-        timestamp: "0:25",
-      },
+      { speaker: "caller", text: "His name is Buddy.", timestamp: "0:25" },
       {
         speaker: "ai",
-        text: "Buddy — what a great name. And this visit is for a routine check-up, correct?",
+        text: "Buddy — what a great name. I've scheduled Buddy's check-up for March 3rd at 10:00 a.m. You'll receive a confirmation shortly.",
         timestamp: "0:28",
       },
       {
         speaker: "caller",
-        text: "Yes, just a regular check-up.",
-        timestamp: "0:35",
-      },
-      {
-        speaker: "ai",
-        text: "Perfect. Do you have a preferred date and time for Buddy's appointment?",
-        timestamp: "0:38",
-      },
-      {
-        speaker: "caller",
-        text: "Yes, I was hoping for March 3rd at 10:00 a.m.",
+        text: "That's perfect. Thank you!",
         timestamp: "0:45",
       },
       {
         speaker: "ai",
-        text: "Let me check on that for you… Great news — March 3rd at 10:00 a.m. is available.",
-        timestamp: "0:51",
-      },
-      {
-        speaker: "caller",
-        text: "That's perfect.",
-        timestamp: "1:00",
-      },
-      {
-        speaker: "ai",
-        text: "Wonderful. I've scheduled Buddy's check-up for March 3rd at 10:00 a.m. at PawPoint Animal Hospital. Before we finish, I can send you a confirmation by text message and email. Would you like me to do that?",
-        timestamp: "1:03",
-      },
-      {
-        speaker: "caller",
-        text: "Yes, that would be great.",
-        timestamp: "1:18",
-      },
-      {
-        speaker: "ai",
-        text: "Perfect. I've just sent a confirmation text message and email with Buddy's appointment details. You'll also receive reminders as the appointment gets closer.",
-        timestamp: "1:21",
-      },
-      {
-        speaker: "caller",
-        text: "Awesome, thank you.",
-        timestamp: "1:34",
-      },
-      {
-        speaker: "ai",
-        text: "You're very welcome, Sarah. If you need to make any changes or have questions before your visit, just give us a call. We look forward to seeing you and Buddy soon. Have a great day!",
-        timestamp: "1:37",
-      },
-      {
-        speaker: "caller",
-        text: "You too. Goodbye.",
-        timestamp: "1:52",
-      },
-      {
-        speaker: "ai",
-        text: "Goodbye!",
-        timestamp: "1:55",
+        text: "You're welcome, Sarah. We look forward to seeing you and Buddy soon. Have a great day!",
+        timestamp: "0:48",
       },
     ],
   },
@@ -286,88 +235,38 @@ const MOCK_CALLS: CallWithTranscript[] = [
     transcript: [
       {
         speaker: "ai",
-        text: "Thank you for calling PawPoint Animal Hospital. This is Ashley, the virtual receptionist. How can I help you today?",
+        text: "Thank you for calling PawPoint Animal Hospital. This is Ashley. How can I help you?",
         timestamp: "0:00",
       },
       {
         speaker: "caller",
-        text: "Hi, I'm new to the area and just wanted to confirm your business hours and location.",
+        text: "Hi, I'm new to the area and wanted to confirm your hours and location.",
         timestamp: "0:08",
       },
       {
         speaker: "ai",
-        text: "Welcome to the area — I'd be happy to help with that. Before we continue, may I have your name?",
+        text: "Welcome! We're located at 123 8th Ave in Sarasota. Our hours are Monday through Friday 8am to 5pm.",
         timestamp: "0:15",
       },
       {
         speaker: "caller",
-        text: "Sure, it's Mike Chen.",
-        timestamp: "0:22",
-      },
-      {
-        speaker: "ai",
-        text: "Thank you, Mike. And do you have a pet you'll be bringing in?",
-        timestamp: "0:25",
-      },
-      {
-        speaker: "caller",
-        text: "Yes, I have a cat named Whiskers.",
+        text: "That's really helpful, thank you.",
         timestamp: "0:30",
       },
       {
         speaker: "ai",
-        text: "Whiskers — that's a great name. Here are our details: PawPoint Animal Hospital is located at 123 8th Ave in Sarasota, Florida. Our regular business hours are Monday through Friday from 8am to 5pm, with lunch from 12pm to 1pm daily. We are closed on Saturday and Sunday. If you ever need help outside of those hours, our phone system can still assist with general information and appointment requests.",
-        timestamp: "0:35",
+        text: "You're welcome! Would you like me to send you our details by text?",
+        timestamp: "0:33",
       },
       {
         speaker: "caller",
-        text: "That's really helpful, thank you.",
-        timestamp: "0:55",
+        text: "Yes please, that would be great.",
+        timestamp: "0:38",
       },
       {
         speaker: "ai",
-        text: "You're very welcome. Would you like me to send you our hours and location by text message or email for easy reference?",
-        timestamp: "0:58",
-      },
-      {
-        speaker: "caller",
-        text: "Yes, that would be great.",
-        timestamp: "1:05",
-      },
-      {
-        speaker: "ai",
-        text: "Great! May I have your email address?",
-        timestamp: "1:08",
-      },
-      {
-        speaker: "caller",
-        text: "Sure, it's mikechen@email.com",
-        timestamp: "1:12",
-      },
-      {
-        speaker: "ai",
-        text: "Perfect — I've just sent you a text message and email with our address, hours, and contact information. If you'd like, I can also help you schedule an appointment for Whiskers or answer any other questions you may have.",
-        timestamp: "1:15",
-      },
-      {
-        speaker: "caller",
-        text: "I'll do that another time, but thanks again.",
-        timestamp: "1:28",
-      },
-      {
-        speaker: "ai",
-        text: "Of course, Mike. We're happy to have you in the area and look forward to meeting you and Whiskers whenever you're ready. Have a great day!",
-        timestamp: "1:32",
-      },
-      {
-        speaker: "caller",
-        text: "You too. Goodbye.",
-        timestamp: "1:36",
-      },
-      {
-        speaker: "ai",
-        text: "Goodbye!",
-        timestamp: "1:38",
+        text: "Done! Have a great day, Mike.",
+        timestamp: "0:42",
       },
     ],
   },
@@ -383,38 +282,18 @@ const MOCK_CALLS: CallWithTranscript[] = [
     transcript: [
       {
         speaker: "ai",
-        text: "Thank you for calling PawPoint Animal Hospital. This is Becky, the virtual receptionist. How can I help you?",
+        text: "Thank you for calling PawPoint Animal Hospital. This is Becky. How can I help you?",
         timestamp: "0:00",
       },
       {
         speaker: "caller",
-        text: "Oh my god—my dog is vomiting blood. I don't know what to do. Please help.",
+        text: "Oh my god—my dog is vomiting blood. Please help.",
         timestamp: "0:08",
       },
       {
         speaker: "ai",
-        text: "I'm so sorry this is happening, Emily. Just to confirm, your dog is actively vomiting blood, correct?",
+        text: "I'm so sorry. This is a medical emergency. I'm transferring you to our veterinary team right now. Please stay on the line.",
         timestamp: "0:15",
-      },
-      {
-        speaker: "caller",
-        text: "Yes—he's thrown up blood twice already.",
-        timestamp: "0:22",
-      },
-      {
-        speaker: "ai",
-        text: "Thank you for telling me. Based on what you've described, this is a medical emergency and your dog needs immediate attention. I'm going to transfer you right now to a live member of our veterinary team so they can assist you. Please stay on the line.",
-        timestamp: "0:26",
-      },
-      {
-        speaker: "caller",
-        text: "Okay—please hurry.",
-        timestamp: "0:42",
-      },
-      {
-        speaker: "ai",
-        text: "I'm transferring your call now. If for any reason the call disconnects, please come directly to PawPoint Animal Hospital or proceed to the nearest emergency veterinary clinic right away. One moment while I connect you.",
-        timestamp: "0:45",
       },
       {
         speaker: "system",
@@ -435,109 +314,26 @@ const MOCK_CALLS: CallWithTranscript[] = [
     transcript: [
       {
         speaker: "ai",
-        text: "Thank you for calling PawPoint Animal Hospital. This is Mary, the virtual receptionist. How can I help you today?",
+        text: "Thank you for calling PawPoint Animal Hospital. This is Mary. How can I help you?",
         timestamp: "0:00",
       },
       {
         speaker: "caller",
-        text: "Hi, my dog has been limping, and I'd like to schedule an appointment.",
+        text: "Hi, my dog has been limping and I'd like to schedule an appointment.",
         timestamp: "0:08",
       },
       {
         speaker: "ai",
-        text: "I'm sorry to hear that your pet isn't feeling well, James. I'll help get that scheduled for you. May I have your full name, please?",
+        text: "I'm sorry to hear that. I can help schedule that. What's your dog's name?",
         timestamp: "0:13",
       },
-      {
-        speaker: "caller",
-        text: "Sure, it's James Wilson.",
-        timestamp: "0:20",
-      },
+      { speaker: "caller", text: "Luna.", timestamp: "0:20" },
       {
         speaker: "ai",
-        text: "Thank you, James. And your dog's name is Luna, correct?",
-        timestamp: "0:23",
+        text: "I've scheduled Luna's appointment with Dr. Mike for February 26th at 1:30 p.m.",
+        timestamp: "0:25",
       },
-      {
-        speaker: "caller",
-        text: "Yes, that's right.",
-        timestamp: "0:28",
-      },
-      {
-        speaker: "ai",
-        text: "Thank you. You mentioned Luna is limping — is she eating and drinking normally otherwise?",
-        timestamp: "0:30",
-      },
-      {
-        speaker: "caller",
-        text: "Yes, everything else seems normal.",
-        timestamp: "0:37",
-      },
-      {
-        speaker: "ai",
-        text: "Okay, thank you for letting me know. Do you have a preferred doctor, date, or time?",
-        timestamp: "0:40",
-      },
-      {
-        speaker: "caller",
-        text: "Yes, I'd like to see Dr. Mike on February 27th at 1:30 p.m. If that's not available, my second choice would be February 26th at 1:30 p.m.",
-        timestamp: "0:46",
-      },
-      {
-        speaker: "ai",
-        text: "Thank you for providing a backup option — let me check availability for you. Unfortunately, Dr. Mike is not available on February 27th at 1:30 p.m. However, I do have availability with Dr. Mike on February 26th at 1:30 p.m. Would that work for you?",
-        timestamp: "0:58",
-      },
-      {
-        speaker: "caller",
-        text: "Yes, that works.",
-        timestamp: "1:15",
-      },
-      {
-        speaker: "ai",
-        text: "Great. I've scheduled Luna's appointment with Dr. Mike for February 26th at 1:30 p.m. at PawPoint Animal Hospital. Before I send your appointment reminders, I just want to confirm your contact information. Is your phone number 850-555-4321?",
-        timestamp: "1:18",
-      },
-      {
-        speaker: "caller",
-        text: "Yes, that's correct.",
-        timestamp: "1:35",
-      },
-      {
-        speaker: "ai",
-        text: "And your email address is james@ppihospital.com?",
-        timestamp: "1:38",
-      },
-      {
-        speaker: "caller",
-        text: "Yes, that's right.",
-        timestamp: "1:43",
-      },
-      {
-        speaker: "ai",
-        text: "Perfect. I've sent your appointment confirmation and reminders by text message and email. If Luna's limping worsens or she has trouble putting weight on her leg before the appointment, please give us a call right away.",
-        timestamp: "1:46",
-      },
-      {
-        speaker: "caller",
-        text: "I will. Thank you for your help.",
-        timestamp: "2:05",
-      },
-      {
-        speaker: "ai",
-        text: "You're very welcome, James. We look forward to seeing you and Luna on February 26th at 1:30 p.m. Have a great day!",
-        timestamp: "2:08",
-      },
-      {
-        speaker: "caller",
-        text: "You too. Goodbye.",
-        timestamp: "2:25",
-      },
-      {
-        speaker: "ai",
-        text: "Goodbye!",
-        timestamp: "2:28",
-      },
+      { speaker: "caller", text: "Thank you so much!", timestamp: "0:35" },
     ],
   },
   {
@@ -552,69 +348,20 @@ const MOCK_CALLS: CallWithTranscript[] = [
     transcript: [
       {
         speaker: "ai",
-        text: "Thank you for calling PawPoint Animal Hospital. This is Emma, the virtual receptionist. How can I help you today?",
+        text: "Thank you for calling PawPoint Animal Hospital. This is Emma. How can I help you?",
         timestamp: "0:00",
       },
       {
         speaker: "caller",
-        text: "Hi, I'm calling to order flea and tick medication for my dog.",
+        text: "Hi, I'm calling to order flea and tick medication for my dog Rocky.",
         timestamp: "0:10",
       },
       {
         speaker: "ai",
-        text: "I can help with that. May I have your name, please?",
+        text: "I can help with that. I've noted your request and our staff will prepare it for pickup.",
         timestamp: "0:18",
       },
-      {
-        speaker: "caller",
-        text: "It's Lisa Brown.",
-        timestamp: "0:25",
-      },
-      {
-        speaker: "ai",
-        text: "Thank you, Lisa. And your dog's name?",
-        timestamp: "0:28",
-      },
-      {
-        speaker: "caller",
-        text: "Rocky.",
-        timestamp: "0:35",
-      },
-      {
-        speaker: "ai",
-        text: "Got it — Rocky. I've noted your request for flea and tick medication. I'll forward this request to our medical staff so they can prepare the medication for you.",
-        timestamp: "0:38",
-      },
-      {
-        speaker: "caller",
-        text: "Okay, great.",
-        timestamp: "0:55",
-      },
-      {
-        speaker: "ai",
-        text: "Once it's ready, you can stop by the office during our regular business hours to pick it up and take care of payment at that time. If the staff has any questions or needs approval from the doctor before dispensing the medication, they'll reach out to you directly.",
-        timestamp: "1:00",
-      },
-      {
-        speaker: "caller",
-        text: "Perfect, thank you.",
-        timestamp: "1:30",
-      },
-      {
-        speaker: "ai",
-        text: "You're very welcome, Lisa. We'll see you soon, and please don't hesitate to call if you have any other questions. Have a great day!",
-        timestamp: "1:35",
-      },
-      {
-        speaker: "caller",
-        text: "You too. Goodbye.",
-        timestamp: "3:10",
-      },
-      {
-        speaker: "ai",
-        text: "Goodbye!",
-        timestamp: "3:15",
-      },
+      { speaker: "caller", text: "Perfect, thank you.", timestamp: "0:30" },
     ],
   },
   {
@@ -629,38 +376,18 @@ const MOCK_CALLS: CallWithTranscript[] = [
     transcript: [
       {
         speaker: "ai",
-        text: "Thank you for calling PawPoint Animal Hospital. This is Bethany, the virtual receptionist. How can I help you?",
+        text: "Thank you for calling PawPoint Animal Hospital. This is Bethany. How can I help you?",
         timestamp: "0:00",
       },
       {
         speaker: "caller",
-        text: "Please help—my dog was bitten by a rattlesnake. I don't know what to do.",
+        text: "Please help—my dog was bitten by a rattlesnake!",
         timestamp: "0:08",
       },
       {
         speaker: "ai",
-        text: "I'm so sorry this is happening, Anna. Just to confirm, your dog was bitten by a rattlesnake, correct?",
+        text: "This is a life-threatening emergency. I'm transferring you to Southpaw Emergency Veterinary Hospital now.",
         timestamp: "0:15",
-      },
-      {
-        speaker: "caller",
-        text: "Yes—her name is Coco. She was bitten on the leg and it's already swelling.",
-        timestamp: "0:22",
-      },
-      {
-        speaker: "ai",
-        text: "Thank you for telling me, Anna. Based on what you've described, this is a life-threatening medical emergency and Coco needs immediate treatment. Because you're calling after hours, PawPoint Animal Hospital is currently closed. I'm going to transfer your call right now to the emergency hospital designated by our medical team: Southpaw Emergency Veterinary Hospital. Please stay on the line while I connect you. If the call disconnects for any reason, go immediately to Southpaw Emergency Veterinary Hospital or the nearest emergency veterinary clinic.",
-        timestamp: "0:30",
-      },
-      {
-        speaker: "caller",
-        text: "Okay—please hurry.",
-        timestamp: "0:55",
-      },
-      {
-        speaker: "ai",
-        text: "I understand, Anna. I'm transferring you now.",
-        timestamp: "0:58",
       },
       {
         speaker: "system",
@@ -671,12 +398,545 @@ const MOCK_CALLS: CallWithTranscript[] = [
   },
 ];
 
+// Mock inbox messages (messages left by callers)
+const MOCK_INBOX = [
+  {
+    id: 1,
+    caller: "Lisa Brown",
+    phone: "+1 (555) 567-8901",
+    pet: "Rocky",
+    message:
+      "Requesting flea and tick medication refill. Will stop by tomorrow to pick up.",
+    category: "Medication Request",
+    time: "1.5 hr ago",
+    status: "unread",
+  },
+  {
+    id: 2,
+    caller: "Tom Harris",
+    phone: "+1 (555) 789-0123",
+    pet: "Bella",
+    message:
+      "Would like to purchase heartworm prevention medication. Please have it ready for pickup this afternoon.",
+    category: "Medication Request",
+    time: "3 hr ago",
+    status: "unread",
+  },
+  {
+    id: 3,
+    caller: "Jennifer Lee",
+    phone: "+1 (555) 890-1234",
+    pet: "Charlie",
+    message:
+      "Calling to check if the special diet food for Charlie is in stock. Please call back.",
+    category: "Product Inquiry",
+    time: "4 hr ago",
+    status: "read",
+  },
+  {
+    id: 4,
+    caller: "David Kim",
+    phone: "+1 (555) 901-2345",
+    pet: "Mochi",
+    message: "Need to pick up Mochi's prescription. Will be there around 3pm.",
+    category: "Medication Pickup",
+    time: "5 hr ago",
+    status: "read",
+  },
+  {
+    id: 5,
+    caller: "Rachel Green",
+    phone: "+1 (555) 012-3456",
+    pet: "Max",
+    message:
+      "Interested in purchasing pet insurance information. Please send details via email.",
+    category: "General Inquiry",
+    time: "Yesterday",
+    status: "read",
+  },
+];
+
+function InboxContent() {
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-nunito font-bold text-zinc-900">Inbox</h1>
+        <p className="text-zinc-600 mt-1">Messages and requests from callers</p>
+      </div>
+
+      {/* Stats */}
+      <div className="flex gap-4">
+        <div className="px-4 py-2 bg-teal-50 rounded-xl">
+          <span className="text-sm font-bold text-teal-700">
+            {MOCK_INBOX.filter((m) => m.status === "unread").length} Unread
+          </span>
+        </div>
+        <div className="px-4 py-2 bg-zinc-100 rounded-xl">
+          <span className="text-sm font-medium text-zinc-600">
+            {MOCK_INBOX.length} Total Messages
+          </span>
+        </div>
+      </div>
+
+      {/* Messages list */}
+      <div className="space-y-3">
+        {MOCK_INBOX.map((msg) => (
+          <div
+            key={msg.id}
+            className={`bg-white rounded-2xl border p-5 shadow-sm transition-all hover:shadow-md ${
+              msg.status === "unread"
+                ? "border-teal-200 bg-teal-50/30"
+                : "border-zinc-200"
+            }`}
+          >
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex items-start gap-4 flex-1">
+                <div
+                  className={`w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 ${
+                    msg.status === "unread" ? "bg-teal-100" : "bg-zinc-100"
+                  }`}
+                >
+                  <Inbox
+                    className={`w-6 h-6 ${msg.status === "unread" ? "text-teal-600" : "text-zinc-500"}`}
+                  />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <h3 className="font-bold text-zinc-900">{msg.caller}</h3>
+                    {msg.status === "unread" && (
+                      <span className="w-2 h-2 rounded-full bg-teal-500" />
+                    )}
+                  </div>
+                  <p className="text-sm text-zinc-500 mb-2">
+                    {msg.phone} • Pet: {msg.pet}
+                  </p>
+                  <p className="text-sm text-zinc-700 leading-relaxed">
+                    {msg.message}
+                  </p>
+                </div>
+              </div>
+              <div className="text-right flex-shrink-0">
+                <span
+                  className={`inline-block px-3 py-1 rounded-full text-xs font-bold mb-2 ${
+                    msg.category === "Medication Request"
+                      ? "bg-purple-100 text-purple-700"
+                      : msg.category === "Medication Pickup"
+                        ? "bg-blue-100 text-blue-700"
+                        : msg.category === "Product Inquiry"
+                          ? "bg-orange-100 text-orange-700"
+                          : "bg-zinc-100 text-zinc-700"
+                  }`}
+                >
+                  {msg.category}
+                </span>
+                <p className="text-xs text-zinc-400">{msg.time}</p>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ReportsContent() {
+  // Generate call summaries from MOCK_CALLS
+  const callSummaries = MOCK_CALLS.map((call) => ({
+    id: call.id,
+    caller: call.caller,
+    duration: call.duration,
+    outcome: call.outcome,
+    sentiment: call.sentiment,
+    time: call.time,
+    summary:
+      call.outcome === "Appointment Booked"
+        ? `${call.caller} called to schedule an appointment. The AI receptionist successfully booked the appointment and sent confirmation.`
+        : call.outcome === "Emergency Transfer"
+          ? `${call.caller} reported an emergency situation. The call was immediately transferred to veterinary staff for urgent care.`
+          : call.outcome === "Information Provided"
+            ? `${call.caller} inquired about clinic information. The AI provided details about location, hours, and services.`
+            : `${call.caller} left a message for the clinic staff regarding a service request.`,
+  }));
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-nunito font-bold text-zinc-900">
+          Reports
+        </h1>
+        <p className="text-zinc-600 mt-1">
+          AI-generated summaries and insights
+        </p>
+      </div>
+
+      {/* Overview Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="bg-white rounded-2xl border border-zinc-200 p-5 shadow-sm">
+          <p className="text-xs text-zinc-500 font-semibold uppercase tracking-wide mb-1">
+            Total Calls
+          </p>
+          <p className="text-3xl font-black text-zinc-900">
+            {MOCK_CALLS.length}
+          </p>
+        </div>
+        <div className="bg-white rounded-2xl border border-zinc-200 p-5 shadow-sm">
+          <p className="text-xs text-zinc-500 font-semibold uppercase tracking-wide mb-1">
+            Appointments Booked
+          </p>
+          <p className="text-3xl font-black text-teal-600">
+            {
+              MOCK_CALLS.filter((c) => c.outcome === "Appointment Booked")
+                .length
+            }
+          </p>
+        </div>
+        <div className="bg-white rounded-2xl border border-zinc-200 p-5 shadow-sm">
+          <p className="text-xs text-zinc-500 font-semibold uppercase tracking-wide mb-1">
+            Emergency Transfers
+          </p>
+          <p className="text-3xl font-black text-red-600">
+            {
+              MOCK_CALLS.filter((c) => c.outcome === "Emergency Transfer")
+                .length
+            }
+          </p>
+        </div>
+        <div className="bg-white rounded-2xl border border-zinc-200 p-5 shadow-sm">
+          <p className="text-xs text-zinc-500 font-semibold uppercase tracking-wide mb-1">
+            Positive Sentiment
+          </p>
+          <p className="text-3xl font-black text-green-600">
+            {MOCK_CALLS.filter((c) => c.sentiment === "positive").length}
+          </p>
+        </div>
+      </div>
+
+      {/* Call Summaries */}
+      <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm overflow-hidden">
+        <div className="p-6 border-b border-zinc-200">
+          <h2 className="text-xl font-bold text-zinc-900">Call Summaries</h2>
+          <p className="text-sm text-zinc-500 mt-1">
+            AI-generated summary for each call
+          </p>
+        </div>
+        <div className="divide-y divide-zinc-100">
+          {callSummaries.map((call) => (
+            <div
+              key={call.id}
+              className="p-5 hover:bg-zinc-50 transition-colors"
+            >
+              <div className="flex items-start justify-between gap-4 mb-3">
+                <div className="flex items-center gap-3">
+                  <div
+                    className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                      call.sentiment === "positive"
+                        ? "bg-green-100"
+                        : call.sentiment === "negative"
+                          ? "bg-red-100"
+                          : "bg-yellow-100"
+                    }`}
+                  >
+                    <Phone
+                      className={`w-5 h-5 ${
+                        call.sentiment === "positive"
+                          ? "text-green-600"
+                          : call.sentiment === "negative"
+                            ? "text-red-600"
+                            : "text-yellow-600"
+                      }`}
+                    />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-zinc-900">{call.caller}</h3>
+                    <p className="text-xs text-zinc-500">
+                      {call.time} • {call.duration}
+                    </p>
+                  </div>
+                </div>
+                <span
+                  className={`inline-flex px-3 py-1 rounded-full text-xs font-bold ${
+                    call.outcome === "Appointment Booked"
+                      ? "bg-teal-100 text-teal-700"
+                      : call.outcome === "Emergency Transfer"
+                        ? "bg-red-100 text-red-700"
+                        : call.outcome === "Information Provided"
+                          ? "bg-purple-100 text-purple-700"
+                          : "bg-zinc-100 text-zinc-700"
+                  }`}
+                >
+                  {call.outcome}
+                </span>
+              </div>
+              <p className="text-sm text-zinc-600 leading-relaxed pl-13">
+                {call.summary}
+              </p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Demo clinic slug for API calls
+const DEMO_CLINIC_SLUG = "demo-clinic";
+
+type ChatMessage = {
+  role: "user" | "assistant";
+  content: string;
+  timestamp: string;
+};
+
+function ChatContent() {
+  const [messages, setMessages] = useState<ChatMessage[]>([
+    {
+      role: "assistant",
+      content:
+        "Hi! Welcome to PawPoint Demo Clinic. I'm your AI assistant. How can I help you and your pet today?",
+      timestamp: new Date().toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+    },
+  ]);
+  const [inputValue, setInputValue] = useState("");
+  const [isTyping, setIsTyping] = useState(false);
+  const [conversationId, setConversationId] = useState<string | undefined>();
+  const [error, setError] = useState<string | null>(null);
+  const [userIdentifier] = useState(
+    () => `demo_${Date.now()}_${Math.random().toString(36).substring(7)}`,
+  );
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll to bottom
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  const handleSend = async () => {
+    if (!inputValue.trim() || isTyping) return;
+
+    const userMessage: ChatMessage = {
+      role: "user",
+      content: inputValue.trim(),
+      timestamp: new Date().toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+    };
+
+    setMessages((prev) => [...prev, userMessage]);
+    const userInput = inputValue;
+    setInputValue("");
+    setIsTyping(true);
+    setError(null);
+
+    try {
+      // Call the streaming chat API
+      const response = await fetch(
+        `${env.apiUrl}/api/v1/${DEMO_CLINIC_SLUG}/chat/stream`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            message: userInput,
+            conversation_id: conversationId,
+            user_identifier: userIdentifier,
+          }),
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to connect to AI assistant");
+      }
+
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+      let assistantMessage = "";
+      let assistantMessageIndex = -1;
+
+      if (reader) {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          const chunk = decoder.decode(value);
+          const lines = chunk.split("\n");
+
+          for (const line of lines) {
+            if (line.startsWith("data: ")) {
+              try {
+                const data = JSON.parse(line.slice(6));
+
+                if (data.type === "conversation_id") {
+                  setConversationId(data.conversation_id);
+                } else if (data.type === "token") {
+                  assistantMessage += data.content;
+
+                  // Update or create assistant message
+                  setMessages((prev) => {
+                    const timestamp = new Date().toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    });
+                    if (assistantMessageIndex === -1) {
+                      assistantMessageIndex = prev.length;
+                      return [
+                        ...prev,
+                        {
+                          role: "assistant",
+                          content: assistantMessage,
+                          timestamp,
+                        },
+                      ];
+                    } else {
+                      const newMessages = [...prev];
+                      newMessages[assistantMessageIndex] = {
+                        ...newMessages[assistantMessageIndex],
+                        content: assistantMessage,
+                      };
+                      return newMessages;
+                    }
+                  });
+                } else if (data.type === "error") {
+                  throw new Error(data.message);
+                }
+              } catch (parseErr) {
+                if (parseErr instanceof SyntaxError) continue;
+                throw parseErr;
+              }
+            }
+          }
+        }
+      }
+    } catch (err) {
+      // Show error when API fails
+      console.error("Chat API error:", err);
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Failed to connect to AI assistant",
+      );
+    } finally {
+      setIsTyping(false);
+    }
+  };
+
+  return (
+    <div className="h-[calc(100vh-180px)] flex flex-col">
+      <div className="mb-4">
+        <h1 className="text-3xl font-nunito font-bold text-zinc-900">Chat</h1>
+        <p className="text-zinc-600 mt-1">Try the AI chatbot assistant</p>
+      </div>
+
+      {/* Chat container */}
+      <div className="flex-1 bg-white rounded-2xl border border-zinc-200 shadow-sm overflow-hidden flex flex-col">
+        {/* Chat header */}
+        <div className="px-6 py-4 border-b border-zinc-200 bg-gradient-to-r from-teal-50 to-teal-100/50">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-gradient-to-br from-[#3EB5B0] to-[#2A8A86] rounded-xl flex items-center justify-center shadow-md">
+              <PawPrint className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h2 className="font-bold text-zinc-900">PawPoint AI Assistant</h2>
+              <p className="text-xs text-zinc-500 flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                Online - Demo Mode
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Messages */}
+        <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-zinc-50">
+          {messages.map((msg, index) => (
+            <div
+              key={index}
+              className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+            >
+              <div
+                className={`flex flex-col max-w-[75%] ${msg.role === "user" ? "items-end" : "items-start"}`}
+              >
+                <div
+                  className={`px-4 py-3 rounded-3xl ${
+                    msg.role === "user"
+                      ? "bg-teal-600 text-white rounded-tr-md"
+                      : "bg-white border border-zinc-200 text-zinc-800 rounded-tl-md"
+                  }`}
+                >
+                  <p className="text-sm leading-relaxed">{msg.content}</p>
+                </div>
+                <span className="text-xs text-zinc-400 mt-1 px-1">
+                  {msg.timestamp}
+                </span>
+              </div>
+            </div>
+          ))}
+          {isTyping && (
+            <div className="flex justify-start">
+              <div className="bg-white border border-zinc-200 rounded-3xl rounded-tl-md px-4 py-3">
+                <div className="flex items-center gap-1.5">
+                  <div
+                    className="w-2 h-2 bg-zinc-400 rounded-full animate-bounce"
+                    style={{ animationDelay: "0ms" }}
+                  />
+                  <div
+                    className="w-2 h-2 bg-zinc-400 rounded-full animate-bounce"
+                    style={{ animationDelay: "150ms" }}
+                  />
+                  <div
+                    className="w-2 h-2 bg-zinc-400 rounded-full animate-bounce"
+                    style={{ animationDelay: "300ms" }}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+          <div ref={messagesEndRef} />
+        </div>
+
+        {/* Error message */}
+        {error && (
+          <div className="px-4 py-3 bg-red-50 border-t border-red-200">
+            <p className="text-sm text-red-600">{error}</p>
+          </div>
+        )}
+
+        {/* Input */}
+        <div className="p-4 border-t border-zinc-200 bg-white">
+          <div className="flex gap-3">
+            <input
+              type="text"
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleSend()}
+              placeholder="Type your message... (try: appointment, hours, services)"
+              className="flex-1 px-4 py-3 bg-white border border-zinc-300 rounded-xl text-sm text-zinc-900 placeholder:text-zinc-400 focus:ring-2 focus:ring-teal-500 focus:border-transparent outline-none"
+            />
+            <button
+              onClick={handleSend}
+              disabled={!inputValue.trim()}
+              className="px-6 py-3 bg-[#3EB5B0] hover:bg-[#2A8A86] disabled:bg-zinc-300 disabled:cursor-not-allowed text-white rounded-xl font-semibold transition-colors shadow-md"
+            >
+              Send
+            </button>
+          </div>
+          <p className="text-xs text-zinc-400 mt-2 text-center">
+            This is a demo chatbot. Try asking about appointments, hours,
+            services, or location.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function AppointmentsContent() {
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-nunito font-bold text-zinc-900">
-          Appointment Requests
+          Appointments
         </h1>
         <p className="text-zinc-600 mt-1">
           Manage incoming appointment requests from callers
@@ -884,17 +1144,13 @@ function CallsContent() {
                 </td>
                 <td className="px-6 py-4 text-zinc-500 text-sm">{call.time}</td>
                 <td className="px-6 py-4">
-                  {call.transcript ? (
-                    <button
-                      onClick={() => setSelectedCall(call)}
-                      className="inline-flex items-center gap-2 px-3 py-1.5 bg-teal-50 hover:bg-teal-100 text-teal-700 rounded-lg text-xs font-medium transition-colors"
-                    >
-                      <FileText className="w-4 h-4" />
-                      View Transcript
-                    </button>
-                  ) : (
-                    <span className="text-xs text-zinc-400">No transcript</span>
-                  )}
+                  <button
+                    onClick={() => setSelectedCall(call)}
+                    className="inline-flex items-center gap-2 px-3 py-1.5 bg-teal-50 hover:bg-teal-100 text-teal-700 rounded-lg text-xs font-medium transition-colors"
+                  >
+                    <FileText className="w-4 h-4" />
+                    View Transcript
+                  </button>
                 </td>
               </tr>
             ))}
@@ -902,8 +1158,8 @@ function CallsContent() {
         </table>
       </div>
 
-      {/* Transcript Modal - Chat Interface */}
-      {selectedCall && selectedCall.transcript && (
+      {/* Transcript Modal */}
+      {selectedCall && (
         <div
           className="fixed inset-0 bg-black/50 flex items-start justify-center z-[100] pt-32 pb-4 px-4"
           onClick={() => setSelectedCall(null)}
@@ -939,7 +1195,6 @@ function CallsContent() {
             {/* Chat Messages */}
             <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-zinc-50">
               {selectedCall.transcript.map((message, index) => {
-                // System message (e.g., call transfer)
                 if (message.speaker === "system") {
                   return (
                     <div key={index} className="flex justify-center my-6">
@@ -956,8 +1211,6 @@ function CallsContent() {
                     </div>
                   );
                 }
-
-                // Regular AI or caller messages
                 return (
                   <div
                     key={index}
@@ -966,9 +1219,8 @@ function CallsContent() {
                     <div
                       className={`flex flex-col max-w-[75%] ${message.speaker === "ai" ? "items-start" : "items-end"}`}
                     >
-                      {/* Speaker label - only for first message or speaker change */}
                       {(index === 0 ||
-                        selectedCall.transcript?.[index - 1]?.speaker !==
+                        selectedCall.transcript[index - 1]?.speaker !==
                           message.speaker) && (
                         <span className="text-xs font-semibold text-zinc-500 mb-1 px-1">
                           {message.speaker === "ai"
@@ -976,8 +1228,6 @@ function CallsContent() {
                             : selectedCall.caller.split(" ")[0]}
                         </span>
                       )}
-
-                      {/* Message bubble */}
                       <div
                         className={`px-4 py-3 rounded-3xl ${
                           message.speaker === "ai"
@@ -989,8 +1239,6 @@ function CallsContent() {
                           {message.text}
                         </p>
                       </div>
-
-                      {/* Timestamp */}
                       <span className="text-xs text-zinc-400 mt-1 px-1 font-mono">
                         {message.timestamp}
                       </span>
@@ -1036,7 +1284,6 @@ function SettingsContent() {
         </p>
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* AI Configuration */}
         <div className="bg-white rounded-2xl border border-zinc-200 p-6 shadow-sm">
           <h2 className="text-lg font-bold text-zinc-900 mb-4">
             AI Configuration
@@ -1077,8 +1324,6 @@ function SettingsContent() {
             </div>
           </div>
         </div>
-
-        {/* Notification Settings */}
         <div className="bg-white rounded-2xl border border-zinc-200 p-6 shadow-sm">
           <h2 className="text-lg font-bold text-zinc-900 mb-4">
             Notifications
@@ -1124,6 +1369,148 @@ function SettingsContent() {
   );
 }
 
+// Demo sidebar with clickable navigation
+function DemoSidebar({
+  activeTab,
+  onTabChange,
+}: {
+  activeTab: DemoTab;
+  onTabChange: (tab: DemoTab) => void;
+}) {
+  const navSections = [
+    {
+      title: null,
+      items: [
+        { id: "dashboard" as DemoTab, label: "Home", icon: LayoutDashboard },
+        { id: "inbox" as DemoTab, label: "Inbox", icon: Inbox },
+      ],
+    },
+    {
+      title: "APPLICATIONS",
+      items: [
+        {
+          id: "appointments" as DemoTab,
+          label: "Appointments",
+          icon: Calendar,
+        },
+        { id: "patients" as DemoTab, label: "Patients", icon: PawPrint },
+        { id: "calls" as DemoTab, label: "Call Log", icon: Phone },
+        { id: "chat" as DemoTab, label: "Chat", icon: MessageCircle },
+      ],
+    },
+    {
+      title: "OTHERS",
+      items: [
+        { id: "reports" as DemoTab, label: "Reports", icon: FileText },
+        { id: null, label: "Widgets", icon: LayoutGrid, disabled: true },
+      ],
+    },
+    {
+      title: "SUPPORT",
+      items: [
+        { id: "settings" as DemoTab, label: "Settings", icon: Settings },
+        { id: null, label: "Security", icon: Shield, disabled: true },
+        { id: null, label: "Help", icon: HelpCircle, disabled: true },
+      ],
+    },
+  ];
+
+  return (
+    <aside className="fixed left-0 top-0 w-[280px] h-screen z-20 flex flex-col overflow-hidden">
+      {/* Glassmorphism background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-[#E8F5F4]/95 via-[#F0F9F8]/90 to-[#E3F2F1]/95 backdrop-blur-xl" />
+
+      {/* Decorative elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-20 -left-10 w-40 h-40 bg-[#A8DCD9]/20 rounded-full blur-3xl" />
+        <div className="absolute bottom-40 -right-10 w-32 h-32 bg-[#3EB5B0]/15 rounded-full blur-2xl" />
+        <div className="absolute top-1/2 left-1/2 w-24 h-24 bg-[#FF8A65]/10 rounded-full blur-2xl" />
+      </div>
+
+      {/* Content */}
+      <div className="relative z-10 flex flex-col h-full">
+        {/* Logo header */}
+        <div className="px-6 pt-6 pb-5">
+          <div className="flex items-center gap-3 px-4 py-3 bg-white/50 backdrop-blur-md rounded-2xl border border-white/60 shadow-sm">
+            <div className="w-9 h-9 bg-gradient-to-br from-[#3EB5B0] to-[#2A8A86] rounded-xl flex items-center justify-center shadow-md">
+              <PawPrint className="w-5 h-5 text-white" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-bold text-[#1D3533] truncate">
+                Demo Clinic
+              </p>
+              <p className="text-xs text-[#1D3533]/50">Veterinary Clinic</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Navigation */}
+        <nav className="flex-1 px-4 overflow-y-auto">
+          {navSections.map((section, sectionIndex) => (
+            <div key={sectionIndex} className="mb-6">
+              {section.title && (
+                <div className="px-4 mb-3">
+                  <p className="text-[10px] font-semibold text-[#1D3533]/40 tracking-wider uppercase">
+                    {section.title}
+                  </p>
+                </div>
+              )}
+              <div className="space-y-1">
+                {section.items.map((item, itemIndex) => {
+                  const isActive = item.id === activeTab;
+                  const isDisabled = item.disabled || !item.id;
+
+                  return (
+                    <button
+                      key={itemIndex}
+                      onClick={() => item.id && onTabChange(item.id)}
+                      disabled={isDisabled}
+                      className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all text-left ${
+                        isActive
+                          ? "bg-white/70 backdrop-blur-sm shadow-sm border border-white/80"
+                          : isDisabled
+                            ? "opacity-40 cursor-not-allowed"
+                            : "hover:bg-white/50 hover:backdrop-blur-sm cursor-pointer"
+                      }`}
+                    >
+                      <div
+                        className={`p-2 rounded-xl shrink-0 transition-all ${
+                          isActive
+                            ? "bg-gradient-to-br from-[#3EB5B0] to-[#2A8A86] text-white shadow-md shadow-[#3EB5B0]/20"
+                            : "bg-white/40 text-[#3EB5B0]"
+                        }`}
+                      >
+                        <item.icon className="w-4 h-4" strokeWidth={2.5} />
+                      </div>
+                      <span
+                        className={`text-[13px] font-medium ${isActive ? "text-[#1D3533]" : "text-[#1D3533]/70"}`}
+                      >
+                        {item.label}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </nav>
+
+        {/* Bottom section */}
+        <div className="p-4 border-t border-white/30">
+          <div className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all bg-white/40 hover:bg-white/60 backdrop-blur-sm border border-white/50 opacity-50 cursor-not-allowed">
+            <div className="p-2 rounded-xl shrink-0 bg-gradient-to-br from-[#FF8A65] to-[#FF6E40] text-white shadow-sm">
+              <LogOut className="w-4 h-4" strokeWidth={2.5} />
+            </div>
+            <span className="text-[13px] font-medium text-[#1D3533]/70">
+              Log Out
+            </span>
+          </div>
+        </div>
+      </div>
+    </aside>
+  );
+}
+
 export default function DemoPage() {
   const [activeTab, setActiveTab] = useState<DemoTab>("dashboard");
 
@@ -1131,107 +1518,33 @@ export default function DemoPage() {
     switch (activeTab) {
       case "dashboard":
         return <DashboardContent analytics={MOCK_ANALYTICS} loading={false} />;
+      case "inbox":
+        return <InboxContent />;
       case "appointments":
         return <AppointmentsContent />;
       case "patients":
         return <PatientsContent />;
       case "calls":
         return <CallsContent />;
+      case "chat":
+        return <ChatContent />;
+      case "reports":
+        return <ReportsContent />;
       case "settings":
         return <SettingsContent />;
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#F8FAFA]">
-      {/* Top Navbar */}
-      <Navbar />
+    <div className="flex min-h-screen bg-gradient-to-br from-[#F5F8F8] via-[#FAFCFC] to-[#F0F6F6]">
+      {/* Sidebar with clickable tabs */}
+      <DemoSidebar activeTab={activeTab} onTabChange={setActiveTab} />
 
-      <div className="flex">
-        {/* Sidebar */}
-        <aside
-          className="fixed left-0 w-64 bg-gradient-to-b from-[#A8DCD9] via-[#B4E2DF] to-[#C5E8E6] z-20 flex flex-col overflow-hidden"
-          style={{
-            top: `${NAVBAR_HEIGHT}px`,
-            height: `calc(100vh - ${NAVBAR_HEIGHT}px)`,
-          }}
-        >
-          {/* Wave patterns - subtle background */}
-          <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-20">
-            <svg
-              className="absolute top-0 left-0 w-full"
-              height="200"
-              viewBox="0 0 300 200"
-              preserveAspectRatio="none"
-            >
-              <path
-                d="M 0,100 C 75,80 150,120 225,100 L 300,100 L 300,0 L 0,0 Z"
-                fill="url(#sidebarWave1)"
-              />
-              <defs>
-                <linearGradient
-                  id="sidebarWave1"
-                  x1="0%"
-                  y1="0%"
-                  x2="0%"
-                  y2="100%"
-                >
-                  <stop offset="0%" stopColor="#7ECDC8" stopOpacity="0.5" />
-                  <stop offset="100%" stopColor="#7ECDC8" stopOpacity="0.1" />
-                </linearGradient>
-              </defs>
-            </svg>
-          </div>
-
-          {/* Content */}
-          <div className="relative z-10 flex flex-col h-full">
-            {/* Navigation */}
-            <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
-              {navItems.map((item) => {
-                const isActive = activeTab === item.id;
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => setActiveTab(item.id)}
-                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-left ${
-                      isActive
-                        ? "bg-white/90 text-[#1D3533] font-semibold shadow-sm"
-                        : "text-[#1D3533]/80 hover:bg-white/40 hover:text-[#1D3533]"
-                    }`}
-                  >
-                    <div
-                      className={`p-2 rounded-lg shrink-0 ${
-                        isActive
-                          ? "bg-[#3EB5B0] text-white"
-                          : "bg-white/60 text-[#3EB5B0]"
-                      }`}
-                    >
-                      <item.icon className="w-5 h-5" />
-                    </div>
-                    <span className="text-sm">{item.label}</span>
-                  </button>
-                );
-              })}
-            </nav>
-
-            {/* Bottom section - clinic info */}
-            <div className="p-4 border-t border-white/20">
-              <div className="px-4 py-3 bg-white/60 backdrop-blur-sm rounded-xl">
-                <p className="text-xs text-[#1D3533]/60 uppercase tracking-wide mb-1 font-medium">
-                  Clinic
-                </p>
-                <p className="text-sm font-bold text-[#1D3533] truncate">
-                  Pawpoint Clinic
-                </p>
-              </div>
-            </div>
-          </div>
-        </aside>
-
-        {/* Main content */}
-        <main className="flex-1 ml-64 p-8 relative z-10">
-          {/* Demo mode badge */}
-          <div className="mb-6 flex items-center gap-3">
+      {/* Main content */}
+      <main className="flex-1 ml-[280px] p-8 relative z-10">
+        {/* Top bar with homepage link and demo badge */}
+        <div className="mb-6 flex items-center justify-between">
+          <div className="flex items-center gap-3">
             <div className="px-4 py-2 bg-orange-100 text-orange-700 text-sm font-bold rounded-full">
               Demo Mode
             </div>
@@ -1239,10 +1552,17 @@ export default function DemoPage() {
               This is a demo with sample data
             </span>
           </div>
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-700 rounded-xl text-sm font-medium transition-colors shadow-sm"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to Homepage
+          </Link>
+        </div>
 
-          {renderContent()}
-        </main>
-      </div>
+        {renderContent()}
+      </main>
     </div>
   );
 }
