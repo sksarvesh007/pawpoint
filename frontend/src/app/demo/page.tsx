@@ -1489,7 +1489,7 @@ function DemoSidebar({
               <div className="space-y-1">
                 {section.items.map((item, itemIndex) => {
                   const isActive = item.id === activeTab;
-                  const isDisabled = item.disabled || !item.id;
+                  const isDisabled = !!(item as NavItem).disabled || !item.id;
 
                   return (
                     <button
