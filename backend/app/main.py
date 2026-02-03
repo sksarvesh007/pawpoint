@@ -1,5 +1,6 @@
 """PawPoint Backend - Main Application Entry Point."""
 
+import os
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
@@ -15,8 +16,17 @@ from slowapi.util import get_remote_address
 from app.api.v1 import api_router
 from app.core.config import settings
 from app.core.logging import configure_logging
+from app.core.redis import close_redis, init_redis
 from app.core.telemetry import init_telemetry, shutdown_telemetry
 from app.db import close_db, init_db
+
+# Export API keys to environment for Pydantic AI and other libraries
+# Pydantic Settings loads from .env files but doesn't export to os.environ
+# We need to explicitly set them so Pydantic AI can access them
+if settings.google_api_key:
+    os.environ["GOOGLE_API_KEY"] = settings.google_api_key.get_secret_value()
+if settings.openai_api_key:
+    os.environ["OPENAI_API_KEY"] = settings.openai_api_key.get_secret_value()
 
 # Initialize rate limiter
 limiter = Limiter(key_func=get_remote_address)
@@ -33,24 +43,39 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     )
 
     # Startup
-    logger.info("🐾 Starting {} v{}", settings.app_name, settings.app_version)
-    logger.info("📍 Environment: {}", settings.app_env.value)
-    logger.info("🔧 Debug mode: {}", settings.debug)
+    logger.info("Starting application: {} v{}", settings.app_name, settings.app_version)
+    logger.info("Environment: {}", settings.app_env.value)
+    logger.info("Debug mode: {}", settings.debug)
 
     # Initialize OpenTelemetry
     init_telemetry(app, settings)
-    logger.info("📊 Telemetry initialized")
+    logger.info("Telemetry and observability initialized")
 
     # Initialize database
-    await init_db()
-    logger.info("🗄️ Database initialized")
+    try:
+        await init_db()
+        logger.info("Database connection pool initialized")
+    except ConnectionError as e:
+        logger.error("Database initialization failed: {}", str(e))
+        logger.error("Application cannot start without a database connection")
+        raise
+
+    # Initialize Redis
+    try:
+        await init_redis()
+        logger.info("Redis connection established")
+    except ConnectionError as e:
+        logger.error("Redis initialization failed: {}", str(e))
+        logger.error("Application cannot start without a Redis connection")
+        raise
 
     yield
 
     # Shutdown
+    await close_redis()
     await close_db()
     shutdown_telemetry(app)
-    logger.info("👋 Shutting down {}", settings.app_name)
+    logger.info("Application shutdown complete: {}", settings.app_name)
 
 
 app = FastAPI(

@@ -6,6 +6,7 @@ export interface ClinicInfo {
   id: string;
   name: string;
   email: string;
+  slug: string;
 }
 
 export interface EmergencyHandlingSettings {
@@ -30,17 +31,38 @@ export interface ChatbotSettings {
 }
 
 export interface ChatbotSettingsResponse {
+  chatbot_name?: string;
   chatbot_persona: string;
   greeting_message: string;
+  additional_context?: string;
   voice_enabled: boolean;
   emergency_handling: EmergencyHandlingSettings;
   appointment_preferences: AppointmentPreferences;
   clinic_name: string;
+  // Contact information
+  phone?: string;
+  email?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  zip_code?: string;
+  business_hours?: Record<string, unknown>;
 }
 
 export interface UpdateChatbotSettingsRequest {
+  // Contact Information
+  phone?: string;
+  email?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  zip_code?: string;
+  business_hours?: Record<string, unknown>;
+  // Chatbot Settings
+  chatbot_name?: string;
   chatbot_persona: "professional" | "friendly" | "empathetic" | "warm";
   greeting_message: string;
+  additional_context?: string;
   emergency_handling?: EmergencyHandlingSettings;
   appointment_preferences?: AppointmentPreferences;
 }

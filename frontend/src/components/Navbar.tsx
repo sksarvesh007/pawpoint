@@ -31,7 +31,7 @@ export function Navbar() {
 
   return (
     <header
-      className="flex items-center justify-between px-20 bg-white sticky top-0 z-50 border-b border-zinc-100 shadow-sm"
+      className="flex items-center justify-between px-12 bg-white sticky top-0 z-50 border-b border-zinc-100 shadow-sm"
       style={{ height: `${NAVBAR_HEIGHT}px` }}
     >
       <div className="flex items-center gap-2">
@@ -39,14 +39,14 @@ export function Navbar() {
           <Logo />
         </Link>
       </div>
-      <nav className="flex items-center gap-8">
+      <nav className="flex items-center gap-4">
         {navItems.map((item) => {
           const active = isActive(item);
           return (
             <Link
               key={item.href}
               href={item.href}
-              className={`relative text-[17px] font-medium transition-colors px-4 py-2 rounded-full ${
+              className={`relative text-[15px] font-medium transition-colors px-3 py-2 rounded-full ${
                 active
                   ? "text-[#2A9D8F] bg-[#E0F2F1]"
                   : "text-[#4A5568] hover:text-[#2A9D8F]"
@@ -58,15 +58,15 @@ export function Navbar() {
         })}
         <Link
           href="/login"
-          className="px-6 py-3 text-[16px] font-bold text-[#3DA99F] border-2 border-[#3DA99F] rounded-lg hover:bg-[#E0F2F1] transition-all"
+          className="px-5 py-2.5 text-[14px] font-bold text-[#3DA99F] border-2 border-[#3DA99F] rounded-lg hover:bg-[#E0F2F1] transition-all whitespace-nowrap"
         >
-          Login as Hospital
+          Login
         </Link>
         <Link
           href="/signup"
-          className="px-6 py-3 text-[16px] font-bold text-white bg-[#3DA99F] rounded-lg hover:bg-[#2A9D8F] transition-all shadow-[0_4px_14px_0_rgba(61,169,159,0.3)]"
+          className="px-5 py-2.5 text-[14px] font-bold text-white bg-[#3DA99F] rounded-lg hover:bg-[#2A9D8F] transition-all shadow-[0_4px_14px_0_rgba(61,169,159,0.3)] whitespace-nowrap"
         >
-          Signup as Hospital
+          Signup
         </Link>
       </nav>
     </header>

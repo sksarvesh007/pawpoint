@@ -42,6 +42,10 @@ class InterceptHandler(logging.Handler):
     """Handler to intercept standard logging and send to Loguru."""
 
     def emit(self, record: logging.LogRecord) -> None:
+        # Skip SQLAlchemy engine logs (database queries)
+        if record.name == "sqlalchemy.engine.Engine":
+            return
+
         # Get corresponding Loguru level
         try:
             level = logger.level(record.levelname).name
@@ -134,6 +138,11 @@ def configure_logging(
     # Intercept uvicorn and other library loggers
     for logger_name in ("uvicorn", "uvicorn.access", "uvicorn.error", "fastapi"):
         logging.getLogger(logger_name).handlers = [InterceptHandler()]
+
+    # Silence SQLAlchemy query logs completely
+    sqlalchemy_logger = logging.getLogger("sqlalchemy.engine")
+    sqlalchemy_logger.handlers = []
+    sqlalchemy_logger.propagate = False
 
     logger.info(
         "Loguru logging configured", debug=debug, json_logs=json_logs, level=log_level

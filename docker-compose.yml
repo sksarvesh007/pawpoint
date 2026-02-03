@@ -4,8 +4,11 @@
 # Usage:
 #   Start all services:    docker compose up
 #   Start backend only:    docker compose up backend
+#   Start frontend only:   docker compose up frontend
+#   Start app services:    docker compose up backend frontend
 #   Rebuild after changes: docker compose up --build
 #   Stop all services:     docker compose down
+#   View logs with UI:     lazydocker (install with: brew install lazydocker)
 # =============================================================================
 
 services:
@@ -27,18 +30,37 @@ services:
     environment:
       - APP_ENV=development
       - DEBUG=true
+      - REDIS_URL=redis://redis:6379/0  # Use 'redis' hostname inside Docker network
     env_file:
       - ./backend/.env # Make sure to run 'cp backend/.env.example backend/.env' first!
     depends_on:
-      db:
-        condition: service_healthy
-    healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:8000/health" ]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
+      - db
+      - redis
     restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
+  # Frontend (Next.js)
+  # ---------------------------------------------------------------------------
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: development
+    ports:
+      - "3000:3000"
+    volumes:
+      # Mount source code for hot reload
+      - ./frontend:/app
+      # Prevent overwriting container's node_modules
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+      - API_URL=http://backend:8000
+    depends_on:
+      - backend
+    restart: unless-stopped
+
   # ---------------------------------------------------------------------------
   # PostgreSQL Database (local development only)
   # ---------------------------------------------------------------------------
@@ -60,13 +82,20 @@ services:
     restart: unless-stopped
 
   # ---------------------------------------------------------------------------
-  # Redis Cache (uncomment when needed)
+  # Redis Cache (for session management & AI chatbot)
   # ---------------------------------------------------------------------------
-  # redis:
-  #   image: redis:7-alpine
-  #   ports:
-  #     - "6379:6379"
-  #   restart: unless-stopped
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
 
   # ===========================================================================
   # OBSERVABILITY STACK
@@ -133,4 +162,5 @@ volumes:
   prometheus_data:
   grafana_data:
   postgres_data:
+  redis_data:
 

@@ -10,6 +10,7 @@ from app.schemas.clinic import UpdateChatbotSettingsRequest
 
 # Default chatbot settings initialized on clinic registration
 DEFAULT_VOICE_SETTINGS = {
+    "chatbot_name": None,  # Will use clinic name by default if not set
     "chatbot_persona": "professional",
     "greeting_message": "Thank you for calling {clinic_name}. How can I help you today?",
     "emergency_handling": {
@@ -68,6 +69,15 @@ class ClinicService:
         merged_settings["clinic_name"] = clinic.name
         merged_settings["voice_enabled"] = clinic.voice_enabled
 
+        # Add contact information
+        merged_settings["phone"] = clinic.phone
+        merged_settings["email"] = clinic.email
+        merged_settings["address"] = clinic.address_line1
+        merged_settings["city"] = clinic.city
+        merged_settings["state"] = clinic.state
+        merged_settings["zip_code"] = clinic.postal_code
+        merged_settings["business_hours"] = clinic.business_hours
+
         return merged_settings
 
     async def update_chatbot_settings(
@@ -99,13 +109,31 @@ class ClinicService:
         if not clinic:
             raise ValueError("Clinic not found")
 
+        # Update contact information if provided
+        if settings.phone is not None:
+            clinic.phone = settings.phone
+        if settings.email is not None:
+            clinic.email = settings.email
+        if settings.address is not None:
+            clinic.address_line1 = settings.address
+        if settings.city is not None:
+            clinic.city = settings.city
+        if settings.state is not None:
+            clinic.state = settings.state
+        if settings.zip_code is not None:
+            clinic.postal_code = settings.zip_code
+        if settings.business_hours is not None:
+            clinic.business_hours = settings.business_hours
+
         # Get existing voice_settings or initialize empty dict
         existing_settings = clinic.voice_settings if clinic.voice_settings else {}
 
         # Build updated settings dict
         updated_settings = existing_settings.copy()
+        updated_settings["chatbot_name"] = settings.chatbot_name
         updated_settings["chatbot_persona"] = settings.chatbot_persona
         updated_settings["greeting_message"] = settings.greeting_message
+        updated_settings["additional_context"] = settings.additional_context
 
         # Update emergency handling if provided
         if settings.emergency_handling:

@@ -10,10 +10,17 @@
  */
 export const env = {
     /**
-     * Backend API URL
+     * Backend API URL for client-side calls (browser)
      * @default http://localhost:8000
      */
     apiUrl: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000',
+
+    /**
+     * Backend API URL for server-side calls (inside Docker container)
+     * Uses Docker service name instead of localhost
+     * @default http://backend:8000
+     */
+    serverApiUrl: process.env.API_URL || 'http://backend:8000',
 
     /**
      * Current environment
@@ -51,6 +58,23 @@ export const env = {
         sentryDsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
     },
 } as const;
+
+/**
+ * Get the appropriate API URL based on execution context
+ * - Server-side: Uses internal Docker network (backend:8000)
+ * - Client-side: Uses localhost or public URL (localhost:8000)
+ *
+ * @returns The correct API URL for the current context
+ */
+export function getApiUrl(): string {
+    // Check if we're running on the server (Node.js) or client (browser)
+    if (typeof window === 'undefined') {
+        // Server-side: use internal Docker network URL
+        return env.serverApiUrl;
+    }
+    // Client-side: use public API URL
+    return env.apiUrl;
+}
 
 /**
  * Validate required environment variables at build/startup

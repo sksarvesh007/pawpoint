@@ -93,7 +93,7 @@ export default function SignupPage() {
         throw new Error(errorMessage);
       }
 
-      router.push("/onboarding/chatbot");
+      router.push("/onboarding");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Registration failed");
     } finally {

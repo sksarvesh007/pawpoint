@@ -181,8 +181,43 @@ class Settings(BaseSettings):
     # External APIs (Optional)
     # -------------------------------------------------------------------------
     openai_api_key: SecretStr | None = None
+    google_api_key: SecretStr | None = None  # For Gemini via Google AI Studio
+    google_vertex_project_id: str | None = None  # For Gemini via Vertex AI
+    google_vertex_region: str = "us-central1"  # Vertex AI region
     twilio_account_sid: str | None = None
     twilio_auth_token: SecretStr | None = None
+
+    # -------------------------------------------------------------------------
+    # AI / LLM Configuration
+    # -------------------------------------------------------------------------
+    # Default models for different tasks (Gemini-only setup)
+    llm_voice_model: str = "gemini-2.5-flash"  # Fast model for voice
+    llm_reasoning_model: str = "gemini-2.5-flash"  # Complex reasoning tasks
+    llm_default_model: str = "gemini-2.5-flash"  # Default for chat/email
+    llm_use_gemini_only: bool = True  # Set to False if using OpenAI too
+
+    # LLM Usage limits
+    llm_max_tokens: int = 4096  # Max tokens per request
+    llm_temperature: float = 0.7  # Default temperature
+    llm_timeout_seconds: int = 30  # Request timeout
+
+    # Conversation settings
+    conversation_session_ttl_seconds: int = 1800  # 30 minutes in Redis
+    conversation_max_history: int = 20  # Max messages to keep in active session
+    conversation_session_ttl_extension: int = (
+        300  # Extra TTL for clinic active sessions set
+    )
+
+    # Redis settings
+    redis_socket_connect_timeout: int = 5  # Seconds to wait for connection
+    redis_socket_timeout: int = 5  # Seconds to wait for response
+    redis_key_prefix_session: str = "conversation:session:"
+    redis_key_prefix_clinic_sessions: str = "clinic:{clinic_id}:active_sessions"
+
+    # API limits
+    message_history_max_limit: int = 200  # Max messages in history API
+    message_history_min_limit: int = 1  # Min messages in history API
+    message_history_default_limit: int = 50  # Default messages in history API
 
     # -------------------------------------------------------------------------
     # PIMS Integration (Optional)

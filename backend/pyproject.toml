@@ -40,6 +40,15 @@ dependencies = [
     # Direct bcrypt for security utilities
     "bcrypt>=4.0.0",
     "sse-starlette>=3.2.0",
+    # AI Orchestration
+    "pydantic-ai[openai]>=0.0.49",
+    "openai>=1.68.0",
+    # WebSocket support for real-time chat
+    "websockets>=13.0",
+    # Fast Redis parser
+    "hiredis>=3.0.0",
+    # Twilio SDK for voice integration
+    "twilio>=9.0.0",
 ]
 
 # ============================================================================
