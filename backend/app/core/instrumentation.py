@@ -193,14 +193,16 @@ active_chat_sessions = _MetricProxy(_active_chat_sessions)
 def normalize_path(path: str) -> str:
     """Normalize paths to prevent metric cardinality explosion.
 
-    Replaces UUIDs and numeric IDs with placeholders.
+    Replaces UUIDs, dates, and numeric IDs with placeholders.
+    Order matters: more specific patterns (UUIDs, dates) must be matched
+    before generic numeric patterns to avoid incorrect replacements.
 
     Examples:
         /api/v1/patients/550e8400-e29b-41d4-a716-446655440000 -> /api/v1/patients/{id}
         /api/v1/clinics/123/settings -> /api/v1/clinics/{id}/settings
         /api/v1/appointments/2024-01-15 -> /api/v1/appointments/{date}
     """
-    # Replace UUIDs (standard format)
+    # Replace UUIDs first (most specific pattern)
     path = re.sub(
         r"/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}",
         "/{id}",
@@ -208,11 +210,11 @@ def normalize_path(path: str) -> str:
         flags=re.IGNORECASE,
     )
 
-    # Replace numeric IDs (digits only)
-    path = re.sub(r"/\d+", "/{id}", path)
-
-    # Replace date patterns (YYYY-MM-DD)
+    # Replace date patterns BEFORE numeric IDs (dates contain digits)
     path = re.sub(r"/\d{4}-\d{2}-\d{2}", "/{date}", path)
+
+    # Replace numeric IDs last (most generic pattern)
+    path = re.sub(r"/\d+", "/{id}", path)
 
     return path
 

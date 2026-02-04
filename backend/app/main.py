@@ -113,20 +113,22 @@ class MetricsMiddleware(BaseHTTPMiddleware):
             return await call_next(request)
 
         start_time = time.perf_counter()
-        response = await call_next(request)
-        duration = time.perf_counter() - start_time
-
-        # Normalize path to prevent cardinality explosion
-        path = normalize_path(request.url.path)
-        method = request.method
-        status_code = str(response.status_code)
-
-        # Record metrics
-        attributes = {"method": method, "path": path, "status_code": status_code}
-        api_requests_total.add(1, attributes)
-        api_request_duration_seconds.record(duration, attributes)
-
-        return response
+        status_code = "500"  # Default for unhandled exceptions
+        try:
+            response = await call_next(request)
+            status_code = str(response.status_code)
+            return response
+        except Exception:
+            # Re-raise but ensure metrics are recorded
+            raise
+        finally:
+            # Always record metrics, even on exceptions
+            duration = time.perf_counter() - start_time
+            path = normalize_path(request.url.path)
+            method = request.method
+            attributes = {"method": method, "path": path, "status_code": status_code}
+            api_requests_total.add(1, attributes)
+            api_request_duration_seconds.record(duration, attributes)
 
 
 # Register rate limiter with the app

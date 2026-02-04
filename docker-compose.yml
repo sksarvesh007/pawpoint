@@ -141,7 +141,7 @@ services:
   # Collects and stores logs from Docker containers via Alloy
   # ---------------------------------------------------------------------------
   loki:
-    image: grafana/loki:latest
+    image: grafana/loki:2.9.4
     ports:
       - "3100:3100"   # Loki HTTP API
     volumes:

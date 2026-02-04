@@ -20,7 +20,7 @@ ingester:
 # Compactor handles trace compaction
 compactor:
   compaction:
-    block_retention: 48h
+    block_retention: 168h  # 7 days - sufficient for debugging weekend issues
 
 # Storage configuration
 storage:
