@@ -11,7 +11,7 @@ from redis.asyncio import Redis
 
 from app.ai.state.schemas import ConversationSession, MessageData
 from app.core.config import settings
-from app.core.instrumentation import traced
+from app.core.instrumentation import decrement_active_chat_sessions, traced
 
 
 class SessionManager:
@@ -181,10 +181,12 @@ class SessionManager:
         key = self._get_key(conversation_id)
         deleted_count = await self.redis.delete(key)
 
-        # Remove from clinic's active sessions set
+        # Remove from clinic's active sessions set and decrement counter
         if session:
             clinic_set_key = self._get_clinic_sessions_key(session.context.clinic_id)
             await self.redis.srem(clinic_set_key, str(conversation_id))  # type: ignore[misc]
+            # Decrement active sessions counter
+            decrement_active_chat_sessions(str(session.context.clinic_id))
 
         return deleted_count > 0
 

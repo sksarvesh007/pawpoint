@@ -11,7 +11,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.ai.state.schemas import MessageData, UsageMetrics
-from app.core.instrumentation import traced
+from app.core.instrumentation import decrement_active_chat_sessions, traced
 from app.models.conversation import Conversation
 from app.models.message import Message
 
@@ -221,6 +221,9 @@ class HistoryManager:
         if not conversation:
             return None
 
+        # Only decrement if session was active (avoid double-decrement)
+        was_active = conversation.session_active
+
         conversation.session_active = False
         conversation.session_ended_at = datetime.now(UTC)
 
@@ -229,6 +232,10 @@ class HistoryManager:
 
         await self.db.flush()
         await self.db.refresh(conversation)
+
+        # Decrement active sessions counter if session was previously active
+        if was_active:
+            decrement_active_chat_sessions(str(conversation.clinic_id))
 
         return conversation
 

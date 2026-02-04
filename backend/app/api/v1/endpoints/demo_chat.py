@@ -86,7 +86,9 @@ async def stream_demo_response(
     llm_start_time = time.perf_counter()
 
     try:
-        logger.info(f"[POST /api/v1/demo-clinic/chat/stream] Demo chat request - Message: {message[:50]}...")
+        logger.info(
+            f"[POST /api/v1/demo-clinic/chat/stream] Demo chat request - Message: {message[:50]}..."
+        )
         # Get the model
         model = ModelFactory.get_model_for_task("faq", channel="chat")
 
@@ -123,9 +125,13 @@ async def stream_demo_response(
 
         # Record chat messages
         record_chat_message(clinic_id="demo", session_id=conv_id, role="user")
-        record_chat_message(clinic_id="demo", session_id=conv_id, role="assistant", tokens=0)
+        record_chat_message(
+            clinic_id="demo", session_id=conv_id, role="assistant", tokens=0
+        )
 
-        logger.success(f"✅ Demo chat complete | Response: {full_response[:50]}... | Duration: {llm_duration:.2f}s")
+        logger.success(
+            f"✅ Demo chat complete | Response: {full_response[:50]}... | Duration: {llm_duration:.2f}s"
+        )
 
         # Send completion
         yield f"data: {json.dumps({'type': 'done', 'tokens_used': 0})}\n\n"

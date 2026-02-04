@@ -53,28 +53,24 @@ def _get_table_from_statement(statement: str) -> str:
     statement = statement.strip().upper()
     words = statement.split()
     try:
-        if statement.startswith("SELECT"):
+        if statement.startswith("SELECT") and "FROM" in words:
             # SELECT ... FROM table_name
-            if "FROM" in words:
-                idx = words.index("FROM")
-                if idx + 1 < len(words):
-                    return words[idx + 1].lower().strip("\"'`")
-        elif statement.startswith("INSERT"):
+            idx = words.index("FROM")
+            if idx + 1 < len(words):
+                return words[idx + 1].lower().strip("\"'`")
+        elif statement.startswith("INSERT") and "INTO" in words:
             # INSERT INTO table_name
-            if "INTO" in words:
-                idx = words.index("INTO")
-                if idx + 1 < len(words):
-                    return words[idx + 1].lower().strip("\"'`")
-        elif statement.startswith("UPDATE"):
+            idx = words.index("INTO")
+            if idx + 1 < len(words):
+                return words[idx + 1].lower().strip("\"'`")
+        elif statement.startswith("UPDATE") and len(words) > 1:
             # UPDATE table_name
-            if len(words) > 1:
-                return words[1].lower().strip("\"'`")
-        elif statement.startswith("DELETE"):
+            return words[1].lower().strip("\"'`")
+        elif statement.startswith("DELETE") and "FROM" in words:
             # DELETE FROM table_name
-            if "FROM" in words:
-                idx = words.index("FROM")
-                if idx + 1 < len(words):
-                    return words[idx + 1].lower().strip("\"'`")
+            idx = words.index("FROM")
+            if idx + 1 < len(words):
+                return words[idx + 1].lower().strip("\"'`")
     except (IndexError, ValueError):
         pass
     return "unknown"

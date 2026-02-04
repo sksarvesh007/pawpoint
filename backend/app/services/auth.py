@@ -50,7 +50,10 @@ class AuthService:
         existing_user = await self.db.execute(select(User).where(User.email == email))
         if existing_user.scalar_one_or_none():
             logger.warning(f"Registration attempt with existing email: {email}")
-            auth_attempts_total.add(1, {"operation": "register", "status": "failed", "reason": "email_exists"})
+            auth_attempts_total.add(
+                1,
+                {"operation": "register", "status": "failed", "reason": "email_exists"},
+            )
             # Generic error message to prevent username enumeration
             raise ValueError(
                 "Registration failed. Please check your information and try again."
@@ -101,7 +104,9 @@ class AuthService:
             }
         )
 
-        auth_attempts_total.add(1, {"operation": "register", "status": "success", "reason": "none"})
+        auth_attempts_total.add(
+            1, {"operation": "register", "status": "success", "reason": "none"}
+        )
         return user, clinic, access_token
 
     @traced(span_name="auth.login")
@@ -143,16 +148,32 @@ class AuthService:
             await asyncio.sleep(secrets.SystemRandom().uniform(0.05, 0.15))
             if not user:
                 logger.warning(f"Login failed: User not found for email {email}")
-                auth_attempts_total.add(1, {"operation": "login", "status": "failed", "reason": "user_not_found"})
+                auth_attempts_total.add(
+                    1,
+                    {
+                        "operation": "login",
+                        "status": "failed",
+                        "reason": "user_not_found",
+                    },
+                )
             elif not password_valid:
                 logger.warning(f"Login failed: Invalid password for email {email}")
-                auth_attempts_total.add(1, {"operation": "login", "status": "failed", "reason": "invalid_password"})
+                auth_attempts_total.add(
+                    1,
+                    {
+                        "operation": "login",
+                        "status": "failed",
+                        "reason": "invalid_password",
+                    },
+                )
             raise ValueError("Invalid email or password")
 
         # Get user's clinic (first one for now)
         if not user.clinics:
             logger.error(f"Login failed: User {email} has no associated clinic")
-            auth_attempts_total.add(1, {"operation": "login", "status": "failed", "reason": "no_clinic"})
+            auth_attempts_total.add(
+                1, {"operation": "login", "status": "failed", "reason": "no_clinic"}
+            )
             raise ValueError("User has no associated clinic")
 
         clinic = user.clinics[0]
@@ -167,7 +188,9 @@ class AuthService:
             }
         )
 
-        auth_attempts_total.add(1, {"operation": "login", "status": "success", "reason": "none"})
+        auth_attempts_total.add(
+            1, {"operation": "login", "status": "success", "reason": "none"}
+        )
         return user, clinic, access_token
 
     async def get_user_by_id(self, user_id: UUID) -> User | None:

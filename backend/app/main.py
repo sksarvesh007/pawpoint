@@ -134,7 +134,7 @@ app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)  # type: ignore[arg-type]
 
 # Add metrics middleware
-app.add_middleware(MetricsMiddleware)
+app.add_middleware(MetricsMiddleware)  # type: ignore[arg-type]
 
 # CORS configuration from settings
 app.add_middleware(
@@ -241,7 +241,7 @@ async def config_info() -> dict[str, str | bool | list[str]]:
 
 
 @app.get("/health/telemetry")
-async def telemetry_health() -> dict[str, bool | float]:
+async def telemetry_health() -> dict[str, bool | float | str]:
     """Health check for observability pipeline.
 
     Returns status of tracing and metrics providers,
@@ -250,14 +250,23 @@ async def telemetry_health() -> dict[str, bool | float]:
     tracer_provider = trace.get_tracer_provider()
     meter_provider = metrics.get_meter_provider()
 
-    tracer_ok = tracer_provider is not None
-    meter_ok = meter_provider is not None
+    # Check for actual configured providers, not just no-op defaults
+    # The SDK TracerProvider and MeterProvider indicate proper configuration
+    tracer_type = type(tracer_provider).__name__
+    meter_type = type(meter_provider).__name__
+
+    # NoOpTracerProvider/ProxyTracerProvider indicate unconfigured state
+    tracer_ok = tracer_type not in ("NoOpTracerProvider", "ProxyTracerProvider")
+    meter_ok = meter_type not in ("NoOpMeterProvider", "ProxyMeterProvider")
 
     # Determine sampling rate (10% in production, 100% in dev)
     sampling_rate = 0.1 if settings.is_production else 1.0
 
     return {
         "tracer": tracer_ok,
+        "tracer_provider": tracer_type,
         "meter": meter_ok,
+        "meter_provider": meter_type,
         "sampling_rate": sampling_rate,
+        "otel_enabled": settings.otel_enabled,
     }

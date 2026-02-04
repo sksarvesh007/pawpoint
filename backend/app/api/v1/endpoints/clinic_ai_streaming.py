@@ -23,8 +23,8 @@ from app.api.dependencies import ClinicDep
 from app.api.v1.endpoints.clinic_ai import ChatRequest, build_clinic_data
 from app.core.config import settings
 from app.core.instrumentation import (
-    active_chat_sessions,
     chat_response_duration_seconds,
+    increment_active_chat_sessions,
     record_chat_message,
     traced,
 )
@@ -73,7 +73,7 @@ async def stream_chat_response(
                 # Convert DB messages to MessageData for session
                 message_history = [
                     MessageData(
-                        role=msg.role,  # type: ignore[arg-type]
+                        role=msg.role,
                         content=msg.content or "",
                         agent_name=msg.agent_name,
                         model_name=msg.model_name,
@@ -135,7 +135,7 @@ async def stream_chat_response(
             await session_manager.create_session(session)
 
             # Track new active session
-            active_chat_sessions.add(1, {"clinic_id": str(clinic.id)})
+            increment_active_chat_sessions(str(clinic.id))
 
         # Save user message
         user_message = MessageData(

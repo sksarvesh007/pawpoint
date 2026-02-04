@@ -4,104 +4,185 @@ Provides:
 - Application-specific metrics following OTel semantic conventions
 - Path normalization for cardinality control
 - Decorator for automatic function tracing
+
+IMPORTANT: Metrics and tracers are lazily initialized to ensure they use
+the configured providers from init_telemetry() rather than no-op defaults.
 """
 
 import functools
 import re
 import time
 from collections.abc import Callable
-from typing import TYPE_CHECKING, ParamSpec, TypeVar
+from typing import TYPE_CHECKING, ClassVar, ParamSpec, TypeVar
 
 from app.core.telemetry import get_meter, get_tracer
 
 if TYPE_CHECKING:
-    from opentelemetry.metrics import Histogram
+    from opentelemetry.metrics import Counter, Histogram, UpDownCounter
+    from opentelemetry.trace import Tracer
 
 # Type variables for generic decorator
 P = ParamSpec("P")
 R = TypeVar("R")
 
-# Get meter and tracer instances
-meter = get_meter("pawpoint")
-tracer = get_tracer("pawpoint")
 
 # =============================================================================
-# Counters (use _total suffix per OTel conventions)
+# Lazy Metric Initialization
+# =============================================================================
+# Metrics are created lazily on first access to ensure they use the configured
+# MeterProvider from init_telemetry() rather than the default no-op provider.
 # =============================================================================
 
-api_requests_total = meter.create_counter(
-    name="pawpoint_api_requests_total",
-    description="Total API requests",
-    unit="1",
-)
 
-chat_messages_total = meter.create_counter(
-    name="pawpoint_chat_messages_total",
-    description="Total chat messages processed",
-    unit="1",
-)
+class _LazyMetrics:
+    """Lazy metric initialization to ensure proper provider configuration."""
 
-chat_tokens_total = meter.create_counter(
-    name="pawpoint_chat_tokens_total",
-    description="Total tokens used in chat",
-    unit="1",
-)
+    _meter = None
+    _tracer = None
+    _metrics: ClassVar[dict] = {}
 
-db_queries_total = meter.create_counter(
-    name="pawpoint_db_queries_total",
-    description="Total database queries executed",
-    unit="1",
-)
+    @classmethod
+    def _get_meter(cls):
+        if cls._meter is None:
+            cls._meter = get_meter("pawpoint")
+        return cls._meter
 
-auth_attempts_total = meter.create_counter(
-    name="pawpoint_auth_attempts_total",
-    description="Total authentication attempts",
-    unit="1",
-)
+    @classmethod
+    def _get_tracer(cls) -> "Tracer":
+        if cls._tracer is None:
+            cls._tracer = get_tracer("pawpoint")
+        return cls._tracer
 
-# =============================================================================
-# Histograms (use _seconds suffix for duration per OTel conventions)
-# =============================================================================
+    @classmethod
+    def get_counter(cls, name: str, description: str) -> "Counter":
+        if name not in cls._metrics:
+            cls._metrics[name] = cls._get_meter().create_counter(
+                name=name, description=description, unit="1"
+            )
+        return cls._metrics[name]
 
-api_request_duration_seconds = meter.create_histogram(
-    name="pawpoint_api_request_duration_seconds",
-    description="API request duration",
-    unit="s",
-)
+    @classmethod
+    def get_histogram(cls, name: str, description: str) -> "Histogram":
+        if name not in cls._metrics:
+            cls._metrics[name] = cls._get_meter().create_histogram(
+                name=name, description=description, unit="s"
+            )
+        return cls._metrics[name]
 
-chat_response_duration_seconds = meter.create_histogram(
-    name="pawpoint_chat_response_duration_seconds",
-    description="Chat response latency",
-    unit="s",
-)
+    @classmethod
+    def get_up_down_counter(cls, name: str, description: str) -> "UpDownCounter":
+        if name not in cls._metrics:
+            cls._metrics[name] = cls._get_meter().create_up_down_counter(
+                name=name, description=description, unit="1"
+            )
+        return cls._metrics[name]
 
-db_query_duration_seconds = meter.create_histogram(
-    name="pawpoint_db_query_duration_seconds",
-    description="Database query duration",
-    unit="s",
-)
 
-llm_request_duration_seconds = meter.create_histogram(
-    name="pawpoint_llm_request_duration_seconds",
-    description="LLM API request duration",
-    unit="s",
-)
+def _get_tracer() -> "Tracer":
+    """Get tracer instance (lazily initialized)."""
+    return _LazyMetrics._get_tracer()
+
 
 # =============================================================================
-# Gauges (current state metrics)
+# Metric Accessors (Lazy)
 # =============================================================================
 
-active_websocket_connections = meter.create_up_down_counter(
-    name="pawpoint_active_websocket_connections",
-    description="Current active WebSocket connections",
-    unit="1",
-)
 
-active_chat_sessions = meter.create_up_down_counter(
-    name="pawpoint_active_chat_sessions",
-    description="Current active chat sessions",
-    unit="1",
-)
+def _api_requests_total() -> "Counter":
+    return _LazyMetrics.get_counter("pawpoint_api_requests_total", "Total API requests")
+
+
+def _chat_messages_total() -> "Counter":
+    return _LazyMetrics.get_counter(
+        "pawpoint_chat_messages_total", "Total chat messages processed"
+    )
+
+
+def _chat_tokens_total() -> "Counter":
+    return _LazyMetrics.get_counter(
+        "pawpoint_chat_tokens_total", "Total tokens used in chat"
+    )
+
+
+def _db_queries_total() -> "Counter":
+    return _LazyMetrics.get_counter(
+        "pawpoint_db_queries_total", "Total database queries executed"
+    )
+
+
+def _auth_attempts_total() -> "Counter":
+    return _LazyMetrics.get_counter(
+        "pawpoint_auth_attempts_total", "Total authentication attempts"
+    )
+
+
+def _api_request_duration_seconds() -> "Histogram":
+    return _LazyMetrics.get_histogram(
+        "pawpoint_api_request_duration_seconds", "API request duration"
+    )
+
+
+def _chat_response_duration_seconds() -> "Histogram":
+    return _LazyMetrics.get_histogram(
+        "pawpoint_chat_response_duration_seconds", "Chat response latency"
+    )
+
+
+def _db_query_duration_seconds() -> "Histogram":
+    return _LazyMetrics.get_histogram(
+        "pawpoint_db_query_duration_seconds", "Database query duration"
+    )
+
+
+def _llm_request_duration_seconds() -> "Histogram":
+    return _LazyMetrics.get_histogram(
+        "pawpoint_llm_request_duration_seconds", "LLM API request duration"
+    )
+
+
+def _active_websocket_connections() -> "UpDownCounter":
+    return _LazyMetrics.get_up_down_counter(
+        "pawpoint_active_websocket_connections", "Current active WebSocket connections"
+    )
+
+
+def _active_chat_sessions() -> "UpDownCounter":
+    return _LazyMetrics.get_up_down_counter(
+        "pawpoint_active_chat_sessions", "Current active chat sessions"
+    )
+
+
+# =============================================================================
+# Backwards-compatible module-level accessors
+# These are properties that lazily initialize metrics on first access
+# =============================================================================
+
+
+class _MetricProxy:
+    """Proxy object that forwards attribute access to lazy metric getter."""
+
+    def __init__(self, getter):
+        self._getter = getter
+
+    def add(self, amount, attributes=None):
+        return self._getter().add(amount, attributes or {})
+
+    def record(self, value, attributes=None):
+        return self._getter().record(value, attributes or {})
+
+
+# Module-level metric objects (lazy via proxy)
+api_requests_total = _MetricProxy(_api_requests_total)
+chat_messages_total = _MetricProxy(_chat_messages_total)
+chat_tokens_total = _MetricProxy(_chat_tokens_total)
+db_queries_total = _MetricProxy(_db_queries_total)
+auth_attempts_total = _MetricProxy(_auth_attempts_total)
+api_request_duration_seconds = _MetricProxy(_api_request_duration_seconds)
+chat_response_duration_seconds = _MetricProxy(_chat_response_duration_seconds)
+db_query_duration_seconds = _MetricProxy(_db_query_duration_seconds)
+llm_request_duration_seconds = _MetricProxy(_llm_request_duration_seconds)
+active_websocket_connections = _MetricProxy(_active_websocket_connections)
+active_chat_sessions = _MetricProxy(_active_chat_sessions)
 
 
 # =============================================================================
@@ -168,11 +249,14 @@ def traced(
     """
 
     def decorator(func: Callable[P, R]) -> Callable[P, R]:
-        name = span_name or f"{getattr(func, '__module__', __name__)}.{getattr(func, '__qualname__', 'unknown')}"
+        name = (
+            span_name
+            or f"{getattr(func, '__module__', __name__)}.{getattr(func, '__qualname__', 'unknown')}"
+        )
 
         @functools.wraps(func)
         async def async_wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
-            with tracer.start_as_current_span(name) as span:
+            with _get_tracer().start_as_current_span(name) as span:
                 if attributes:
                     for key, value in attributes.items():
                         span.set_attribute(key, value)
@@ -189,7 +273,7 @@ def traced(
 
         @functools.wraps(func)
         def sync_wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
-            with tracer.start_as_current_span(name) as span:
+            with _get_tracer().start_as_current_span(name) as span:
                 if attributes:
                     for key, value in attributes.items():
                         span.set_attribute(key, value)
@@ -282,7 +366,7 @@ def record_api_request(
 
 def record_chat_message(
     clinic_id: str,
-    session_id: str,
+    session_id: str,  # kept for API compatibility, not used in metrics to avoid cardinality
     role: str,
     tokens: int = 0,
 ) -> None:
@@ -290,10 +374,12 @@ def record_chat_message(
 
     Args:
         clinic_id: Clinic identifier
-        session_id: Chat session identifier
+        session_id: Chat session identifier (not included in metrics to avoid cardinality explosion)
         role: Message role (user, assistant, system)
         tokens: Number of tokens used
     """
+    # Note: session_id intentionally not included in attributes to prevent
+    # high cardinality issues (each session would create new metric series)
     attributes = {
         "clinic_id": clinic_id,
         "role": role,
@@ -343,3 +429,30 @@ def record_db_query(
     }
     db_queries_total.add(1, attributes)
     db_query_duration_seconds.record(duration_seconds, attributes)
+
+
+# =============================================================================
+# Session Tracking Helpers
+# =============================================================================
+
+
+def increment_active_chat_sessions(clinic_id: str) -> None:
+    """Increment the active chat sessions counter for a clinic.
+
+    Call this when a new chat session is created.
+
+    Args:
+        clinic_id: Clinic identifier
+    """
+    active_chat_sessions.add(1, {"clinic_id": clinic_id})
+
+
+def decrement_active_chat_sessions(clinic_id: str) -> None:
+    """Decrement the active chat sessions counter for a clinic.
+
+    Call this when a chat session ends or is deleted.
+
+    Args:
+        clinic_id: Clinic identifier
+    """
+    active_chat_sessions.add(-1, {"clinic_id": clinic_id})
