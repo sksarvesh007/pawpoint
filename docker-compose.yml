@@ -113,9 +113,41 @@ services:
       - "12345:12345" # Alloy UI
     volumes:
       - ./observability/alloy-config.river:/etc/alloy/config.river:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro  # Log collection from containers
     command: [ "run", "/etc/alloy/config.river", "--server.http.listen-addr=0.0.0.0:12345" ]
     depends_on:
       - prometheus
+      - tempo
+      - loki
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
+  # Tempo - Distributed Tracing Backend
+  # Stores and queries distributed traces from the backend
+  # ---------------------------------------------------------------------------
+  tempo:
+    image: grafana/tempo:2.3.1
+    ports:
+      - "3200:3200"   # Tempo HTTP API
+      - "9095:9095"   # Tempo gRPC
+    volumes:
+      - ./observability/tempo.yaml:/etc/tempo/tempo.yaml:ro
+      - tempo_data:/var/tempo
+    command: ["-config.file=/etc/tempo/tempo.yaml"]
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
+  # Loki - Log Aggregation
+  # Collects and stores logs from Docker containers via Alloy
+  # ---------------------------------------------------------------------------
+  loki:
+    image: grafana/loki:latest
+    ports:
+      - "3100:3100"   # Loki HTTP API
+    volumes:
+      - ./observability/loki.yaml:/etc/loki/local-config.yaml:ro
+      - loki_data:/loki
+    command: ["-config.file=/etc/loki/local-config.yaml"]
     restart: unless-stopped
 
   # ---------------------------------------------------------------------------
@@ -135,6 +167,7 @@ services:
       - '--web.enable-remote-write-receiver'
       - '--web.console.libraries=/etc/prometheus/console_libraries'
       - '--web.console.templates=/etc/prometheus/consoles'
+      - '--enable-feature=exemplar-storage'  # Enable exemplars for trace correlation
     restart: unless-stopped
 
   # ---------------------------------------------------------------------------
@@ -163,4 +196,6 @@ volumes:
   grafana_data:
   postgres_data:
   redis_data:
+  tempo_data:
+  loki_data:
 

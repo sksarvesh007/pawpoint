@@ -11,6 +11,7 @@ from redis.asyncio import Redis
 
 from app.ai.state.schemas import ConversationSession, MessageData
 from app.core.config import settings
+from app.core.instrumentation import traced
 
 
 class SessionManager:
@@ -57,6 +58,7 @@ class SessionManager:
         """
         return self.clinic_sessions_prefix.format(clinic_id=clinic_id)
 
+    @traced(span_name="session_manager.create_session")
     async def create_session(self, session: ConversationSession) -> None:
         """Create a new conversation session in Redis.
 
@@ -82,6 +84,7 @@ class SessionManager:
         # Set expiration on the set (slightly longer than session TTL)
         await self.redis.expire(clinic_set_key, self.ttl_seconds + self.ttl_extension)
 
+    @traced(span_name="session_manager.get_session")
     async def get_session(
         self, conversation_id: UUID | str
     ) -> ConversationSession | None:
@@ -104,6 +107,7 @@ class SessionManager:
 
         return ConversationSession.model_validate_json(session_json)
 
+    @traced(span_name="session_manager.update_session")
     async def update_session(self, session: ConversationSession) -> None:
         """Update an existing conversation session.
 
@@ -125,6 +129,7 @@ class SessionManager:
             session_json,
         )
 
+    @traced(span_name="session_manager.add_message")
     async def add_message(
         self,
         conversation_id: UUID | str,
@@ -157,6 +162,7 @@ class SessionManager:
 
         return session
 
+    @traced(span_name="session_manager.delete_session")
     async def delete_session(self, conversation_id: UUID | str) -> bool:
         """Delete a conversation session from Redis.
 
@@ -182,6 +188,7 @@ class SessionManager:
 
         return deleted_count > 0
 
+    @traced(span_name="session_manager.extend_session")
     async def extend_session(
         self, conversation_id: UUID | str, extra_seconds: int = 0
     ) -> bool:
@@ -204,6 +211,7 @@ class SessionManager:
 
         return cast(bool, await self.redis.expire(key, ttl))
 
+    @traced(span_name="session_manager.get_active_sessions_count")
     async def get_active_sessions_count(self, clinic_id: UUID | str) -> int:
         """Get count of active sessions for a clinic.
 

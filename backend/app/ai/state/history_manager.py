@@ -11,6 +11,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.ai.state.schemas import MessageData, UsageMetrics
+from app.core.instrumentation import traced
 from app.models.conversation import Conversation
 from app.models.message import Message
 
@@ -33,6 +34,7 @@ class HistoryManager:
         """
         self.db = db_session
 
+    @traced(span_name="history_manager.create_conversation")
     async def create_conversation(
         self,
         clinic_id: UUID,
@@ -71,6 +73,7 @@ class HistoryManager:
 
         return conversation
 
+    @traced(span_name="history_manager.save_message")
     async def save_message(
         self,
         conversation_id: UUID,
@@ -117,6 +120,7 @@ class HistoryManager:
 
         return message
 
+    @traced(span_name="history_manager.get_conversation")
     async def get_conversation(self, conversation_id: UUID) -> Conversation | None:
         """Retrieve a conversation by ID.
 
@@ -133,6 +137,7 @@ class HistoryManager:
         result = await self.db.execute(stmt)
         return result.scalar_one_or_none()
 
+    @traced(span_name="history_manager.get_conversation_messages")
     async def get_conversation_messages(
         self,
         conversation_id: UUID,
@@ -165,6 +170,7 @@ class HistoryManager:
         result = await self.db.execute(stmt)
         return result.scalars().all()
 
+    @traced(span_name="history_manager.get_recent_conversations")
     async def get_recent_conversations(
         self,
         clinic_id: UUID,
@@ -195,6 +201,7 @@ class HistoryManager:
         result = await self.db.execute(stmt)
         return result.scalars().all()
 
+    @traced(span_name="history_manager.end_conversation")
     async def end_conversation(
         self, conversation_id: UUID, summary: str | None = None
     ) -> Conversation | None:
@@ -225,6 +232,7 @@ class HistoryManager:
 
         return conversation
 
+    @traced(span_name="history_manager.update_conversation_context")
     async def update_conversation_context(
         self,
         conversation_id: UUID,
@@ -254,6 +262,7 @@ class HistoryManager:
 
         return conversation
 
+    @traced(span_name="history_manager._update_conversation_totals")
     async def _update_conversation_totals(
         self, conversation_id: UUID, tokens_to_add: int = 0
     ) -> None:
@@ -275,6 +284,7 @@ class HistoryManager:
 
         await self.db.flush()
 
+    @traced(span_name="history_manager.get_conversation_usage_summary")
     async def get_conversation_usage_summary(
         self, conversation_id: UUID
     ) -> dict[str, int]:

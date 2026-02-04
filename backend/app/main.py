@@ -1,24 +1,38 @@
 """PawPoint Backend - Main Application Entry Point."""
 
 import os
+import secrets
+import time
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import PlainTextResponse
+from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from loguru import logger
+from opentelemetry import metrics, trace
 from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.responses import Response
 
 from app.api.v1 import api_router
 from app.core.config import settings
+from app.core.instrumentation import (
+    api_request_duration_seconds,
+    api_requests_total,
+    normalize_path,
+)
 from app.core.logging import configure_logging
 from app.core.redis import close_redis, init_redis
 from app.core.telemetry import init_telemetry, shutdown_telemetry
 from app.db import close_db, init_db
+
+# Security for metrics endpoint (auto_error=False allows optional auth in dev)
+security = HTTPBasic(auto_error=False)
 
 # Export API keys to environment for Pydantic AI and other libraries
 # Pydantic Settings loads from .env files but doesn't export to os.environ
@@ -88,9 +102,39 @@ app = FastAPI(
     redoc_url="/redoc" if settings.debug else None,
 )
 
+
+# Metrics middleware to capture HTTP request metrics
+class MetricsMiddleware(BaseHTTPMiddleware):
+    """Middleware to capture HTTP request metrics."""
+
+    async def dispatch(self, request: Request, call_next) -> Response:
+        # Skip metrics for health and metrics endpoints
+        if request.url.path in ("/health", "/metrics", "/"):
+            return await call_next(request)
+
+        start_time = time.perf_counter()
+        response = await call_next(request)
+        duration = time.perf_counter() - start_time
+
+        # Normalize path to prevent cardinality explosion
+        path = normalize_path(request.url.path)
+        method = request.method
+        status_code = str(response.status_code)
+
+        # Record metrics
+        attributes = {"method": method, "path": path, "status_code": status_code}
+        api_requests_total.add(1, attributes)
+        api_request_duration_seconds.record(duration, attributes)
+
+        return response
+
+
 # Register rate limiter with the app
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)  # type: ignore[arg-type]
+
+# Add metrics middleware
+app.add_middleware(MetricsMiddleware)
 
 # CORS configuration from settings
 app.add_middleware(
@@ -120,9 +164,60 @@ async def health_check() -> dict[str, str]:
     }
 
 
+def verify_metrics_auth(
+    credentials: HTTPBasicCredentials | None = Depends(security),
+) -> bool:
+    """Verify metrics endpoint credentials with constant-time comparison.
+
+    In development without metrics_password configured, authentication is skipped.
+    In production, valid credentials are required.
+    """
+    # Skip auth in development if not configured
+    if settings.is_development and not settings.metrics_password:
+        return True
+
+    # Require auth configuration in production
+    if not settings.metrics_password:
+        raise HTTPException(
+            status_code=500,
+            detail="Metrics authentication not configured",
+        )
+
+    # No credentials provided but auth is required
+    if not credentials:
+        raise HTTPException(
+            status_code=401,
+            detail="Authentication required",
+            headers={"WWW-Authenticate": "Basic"},
+        )
+
+    # Constant-time comparison to prevent timing attacks
+    correct_user = secrets.compare_digest(
+        credentials.username.encode("utf8"),
+        settings.metrics_username.encode("utf8"),
+    )
+    correct_pass = secrets.compare_digest(
+        credentials.password.encode("utf8"),
+        settings.metrics_password.get_secret_value().encode("utf8"),
+    )
+
+    if not (correct_user and correct_pass):
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid credentials",
+            headers={"WWW-Authenticate": "Basic"},
+        )
+    return True
+
+
 @app.get("/metrics", response_class=PlainTextResponse)
-async def metrics_endpoint() -> PlainTextResponse:
-    """Prometheus metrics endpoint for scraping."""
+async def metrics_endpoint(
+    _auth: bool = Depends(verify_metrics_auth),
+) -> PlainTextResponse:
+    """Prometheus metrics endpoint for scraping.
+
+    Protected by HTTP Basic authentication in production.
+    """
     return PlainTextResponse(
         content=generate_latest(),
         media_type=CONTENT_TYPE_LATEST,
@@ -142,4 +237,27 @@ async def config_info() -> dict[str, str | bool | list[str]]:
         "debug": settings.debug,
         "allowed_origins": settings.allowed_origins,
         "telemetry_enabled": settings.otel_enabled,
+    }
+
+
+@app.get("/health/telemetry")
+async def telemetry_health() -> dict[str, bool | float]:
+    """Health check for observability pipeline.
+
+    Returns status of tracing and metrics providers,
+    along with the current sampling rate.
+    """
+    tracer_provider = trace.get_tracer_provider()
+    meter_provider = metrics.get_meter_provider()
+
+    tracer_ok = tracer_provider is not None
+    meter_ok = meter_provider is not None
+
+    # Determine sampling rate (10% in production, 100% in dev)
+    sampling_rate = 0.1 if settings.is_production else 1.0
+
+    return {
+        "tracer": tracer_ok,
+        "meter": meter_ok,
+        "sampling_rate": sampling_rate,
     }

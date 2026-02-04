@@ -6,6 +6,7 @@ from uuid import UUID
 from sqlalchemy import and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.instrumentation import traced
 from app.models.appointment import Appointment, AppointmentSource, AppointmentStatus
 from app.models.call_log import CallLog, CallOutcome
 from app.models.patient import Patient
@@ -27,6 +28,7 @@ class AnalyticsService:
     def __init__(self, db: AsyncSession):
         self.db = db
 
+    @traced(span_name="analytics.get_call_analytics")
     async def get_call_analytics(
         self, clinic_id: UUID, days: int = 30
     ) -> CallAnalytics:
@@ -218,6 +220,7 @@ class AnalyticsService:
             calls_by_hour=calls_by_hour,
         )
 
+    @traced(span_name="analytics.get_appointment_analytics")
     async def get_appointment_analytics(
         self, clinic_id: UUID, days: int = 30
     ) -> AppointmentAnalytics:
@@ -323,6 +326,7 @@ class AnalyticsService:
             appointments_by_status=appointments_by_status,
         )
 
+    @traced(span_name="analytics.get_patient_analytics")
     async def get_patient_analytics(self, clinic_id: UUID) -> PatientAnalytics:
         """Get patient statistics."""
         month_start = datetime.now(UTC).replace(
@@ -393,6 +397,7 @@ class AnalyticsService:
             total_owners=total_owners,
         )
 
+    @traced(span_name="analytics.get_pims_analytics")
     async def get_pims_analytics(self, clinic_id: UUID) -> PIMSSyncAnalytics:
         """Get PIMS sync health."""
         today_start = datetime.now(UTC).replace(
@@ -494,6 +499,7 @@ class AnalyticsService:
             failed_syncs_today=failed_syncs_today,
         )
 
+    @traced(span_name="analytics.get_sentiment_analytics")
     async def get_sentiment_analytics(
         self, clinic_id: UUID, days: int = 30
     ) -> SentimentData:
@@ -546,6 +552,7 @@ class AnalyticsService:
             average_sentiment_score=round(avg_sentiment_score, 2),
         )
 
+    @traced(span_name="analytics.get_recent_calls")
     async def get_recent_calls(
         self, clinic_id: UUID, limit: int = 10
     ) -> list[CallLogSummary]:
@@ -594,6 +601,7 @@ class AnalyticsService:
 
         return summaries
 
+    @traced(span_name="analytics.get_dashboard_analytics")
     async def get_dashboard_analytics(self, clinic_id: UUID) -> DashboardAnalytics:
         """Get all dashboard analytics in parallel for better performance."""
         import asyncio
