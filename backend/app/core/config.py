@@ -8,7 +8,7 @@ The environment is determined by the ENVIRONMENT constant below.
 Change this constant to switch between dev and prod environments.
 """
 
-from enum import Enum
+from enum import StrEnum
 from functools import lru_cache
 from pathlib import Path
 
@@ -26,7 +26,7 @@ ENVIRONMENT: str = "development"  # 👈 CHANGE THIS TO "production" FOR PROD
 # =============================================================================
 
 
-class Environment(str, Enum):
+class Environment(StrEnum):
     """Application environment modes."""
 
     DEVELOPMENT = "development"

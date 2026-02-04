@@ -5,8 +5,8 @@ Represents system users (clinic staff, admins) with role-based access control.
 Users can belong to multiple clinics through the UserClinic association.
 """
 
-import enum
 from datetime import datetime
+from enum import StrEnum
 from typing import TYPE_CHECKING
 
 from sqlalchemy import Boolean, Column, Enum, ForeignKey, String, Table, Text
@@ -19,7 +19,7 @@ if TYPE_CHECKING:
     from app.models.clinic import Clinic
 
 
-class UserRole(str, enum.Enum):
+class UserRole(StrEnum):
     """User roles for access control."""
 
     SUPER_ADMIN = "super_admin"  # Platform admin (can manage all clinics)

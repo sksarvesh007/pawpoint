@@ -5,8 +5,8 @@ Audit trail for all PIMS synchronization operations.
 Tracks sync jobs, success/failure, errors, and statistics.
 """
 
-import enum
 from datetime import UTC, datetime
+from enum import StrEnum
 from typing import TYPE_CHECKING
 
 from sqlalchemy import Enum, Float, ForeignKey, Index, Integer, String, Text
@@ -19,7 +19,7 @@ if TYPE_CHECKING:
     from app.models.clinic import Clinic
 
 
-class SyncType(str, enum.Enum):
+class SyncType(StrEnum):
     """Type of sync operation."""
 
     FULL = "full"  # Full sync of all records
@@ -29,7 +29,7 @@ class SyncType(str, enum.Enum):
     BIDIRECTIONAL = "bidirectional"  # Sync both directions
 
 
-class SyncEntityType(str, enum.Enum):
+class SyncEntityType(StrEnum):
     """Entity type being synced."""
 
     PATIENTS = "patients"
@@ -38,7 +38,7 @@ class SyncEntityType(str, enum.Enum):
     ALL = "all"
 
 
-class SyncJobStatus(str, enum.Enum):
+class SyncJobStatus(StrEnum):
     """Status of the sync job."""
 
     PENDING = "pending"  # Queued, waiting to start

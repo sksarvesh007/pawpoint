@@ -5,8 +5,8 @@ Represents veterinary clinics/practices with PIMS integration settings.
 Each clinic can connect to one PIMS and has its own patients, providers, and appointments.
 """
 
-import enum
 from datetime import datetime
+from enum import StrEnum
 from typing import TYPE_CHECKING
 
 from sqlalchemy import Boolean, Enum, String, Text
@@ -25,7 +25,7 @@ if TYPE_CHECKING:
     from app.models.user import User
 
 
-class PIMSType(str, enum.Enum):
+class PIMSType(StrEnum):
     """Supported Practice Information Management Systems."""
 
     EZYVET = "ezyvet"
@@ -37,7 +37,7 @@ class PIMSType(str, enum.Enum):
     NONE = "none"  # No PIMS integration
 
 
-class PIMSConnectionStatus(str, enum.Enum):
+class PIMSConnectionStatus(StrEnum):
     """PIMS connection health status."""
 
     CONNECTED = "connected"  # Successfully connected and syncing

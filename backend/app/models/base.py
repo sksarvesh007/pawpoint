@@ -8,8 +8,8 @@ Provides base classes and mixins for all SQLAlchemy models:
 - PIMSSyncMixin: PIMS integration fields (pims_id, sync_status, last_synced_at)
 """
 
-import enum
 from datetime import UTC, datetime
+from enum import StrEnum
 from typing import Any, ClassVar
 from uuid import UUID as PyUUID, uuid4
 
@@ -18,7 +18,7 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, declared_attr, mapped_column
 
 
-class SyncStatus(str, enum.Enum):
+class SyncStatus(StrEnum):
     """Status of PIMS synchronization for a record."""
 
     PENDING = "pending"  # Not yet synced to PIMS

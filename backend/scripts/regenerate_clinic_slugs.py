@@ -175,8 +175,12 @@ async def regenerate_all_slugs(dry_run: bool = False) -> None:
             print("DRY RUN - No changes made to database")
             return
 
-        # Confirm before proceeding
-        response = input(f"\nUpdate {len(updates)} clinic slug(s)? (yes/no): ").lower()
+        # Confirm before proceeding (run input in thread to avoid blocking async)
+        response = (
+            await asyncio.to_thread(
+                input, f"\nUpdate {len(updates)} clinic slug(s)? (yes/no): "
+            )
+        ).lower()
         if response != "yes":
             print("Cancelled.")
             return
@@ -217,8 +221,10 @@ async def regenerate_clinic_slug(clinic_id: UUID, dry_run: bool = False) -> None
             print("DRY RUN - No changes made to database")
             return
 
-        # Confirm
-        response = input("Update this clinic's slug? (yes/no): ").lower()
+        # Confirm (run input in thread to avoid blocking async)
+        response = (
+            await asyncio.to_thread(input, "Update this clinic's slug? (yes/no): ")
+        ).lower()
         if response != "yes":
             print("Cancelled.")
             return

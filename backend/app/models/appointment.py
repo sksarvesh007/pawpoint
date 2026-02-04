@@ -5,8 +5,8 @@ Represents scheduled appointments between patients and providers.
 The core entity for PIMS synchronization with bidirectional sync support.
 """
 
-import enum
 from datetime import UTC, datetime
+from enum import StrEnum
 from typing import TYPE_CHECKING
 
 from sqlalchemy import Enum, ForeignKey, Index, Integer, String, Text
@@ -22,7 +22,7 @@ if TYPE_CHECKING:
     from app.models.provider import Provider
 
 
-class AppointmentStatus(str, enum.Enum):
+class AppointmentStatus(StrEnum):
     """Appointment lifecycle status."""
 
     SCHEDULED = "scheduled"  # Confirmed appointment
@@ -36,7 +36,7 @@ class AppointmentStatus(str, enum.Enum):
     RESCHEDULED = "rescheduled"  # Moved to different time
 
 
-class AppointmentType(str, enum.Enum):
+class AppointmentType(StrEnum):
     """Type of appointment."""
 
     CHECKUP = "checkup"  # Routine wellness exam
@@ -53,7 +53,7 @@ class AppointmentType(str, enum.Enum):
     OTHER = "other"
 
 
-class AppointmentSource(str, enum.Enum):
+class AppointmentSource(StrEnum):
     """How the appointment was created."""
 
     DASHBOARD = "dashboard"  # Created via clinic dashboard

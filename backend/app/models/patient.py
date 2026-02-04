@@ -5,8 +5,8 @@ Represents pets/animals managed by the clinic.
 Syncs with PIMS and includes owner contact information.
 """
 
-import enum
 from datetime import date
+from enum import StrEnum
 from typing import TYPE_CHECKING
 
 from sqlalchemy import Boolean, Date, Enum, Float, ForeignKey, Index, String, Text
@@ -20,7 +20,7 @@ if TYPE_CHECKING:
     from app.models.clinic import Clinic
 
 
-class Species(str, enum.Enum):
+class Species(StrEnum):
     """Common pet species."""
 
     DOG = "dog"
@@ -35,7 +35,7 @@ class Species(str, enum.Enum):
     OTHER = "other"
 
 
-class Sex(str, enum.Enum):
+class Sex(StrEnum):
     """Patient sex."""
 
     MALE = "male"
