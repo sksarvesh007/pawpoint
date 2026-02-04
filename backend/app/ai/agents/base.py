@@ -3,6 +3,7 @@
 All specialized agents inherit from this base to get consistent setup.
 """
 
+import time
 from dataclasses import dataclass
 from typing import Any, Protocol
 from uuid import UUID
@@ -12,6 +13,7 @@ from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.ai.state import HistoryManager, SessionManager
+from app.core.instrumentation import record_llm_request, traced
 
 
 # Simple PIMS adapter protocol (actual implementation in Phase 2)
@@ -105,6 +107,7 @@ class BaseAgent:
         """
         return self.agent.tool(func)
 
+    @traced(span_name="agent.run")
     async def run(
         self,
         user_input: str,
@@ -121,11 +124,31 @@ class BaseAgent:
         Returns:
             Agent result
         """
-        return await self.agent.run(
-            user_input,
-            deps=deps,
-            message_history=message_history,
-        )
+        start_time = time.perf_counter()
+        success = True
+        model_name = "unknown"
+
+        try:
+            result = await self.agent.run(
+                user_input,
+                deps=deps,
+                message_history=message_history,
+            )
+            # Extract model name if available
+            if hasattr(result, "model"):
+                model_name = result.model or model_name
+            return result
+        except Exception:
+            success = False
+            raise
+        finally:
+            duration = time.perf_counter() - start_time
+            record_llm_request(
+                model=model_name,
+                operation="chat",
+                duration_seconds=duration,
+                success=success,
+            )
 
     async def run_sync_wrapper(
         self,
@@ -153,6 +176,7 @@ class BaseAgent:
 # Common tool patterns for all agents
 
 
+@traced(span_name="tool.get_clinic_info")
 async def get_clinic_info(ctx: RunContext[AgentDependencies]) -> dict[str, Any]:
     """Get clinic information.
 
@@ -186,6 +210,7 @@ async def get_clinic_info(ctx: RunContext[AgentDependencies]) -> dict[str, Any]:
     }
 
 
+@traced(span_name="tool.get_conversation_context")
 async def get_conversation_context(
     ctx: RunContext[AgentDependencies],
 ) -> dict[str, Any]:
@@ -205,6 +230,7 @@ async def get_conversation_context(
     return session.context.model_dump()
 
 
+@traced(span_name="tool.update_conversation_context")
 async def update_conversation_context(
     ctx: RunContext[AgentDependencies], context_updates: dict[str, Any]
 ) -> bool:

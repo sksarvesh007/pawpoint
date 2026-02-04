@@ -1,5 +1,10 @@
 # Prometheus Configuration for PawPoint
 # Scrapes metrics from the backend and Alloy
+#
+# SECURITY NOTE: The basic_auth credentials below must match the backend's
+# METRICS_USERNAME and METRICS_PASSWORD environment variables.
+# For production, use external secret management (Vault, K8s secrets, etc.)
+# and do NOT commit production credentials to this file.
 
 global:
   scrape_interval: 15s
@@ -11,6 +16,12 @@ scrape_configs:
     static_configs:
       - targets: ['backend:8000']
     metrics_path: /metrics
+    basic_auth:
+      # IMPORTANT: These must match backend's METRICS_USERNAME/METRICS_PASSWORD
+      # Dev default: prometheus / dev-metrics-password-change-in-prod
+      # Production: Use file_sd_configs with external secret management
+      username: prometheus
+      password: dev-metrics-password-change-in-prod
 
   # Alloy self-metrics
   - job_name: 'alloy'

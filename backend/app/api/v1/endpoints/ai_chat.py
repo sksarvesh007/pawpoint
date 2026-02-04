@@ -3,6 +3,7 @@
 Simple REST endpoint to test FAQ agent and conversation flow.
 """
 
+import time
 from datetime import UTC, datetime, timedelta
 from typing import Any
 from uuid import UUID
@@ -21,6 +22,11 @@ from app.ai.state import (
     SessionManager,
 )
 from app.core.config import settings
+from app.core.instrumentation import (
+    chat_response_duration_seconds,
+    record_chat_message,
+    traced,
+)
 from app.core.redis import get_redis
 from app.db import get_db as get_session
 
@@ -48,6 +54,7 @@ class ChatResponse(BaseModel):
 
 
 @router.post("/message", response_model=ChatResponse, status_code=status.HTTP_200_OK)
+@traced(span_name="endpoint.ai_chat_message")
 async def send_chat_message(
     request: ChatRequest,
     db: AsyncSession = Depends(get_session),
@@ -147,6 +154,13 @@ async def send_chat_message(
     await history_manager.save_message(conversation_id, user_message)
     session.add_message(user_message)
 
+    # Record user message metric
+    record_chat_message(
+        clinic_id=str(request.clinic_id),
+        session_id=str(conversation_id),
+        role="user",
+    )
+
     # Fetch clinic data for dynamic prompt
     from sqlalchemy import select
 
@@ -194,6 +208,8 @@ async def send_chat_message(
     faq_agent = create_faq_agent(clinic_data=clinic_data)
 
     try:
+        # Time the LLM response
+        start_time = time.perf_counter()
         result = await faq_agent.run(
             user_input=request.message,
             deps=deps,
@@ -201,6 +217,13 @@ async def send_chat_message(
                 {"role": msg.role, "content": msg.content}
                 for msg in session.message_history[-5:]  # Last 5 messages
             ],
+        )
+        response_duration = time.perf_counter() - start_time
+
+        # Record chat response duration
+        chat_response_duration_seconds.record(
+            response_duration,
+            {"clinic_id": str(request.clinic_id), "agent": "faq_agent"},
         )
 
         # Extract response
@@ -222,6 +245,14 @@ async def send_chat_message(
             timestamp=datetime.now(UTC),
         )
         await history_manager.save_message(conversation_id, assistant_message)
+
+        # Record assistant message metric
+        record_chat_message(
+            clinic_id=str(request.clinic_id),
+            session_id=str(conversation_id),
+            role="assistant",
+            tokens=tokens_used or 0,
+        )
 
         # Update session
         session.add_message(assistant_message)
@@ -252,6 +283,7 @@ async def send_chat_message(
     response_model=list[dict[str, Any]],
     status_code=status.HTTP_200_OK,
 )
+@traced(span_name="endpoint.ai_chat_history")
 async def get_chat_history(
     conversation_id: UUID,
     db: AsyncSession = Depends(get_session),

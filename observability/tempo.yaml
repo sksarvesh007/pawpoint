@@ -1,0 +1,37 @@
+# Tempo Configuration for v2.3.1 - Single Binary Mode
+server:
+  http_listen_port: 3200
+  grpc_listen_port: 9095
+
+# Distributor receives traces
+distributor:
+  receivers:
+    otlp:
+      protocols:
+        grpc:
+          endpoint: 0.0.0.0:4317
+        http:
+          endpoint: 0.0.0.0:4318
+
+# Ingester writes traces to storage
+ingester:
+  max_block_duration: 5m
+
+# Compactor handles trace compaction
+compactor:
+  compaction:
+    block_retention: 168h  # 7 days - sufficient for debugging weekend issues
+
+# Storage configuration
+storage:
+  trace:
+    backend: local
+    wal:
+      path: /var/tempo/wal
+    local:
+      path: /var/tempo/blocks
+
+# Query frontend
+querier:
+  frontend_worker:
+    frontend_address: 127.0.0.1:9095

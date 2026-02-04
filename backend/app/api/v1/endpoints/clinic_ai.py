@@ -9,6 +9,7 @@ The AI assistant automatically loads clinic-specific configuration
 and uses dynamic prompts based on the clinic's settings.
 """
 
+import time
 from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
@@ -27,6 +28,12 @@ from app.ai.state import (
 )
 from app.api.dependencies import ClinicDep
 from app.core.config import settings
+from app.core.instrumentation import (
+    chat_response_duration_seconds,
+    increment_active_chat_sessions,
+    record_chat_message,
+    traced,
+)
 from app.core.redis import get_redis
 from app.db import get_db as get_session
 from app.models.clinic import Clinic
@@ -90,6 +97,7 @@ def build_clinic_data(clinic: Clinic) -> dict[str, object]:
     summary="Send chat message to clinic AI",
     description="Send a message to the clinic's AI assistant. Automatically loads clinic configuration.",
 )
+@traced(span_name="endpoint.clinic_chat")
 async def clinic_chat(
     request: ChatRequest,
     clinic: ClinicDep,  # Automatically loaded from {clinic_slug}
@@ -159,7 +167,7 @@ async def clinic_chat(
             # Convert DB messages to MessageData for session
             message_history = [
                 MessageData(
-                    role=msg.role,  # type: ignore[arg-type]
+                    role=msg.role,
                     content=msg.content or "",
                     agent_name=msg.agent_name,
                     model_name=msg.model_name,
@@ -224,6 +232,9 @@ async def clinic_chat(
         )
         await session_manager.create_session(session)
 
+        # Track new active session
+        increment_active_chat_sessions(str(clinic.id))
+
     # Save user message
     user_message = MessageData(
         role="user",
@@ -232,6 +243,13 @@ async def clinic_chat(
     )
     await history_manager.save_message(conversation_id, user_message)
     session.add_message(user_message)
+
+    # Record user message metric
+    record_chat_message(
+        clinic_id=str(clinic.id),
+        session_id=str(conversation_id),
+        role="user",
+    )
 
     # Build clinic data for dynamic prompt
     clinic_data = build_clinic_data(clinic)
@@ -255,6 +273,9 @@ async def clinic_chat(
         logger.info(
             f"[POST /api/v1/{clinic.slug}/chat] Running FAQ agent - History: {len(session.message_history)} messages, Conversation: {conversation_id}"
         )
+
+        # Time the LLM response
+        start_time = time.perf_counter()
         result = await faq_agent.run(
             user_input=request.message,
             deps=deps,
@@ -262,6 +283,13 @@ async def clinic_chat(
                 {"role": msg.role, "content": msg.content}
                 for msg in session.message_history  # Use all messages in session
             ],
+        )
+        response_duration = time.perf_counter() - start_time
+
+        # Record chat response duration
+        chat_response_duration_seconds.record(
+            response_duration,
+            {"clinic_id": str(clinic.id), "agent": "faq_agent"},
         )
 
         # Extract response
@@ -288,6 +316,14 @@ async def clinic_chat(
             timestamp=datetime.now(UTC),
         )
         await history_manager.save_message(conversation_id, assistant_message)
+
+        # Record assistant message metric
+        record_chat_message(
+            clinic_id=str(clinic.id),
+            session_id=str(conversation_id),
+            role="assistant",
+            tokens=tokens_used or 0,
+        )
 
         # Update session
         session.add_message(assistant_message)
@@ -325,6 +361,7 @@ async def clinic_chat(
     status_code=status.HTTP_200_OK,
     summary="Get conversation history",
 )
+@traced(span_name="endpoint.clinic_chat_history")
 async def get_clinic_chat_history(
     conversation_id: UUID,
     clinic: ClinicDep,

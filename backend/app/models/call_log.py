@@ -5,8 +5,8 @@ Records all inbound and outbound phone calls handled by the AI voice assistant.
 Stores transcripts, recordings, and call outcomes.
 """
 
-import enum
 from datetime import datetime
+from enum import StrEnum
 from typing import TYPE_CHECKING
 
 from sqlalchemy import Enum, Float, ForeignKey, Index, Integer, String, Text
@@ -20,14 +20,14 @@ if TYPE_CHECKING:
     from app.models.clinic import Clinic
 
 
-class CallDirection(str, enum.Enum):
+class CallDirection(StrEnum):
     """Direction of the call."""
 
     INBOUND = "inbound"  # Client called the clinic
     OUTBOUND = "outbound"  # Clinic/AI called the client
 
 
-class CallStatus(str, enum.Enum):
+class CallStatus(StrEnum):
     """Status of the call."""
 
     RINGING = "ringing"  # Call is ringing
@@ -40,7 +40,7 @@ class CallStatus(str, enum.Enum):
     TRANSFERRED = "transferred"  # Transferred to human
 
 
-class CallOutcome(str, enum.Enum):
+class CallOutcome(StrEnum):
     """Outcome/result of the call."""
 
     APPOINTMENT_BOOKED = "appointment_booked"

@@ -4,12 +4,15 @@ Database Configuration
 Provides async database engine, session factory, and dependency injection.
 """
 
+import time
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
+from sqlalchemy import event
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from app.core.config import get_settings
+from app.core.instrumentation import db_queries_total, db_query_duration_seconds
 
 settings = get_settings()
 
@@ -26,6 +29,74 @@ engine = create_async_engine(
     pool_pre_ping=True,
     pool_recycle=3600,
 )
+
+
+# =============================================================================
+# Database Query Instrumentation
+# =============================================================================
+def _get_operation_from_statement(statement: str) -> str:
+    """Extract operation type from SQL statement."""
+    statement = statement.strip().upper()
+    if statement.startswith("SELECT"):
+        return "select"
+    elif statement.startswith("INSERT"):
+        return "insert"
+    elif statement.startswith("UPDATE"):
+        return "update"
+    elif statement.startswith("DELETE"):
+        return "delete"
+    return "other"
+
+
+def _get_table_from_statement(statement: str) -> str:
+    """Extract table name from SQL statement (best effort)."""
+    statement = statement.strip().upper()
+    words = statement.split()
+    try:
+        if statement.startswith("SELECT") and "FROM" in words:
+            # SELECT ... FROM table_name
+            idx = words.index("FROM")
+            if idx + 1 < len(words):
+                return words[idx + 1].lower().strip("\"'`")
+        elif statement.startswith("INSERT") and "INTO" in words:
+            # INSERT INTO table_name
+            idx = words.index("INTO")
+            if idx + 1 < len(words):
+                return words[idx + 1].lower().strip("\"'`")
+        elif statement.startswith("UPDATE") and len(words) > 1:
+            # UPDATE table_name
+            return words[1].lower().strip("\"'`")
+        elif statement.startswith("DELETE") and "FROM" in words:
+            # DELETE FROM table_name
+            idx = words.index("FROM")
+            if idx + 1 < len(words):
+                return words[idx + 1].lower().strip("\"'`")
+    except (IndexError, ValueError):
+        pass
+    return "unknown"
+
+
+@event.listens_for(engine.sync_engine, "before_cursor_execute")
+def _before_cursor_execute(conn, cursor, statement, parameters, context, executemany):
+    """Record query start time."""
+    conn.info["query_start_time"] = time.perf_counter()
+
+
+@event.listens_for(engine.sync_engine, "after_cursor_execute")
+def _after_cursor_execute(conn, cursor, statement, parameters, context, executemany):
+    """Record query metrics after execution."""
+    start_time = conn.info.pop("query_start_time", None)
+    if start_time is None:
+        return
+
+    duration = time.perf_counter() - start_time
+    operation = _get_operation_from_statement(statement)
+    table = _get_table_from_statement(statement)
+
+    attributes = {"operation": operation, "table": table}
+    db_queries_total.add(1, attributes)
+    db_query_duration_seconds.record(duration, attributes)
+
 
 # Session factory
 async_session_factory = async_sessionmaker(

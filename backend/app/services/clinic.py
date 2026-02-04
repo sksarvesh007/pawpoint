@@ -5,6 +5,7 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.instrumentation import traced
 from app.models.clinic import Clinic
 from app.schemas.clinic import UpdateChatbotSettingsRequest
 
@@ -34,6 +35,7 @@ class ClinicService:
     def __init__(self, db: AsyncSession) -> None:
         self.db = db
 
+    @traced(span_name="clinic.get_chatbot_settings")
     async def get_chatbot_settings(self, clinic_id: UUID) -> dict:
         """
         Get chatbot settings for a clinic.
@@ -80,6 +82,7 @@ class ClinicService:
 
         return merged_settings
 
+    @traced(span_name="clinic.update_chatbot_settings")
     async def update_chatbot_settings(
         self,
         clinic_id: UUID,

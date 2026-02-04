@@ -4,20 +4,20 @@ This module provides a centralized factory for creating OpenAI and Gemini models
 using the OpenAI Python client (Gemini via OpenAI-compatible API).
 """
 
-from enum import Enum
+from enum import StrEnum
 from typing import Literal
 
 from app.core.config import settings
 
 
-class ModelProvider(str, Enum):
+class ModelProvider(StrEnum):
     """Supported LLM providers."""
 
     OPENAI = "openai"
     GEMINI = "gemini"
 
 
-class TaskType(str, Enum):
+class TaskType(StrEnum):
     """Task types for model routing."""
 
     VOICE = "voice"  # Real-time voice interactions

@@ -5,7 +5,7 @@ Represents veterinarians and other healthcare providers at a clinic.
 Syncs with PIMS for availability and appointment scheduling.
 """
 
-import enum
+from enum import StrEnum
 from typing import TYPE_CHECKING
 
 from sqlalchemy import Boolean, Enum, ForeignKey, Integer, String, Text
@@ -19,7 +19,7 @@ if TYPE_CHECKING:
     from app.models.clinic import Clinic
 
 
-class ProviderType(str, enum.Enum):
+class ProviderType(StrEnum):
     """Type of healthcare provider."""
 
     VETERINARIAN = "veterinarian"

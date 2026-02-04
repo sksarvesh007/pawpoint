@@ -1,5 +1,6 @@
 // Grafana Alloy Configuration
 // OpenTelemetry Collector for PawPoint
+// Receives telemetry from backend and forwards to Prometheus, Tempo, and Loki
 
 // ============================================================================
 // OTLP Receiver - Accepts telemetry from the backend
@@ -15,7 +16,6 @@ otelcol.receiver.otlp "default" {
   output {
     metrics = [otelcol.processor.batch.default.input]
     traces  = [otelcol.processor.batch.default.input]
-    logs    = [otelcol.processor.batch.default.input]
   }
 }
 
@@ -26,25 +26,24 @@ otelcol.processor.batch "default" {
   output {
     metrics = [otelcol.exporter.prometheus.default.input]
     traces  = [otelcol.exporter.otlp.tempo.input]
-    logs    = [otelcol.exporter.loki.default.input]
   }
 }
 
 // ============================================================================
-// Prometheus Exporter - Exposes metrics for Prometheus to scrape
+// Prometheus Exporter - Forwards metrics to Prometheus via remote write
 // ============================================================================
 otelcol.exporter.prometheus "default" {
-  forward_to = [prometheus.remote_write.local.receiver]
+  forward_to = [prometheus.remote_write.default.receiver]
 }
 
-prometheus.remote_write "local" {
+prometheus.remote_write "default" {
   endpoint {
     url = "http://prometheus:9090/api/v1/write"
   }
 }
 
 // ============================================================================
-// Tempo Exporter - Sends traces to Tempo (optional, for local trace storage)
+// Tempo Exporter - Sends traces to Tempo with graceful degradation
 // ============================================================================
 otelcol.exporter.otlp "tempo" {
   client {
@@ -53,16 +52,46 @@ otelcol.exporter.otlp "tempo" {
       insecure = true
     }
   }
+  sending_queue {
+    enabled = true
+    num_consumers = 4
+    queue_size = 5000
+  }
+  retry_on_failure {
+    enabled = true
+    initial_interval = "5s"
+    max_interval = "30s"
+  }
 }
 
 // ============================================================================
-// Loki Exporter - Sends logs to Loki (optional)
+// Docker Log Collection - Scrapes container logs and sends to Loki
 // ============================================================================
-otelcol.exporter.loki "default" {
-  forward_to = [loki.write.local.receiver]
+discovery.docker "containers" {
+  host = "unix:///var/run/docker.sock"
 }
 
-loki.write "local" {
+loki.source.docker "default" {
+  host = "unix:///var/run/docker.sock"
+  targets = discovery.docker.containers.targets
+  forward_to = [loki.process.add_labels.receiver]
+}
+
+loki.process "add_labels" {
+  forward_to = [loki.write.default.receiver]
+
+  // Parse Docker container logs
+  stage.docker {}
+
+  // Add static labels for all logs
+  stage.static_labels {
+    values = {
+      source = "docker",
+    }
+  }
+}
+
+loki.write "default" {
   endpoint {
     url = "http://loki:3100/loki/api/v1/push"
   }

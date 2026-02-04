@@ -1,30 +1,37 @@
 # Grafana Datasource Provisioning
-# Automatically configures Prometheus as a datasource
+# Configures Prometheus, Tempo, and Loki with correlation
 
 apiVersion: 1
 
 datasources:
+  # Prometheus - Metrics storage and querying
   - name: Prometheus
     type: prometheus
     access: proxy
     url: http://prometheus:9090
     isDefault: true
     editable: false
+    uid: prometheus
     jsonData:
       httpMethod: POST
       manageAlerts: true
       prometheusType: Prometheus
 
-  # Uncomment when Tempo is added for tracing
-  # - name: Tempo
-  #   type: tempo
-  #   access: proxy
-  #   url: http://tempo:3200
-  #   editable: false
+  # Tempo - Distributed tracing
+  - name: Tempo
+    type: tempo
+    access: proxy
+    url: http://tempo:3200
+    uid: tempo
+    editable: false
+    jsonData:
+      nodeGraph:
+        enabled: true
 
-  # Uncomment when Loki is added for logs
-  # - name: Loki
-  #   type: loki
-  #   access: proxy
-  #   url: http://loki:3100
-  #   editable: false
+  # Loki - Log aggregation
+  - name: Loki
+    type: loki
+    access: proxy
+    url: http://loki:3100
+    uid: loki
+    editable: false

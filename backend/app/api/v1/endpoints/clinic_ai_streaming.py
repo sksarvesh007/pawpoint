@@ -1,11 +1,13 @@
 """Streaming endpoint for clinic AI chat."""
 
 import json
+import time
 from collections.abc import AsyncIterator
 from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Depends, status
 from fastapi.responses import StreamingResponse
+from loguru import logger
 from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -20,6 +22,12 @@ from app.ai.state import (
 from app.api.dependencies import ClinicDep
 from app.api.v1.endpoints.clinic_ai import ChatRequest, build_clinic_data
 from app.core.config import settings
+from app.core.instrumentation import (
+    chat_response_duration_seconds,
+    increment_active_chat_sessions,
+    record_chat_message,
+    traced,
+)
 from app.core.redis import get_redis
 from app.db import get_db as get_session
 
@@ -37,6 +45,10 @@ async def stream_chat_response(
     Yields Server-Sent Events (SSE) formatted chunks.
     """
     try:
+        logger.info(
+            f"[POST /api/v1/{clinic.slug}/chat/stream] Chat stream request - User: {request.user_identifier}, Message: {request.message[:50]}..."
+        )
+
         # Initialize managers
         session_manager = SessionManager(redis)
         history_manager = HistoryManager(db)
@@ -61,7 +73,7 @@ async def stream_chat_response(
                 # Convert DB messages to MessageData for session
                 message_history = [
                     MessageData(
-                        role=msg.role,  # type: ignore[arg-type]
+                        role=msg.role,
                         content=msg.content or "",
                         agent_name=msg.agent_name,
                         model_name=msg.model_name,
@@ -122,6 +134,9 @@ async def stream_chat_response(
             )
             await session_manager.create_session(session)
 
+            # Track new active session
+            increment_active_chat_sessions(str(clinic.id))
+
         # Save user message
         user_message = MessageData(
             role="user",
@@ -130,6 +145,13 @@ async def stream_chat_response(
         )
         await history_manager.save_message(conversation_id, user_message)
         session.add_message(user_message)
+
+        # Record user message metric
+        record_chat_message(
+            clinic_id=str(clinic.id),
+            session_id=str(conversation_id),
+            role="user",
+        )
 
         # Build clinic data with persona
         clinic_data = build_clinic_data(clinic)
@@ -154,6 +176,7 @@ async def stream_chat_response(
         # Stream the response
         full_response = ""
         total_tokens = 0
+        llm_start_time = time.perf_counter()
 
         async with faq_agent.agent.run_stream(
             user_prompt=request.message,
@@ -181,6 +204,13 @@ async def stream_chat_response(
                 # This could happen if the LLM provider doesn't return usage info
                 total_tokens = 0
 
+        # Record LLM response duration
+        llm_duration = time.perf_counter() - llm_start_time
+        chat_response_duration_seconds.record(
+            llm_duration,
+            {"clinic_id": str(clinic.id), "agent": "faq_agent", "streaming": "true"},
+        )
+
         # Save assistant message
         assistant_message = MessageData(
             role="assistant",
@@ -191,6 +221,14 @@ async def stream_chat_response(
         )
         await history_manager.save_message(conversation_id, assistant_message)
 
+        # Record assistant message metric
+        record_chat_message(
+            clinic_id=str(clinic.id),
+            session_id=str(conversation_id),
+            role="assistant",
+            tokens=total_tokens,
+        )
+
         # Update session
         session.add_message(assistant_message)
         session.total_tokens += total_tokens
@@ -198,6 +236,10 @@ async def stream_chat_response(
 
         # Commit DB changes
         await db.commit()
+
+        logger.success(
+            f"✅ Chat stream complete | Response: {full_response[:50]}... | Tokens: {total_tokens} | Duration: {llm_duration:.2f}s"
+        )
 
         # Send completion message
         yield f"data: {json.dumps({'type': 'done', 'tokens_used': total_tokens})}\n\n"
@@ -213,6 +255,7 @@ async def stream_chat_response(
     summary="Send chat message with streaming response",
     description="Send a message and receive streaming AI response via Server-Sent Events.",
 )
+@traced(span_name="endpoint.clinic_chat_stream")
 async def clinic_chat_stream(
     request: ChatRequest,
     clinic: ClinicDep,

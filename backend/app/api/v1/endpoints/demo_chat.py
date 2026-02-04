@@ -5,15 +5,22 @@ require a real clinic in the database. Uses hardcoded demo clinic data.
 """
 
 import json
+import time
 from collections.abc import AsyncIterator
 
 from fastapi import APIRouter, status
 from fastapi.responses import StreamingResponse
 from httpx import HTTPStatusError
+from loguru import logger
 from pydantic import BaseModel, Field
 
 from app.ai.models.factory import ModelFactory
 from app.ai.prompts import build_faq_system_prompt
+from app.core.instrumentation import (
+    chat_response_duration_seconds,
+    record_chat_message,
+    traced,
+)
 
 router = APIRouter(tags=["Demo"])
 
@@ -76,7 +83,12 @@ async def stream_demo_response(
     Yields:
         Server-Sent Events formatted chunks
     """
+    llm_start_time = time.perf_counter()
+
     try:
+        logger.info(
+            f"[POST /api/v1/demo-clinic/chat/stream] Demo chat request - Message: {message[:50]}..."
+        )
         # Get the model
         model = ModelFactory.get_model_for_task("faq", channel="chat")
 
@@ -103,6 +115,23 @@ async def stream_demo_response(
             async for chunk in stream_result.stream_text():
                 full_response += chunk
                 yield f"data: {json.dumps({'type': 'token', 'content': chunk})}\n\n"
+
+        # Record LLM response duration
+        llm_duration = time.perf_counter() - llm_start_time
+        chat_response_duration_seconds.record(
+            llm_duration,
+            {"clinic_id": "demo", "agent": "demo_agent", "streaming": "true"},
+        )
+
+        # Record chat messages
+        record_chat_message(clinic_id="demo", session_id=conv_id, role="user")
+        record_chat_message(
+            clinic_id="demo", session_id=conv_id, role="assistant", tokens=0
+        )
+
+        logger.success(
+            f"✅ Demo chat complete | Response: {full_response[:50]}... | Duration: {llm_duration:.2f}s"
+        )
 
         # Send completion
         yield f"data: {json.dumps({'type': 'done', 'tokens_used': 0})}\n\n"
@@ -137,6 +166,7 @@ async def stream_demo_response(
     summary="Demo chat with streaming response",
     description="Send a message to the demo chatbot and receive streaming AI response. No authentication required.",
 )
+@traced(span_name="endpoint.demo_chat_stream")
 async def demo_chat_stream(request: DemoChatRequest) -> StreamingResponse:
     """Stream chat response from demo AI assistant.
 

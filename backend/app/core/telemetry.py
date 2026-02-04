@@ -1,10 +1,11 @@
 """OpenTelemetry instrumentation for PawPoint backend.
 
 Provides:
-- Distributed tracing with OTLP export
-- Prometheus metrics endpoint
+- Distributed tracing with OTLP export and sampling
+- Prometheus metrics endpoint with exemplar support
 - Structured logging with trace correlation
-- Environment-aware configuration (local vs Grafana Cloud)
+- Environment-aware configuration (local vs production)
+- Auto-instrumentation for SQLAlchemy, HTTPX, Redis
 """
 
 from typing import TYPE_CHECKING
@@ -17,9 +18,19 @@ from opentelemetry.exporter.prometheus import PrometheusMetricReader
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from opentelemetry.sdk.metrics import MeterProvider
 from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
-from opentelemetry.sdk.resources import SERVICE_NAME, SERVICE_VERSION, Resource
+from opentelemetry.sdk.resources import (
+    DEPLOYMENT_ENVIRONMENT,
+    SERVICE_NAME,
+    SERVICE_NAMESPACE,
+    SERVICE_VERSION,
+    OsResourceDetector,
+    ProcessResourceDetector,
+    Resource,
+    get_aggregated_resources,
+)
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
+from opentelemetry.sdk.trace.sampling import ParentBasedTraceIdRatio
 
 if TYPE_CHECKING:
     from fastapi import FastAPI
@@ -27,36 +38,55 @@ if TYPE_CHECKING:
     from app.core.config import Settings
 
 
-def create_resource(
-    service_name: str, service_version: str, environment: str
-) -> Resource:
-    """Create OpenTelemetry resource with service metadata."""
-    return Resource.create(
+def create_resource(settings: "Settings") -> Resource:
+    """Create OpenTelemetry resource with auto-detection.
+
+    Aggregates OS and process metadata with service-specific attributes.
+    """
+    base_resource = Resource.create(
         {
-            SERVICE_NAME: service_name,
-            SERVICE_VERSION: service_version,
-            "deployment.environment": environment,
-            "service.namespace": "pawpoint",
+            SERVICE_NAME: settings.otel_service_name,
+            SERVICE_VERSION: settings.app_version,
+            DEPLOYMENT_ENVIRONMENT: settings.app_env.value,
+            SERVICE_NAMESPACE: "pawpoint",
         }
     )
+
+    # Aggregate with auto-detected resources
+    detected_resource = get_aggregated_resources(
+        [
+            OsResourceDetector(),
+            ProcessResourceDetector(),
+        ]
+    )
+
+    # Merge with base resource (base takes precedence)
+    return detected_resource.merge(base_resource)
 
 
 def init_tracing(
     resource: Resource,
+    settings: "Settings",
     otlp_endpoint: str | None = None,
     otlp_headers: dict[str, str] | None = None,
 ) -> TracerProvider:
-    """Initialize tracing with OTLP exporter.
+    """Initialize tracing with OTLP exporter and sampling.
 
     Args:
         resource: OpenTelemetry resource describing the service
+        settings: Application settings for environment detection
         otlp_endpoint: OTLP collector endpoint (e.g., http://localhost:4317)
         otlp_headers: Headers for authentication (e.g., Grafana Cloud token)
 
     Returns:
-        Configured TracerProvider
+        Configured TracerProvider with sampling
     """
-    provider = TracerProvider(resource=resource)
+    # 10% sampling in production, 100% in development
+    sample_rate = 0.1 if settings.is_production else 1.0
+    sampler = ParentBasedTraceIdRatio(sample_rate)
+
+    provider = TracerProvider(resource=resource, sampler=sampler)
+    logger.info("Trace sampling rate: {}%", int(sample_rate * 100))
 
     if otlp_endpoint:
         exporter = OTLPSpanExporter(
@@ -77,6 +107,8 @@ def init_metrics(
     prometheus_enabled: bool = True,
 ) -> tuple[MeterProvider, PrometheusMetricReader | None]:
     """Initialize metrics with Prometheus and/or OTLP exporters.
+
+    Supports exemplars for trace-to-metrics correlation via DELTA temporality.
 
     Args:
         resource: OpenTelemetry resource describing the service
@@ -129,6 +161,49 @@ def parse_otlp_headers(headers_str: str | None) -> dict[str, str]:
     return headers
 
 
+def instrument_libraries(settings: "Settings") -> None:
+    """Instrument external libraries for automatic tracing.
+
+    Instruments SQLAlchemy, HTTPX, and Redis if available.
+    """
+    # Instrument SQLAlchemy (database queries)
+    try:
+        from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
+
+        # Check if already instrumented
+        if not SQLAlchemyInstrumentor().is_instrumented_by_opentelemetry:
+            SQLAlchemyInstrumentor().instrument(
+                enable_commenter=True,
+                commenter_options={
+                    "db_framework": True,
+                    "opentelemetry_values": True,
+                },
+            )
+            logger.info("SQLAlchemy instrumentation enabled")
+    except ImportError:
+        logger.debug("SQLAlchemy instrumentation not available")
+
+    # Instrument HTTPX (HTTP client calls)
+    try:
+        from opentelemetry.instrumentation.httpx import HTTPXClientInstrumentor
+
+        if not HTTPXClientInstrumentor().is_instrumented_by_opentelemetry:
+            HTTPXClientInstrumentor().instrument()
+            logger.info("HTTPX instrumentation enabled")
+    except ImportError:
+        logger.debug("HTTPX instrumentation not available")
+
+    # Instrument Redis (cache operations)
+    try:
+        from opentelemetry.instrumentation.redis import RedisInstrumentor
+
+        if not RedisInstrumentor().is_instrumented_by_opentelemetry:
+            RedisInstrumentor().instrument()
+            logger.info("Redis instrumentation enabled")
+    except ImportError:
+        logger.debug("Redis instrumentation not available")
+
+
 def init_telemetry(app: "FastAPI", settings: "Settings") -> None:
     """Initialize OpenTelemetry instrumentation for FastAPI app.
 
@@ -142,34 +217,36 @@ def init_telemetry(app: "FastAPI", settings: "Settings") -> None:
 
     logger.info("Initializing OpenTelemetry instrumentation...")
 
-    # Create resource with service metadata
-    resource = create_resource(
-        service_name=settings.otel_service_name,
-        service_version=settings.app_version,
-        environment=settings.app_env,
-    )
+    # Create resource with auto-detection
+    resource = create_resource(settings)
 
     # Parse headers for Grafana Cloud authentication
     otlp_headers = parse_otlp_headers(settings.otel_exporter_otlp_headers)
 
-    # Initialize tracing
+    # Initialize tracing with sampling
     init_tracing(
         resource=resource,
+        settings=settings,
         otlp_endpoint=settings.otel_exporter_otlp_endpoint,
         otlp_headers=otlp_headers,
     )
 
     # Initialize metrics
-    init_metrics(
+    meter_provider, _ = init_metrics(
         resource=resource,
         otlp_endpoint=settings.otel_exporter_otlp_endpoint,
         otlp_headers=otlp_headers,
         prometheus_enabled=settings.prometheus_enabled,
     )
 
-    # Instrument FastAPI
+    # Instrument external libraries
+    instrument_libraries(settings)
+
+    # Instrument FastAPI with both tracing and metrics
     FastAPIInstrumentor.instrument_app(
         app,
+        tracer_provider=trace.get_tracer_provider(),
+        meter_provider=meter_provider,
         excluded_urls="health,metrics",  # Don't trace health/metrics endpoints
     )
     logger.info("FastAPI instrumentation enabled")
@@ -227,3 +304,27 @@ def get_meter(name: str = __name__) -> metrics.Meter:
         counter.add(1, {"label": "value"})
     """
     return metrics.get_meter(name)
+
+
+def get_current_trace_id() -> str | None:
+    """Get the current trace ID for correlation.
+
+    Returns:
+        Hex-encoded trace ID or None if no active span.
+    """
+    span = trace.get_current_span()
+    if span and span.get_span_context().is_valid:
+        return format(span.get_span_context().trace_id, "032x")
+    return None
+
+
+def get_current_span_id() -> str | None:
+    """Get the current span ID for correlation.
+
+    Returns:
+        Hex-encoded span ID or None if no active span.
+    """
+    span = trace.get_current_span()
+    if span and span.get_span_context().is_valid:
+        return format(span.get_span_context().span_id, "016x")
+    return None
