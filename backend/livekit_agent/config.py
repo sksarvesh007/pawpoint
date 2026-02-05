@@ -2,6 +2,9 @@
 LiveKit Agent Configuration
 
 Settings specific to the LiveKit agent worker.
+
+When running standalone: reads from dev.env (or ENV_FILE)
+When running embedded in FastAPI: inherits environment from parent process
 """
 
 import os
@@ -13,14 +16,22 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # Get the backend directory (parent of livekit_agent)
 _BACKEND_DIR = Path(__file__).resolve().parent.parent
-_ENV_FILE = os.getenv("ENV_FILE", str(_BACKEND_DIR / "dev.env"))
+
+# Determine env file - skip if running embedded (env vars already set by FastAPI)
+# Check if we're running embedded by looking for LIVEKIT_AGENT_EMBEDDED env var
+_IS_EMBEDDED = os.getenv("LIVEKIT_AGENT_EMBEDDED", "false").lower() == "true"
+_ENV_FILE = (
+    None if _IS_EMBEDDED else os.getenv("ENV_FILE", str(_BACKEND_DIR / "dev.env"))
+)
 
 
 class AgentSettings(BaseSettings):
     """LiveKit agent-specific settings."""
 
+    # When embedded, env_file is None so we only read from environment variables
+    # When standalone, we read from the specified env file
     model_config = SettingsConfigDict(
-        env_file=_ENV_FILE,
+        env_file=_ENV_FILE if _ENV_FILE else None,
         env_file_encoding="utf-8",
         case_sensitive=False,
         extra="ignore",
