@@ -94,14 +94,15 @@ async def register(
         ) from None
 
     # Set access token as httpOnly cookie for XSS protection
-    # In production: secure=True (HTTPS), samesite=lax (proxied through frontend)
-    # In development: secure=False (HTTP localhost), samesite=lax
+    # Cross-site cookies (Vercel frontend → Render backend) require:
+    # - secure=True (HTTPS only)
+    # - samesite="none" (allows cross-site requests)
     response.set_cookie(
         key="access_token",
         value=access_token,
         httponly=True,
-        secure=settings.is_production,
-        samesite="lax",  # Works with same-origin and proxied requests
+        secure=True,  # Required for SameSite=None
+        samesite="none",  # Required for cross-site cookies
         max_age=settings.jwt_access_token_expire_minutes * 60,
         path="/",
     )
@@ -194,14 +195,15 @@ async def login(
         ) from None
 
     # Set access token as httpOnly cookie for XSS protection
-    # In production: secure=True (HTTPS), samesite=lax (proxied through frontend)
-    # In development: secure=False (HTTP localhost), samesite=lax
+    # Cross-site cookies (Vercel frontend → Render backend) require:
+    # - secure=True (HTTPS only)
+    # - samesite="none" (allows cross-site requests)
     response.set_cookie(
         key="access_token",
         value=access_token,
         httponly=True,
-        secure=settings.is_production,
-        samesite="lax",  # Works with same-origin and proxied requests
+        secure=True,  # Required for SameSite=None
+        samesite="none",  # Required for cross-site cookies
         max_age=settings.jwt_access_token_expire_minutes * 60,
         path="/",
     )
@@ -243,7 +245,7 @@ async def logout(response: Response) -> None:
     response.delete_cookie(
         key="access_token",
         httponly=True,
-        secure=settings.is_production,
-        samesite="lax",  # Must match the cookie setting used in login
+        secure=True,
+        samesite="none",  # Must match the cookie setting used in login
         path="/",
     )
