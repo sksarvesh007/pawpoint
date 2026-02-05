@@ -49,16 +49,15 @@ FROM base AS production
 
 # Create non-root user for security
 RUN groupadd --gid 1000 appgroup && \
-    useradd --uid 1000 --gid appgroup --shell /bin/bash --create-home appuser
+    useradd --uid 1000 --gid appgroup --shell /bin/bash --create-home appuser && \
+    chown -R appuser:appgroup /app
 
 # Copy dependency files and application code
 COPY --chown=appuser:appgroup pyproject.toml uv.lock ./
 COPY --chown=appuser:appgroup . .
 
-# Make entrypoint executable
+# Make entrypoint executable and switch to non-root user
 RUN chmod +x entrypoint.sh
-
-# Switch to non-root user BEFORE installing dependencies
 USER appuser
 
 # Install only production dependencies (no dev group)
