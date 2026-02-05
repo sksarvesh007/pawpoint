@@ -9,12 +9,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.instrumentation import traced
 from app.models.appointment import Appointment, AppointmentSource, AppointmentStatus
 from app.models.call_log import CallLog, CallOutcome
+from app.models.conversation import Conversation
 from app.models.patient import Patient
 from app.models.pims_sync_log import PIMSSyncLog, SyncJobStatus
 from app.schemas.analytics import (
     AppointmentAnalytics,
     CallAnalytics,
     CallLogSummary,
+    ChatAnalytics,
+    ChatLogSummary,
     DashboardAnalytics,
     PatientAnalytics,
     PIMSSyncAnalytics,
@@ -206,6 +209,26 @@ class AnalyticsService:
             {"hour": h, "count": calls_by_hour_dict.get(h, 0)} for h in range(24)
         ]
 
+        # Get hours when transfers occurred (last 24 hours)
+        transfer_hours_result = await self.db.execute(
+            select(func.extract("hour", CallLog.started_at).label("hour"))
+            .where(
+                and_(
+                    CallLog.clinic_id == str(clinic_id),
+                    CallLog.started_at >= last_24h,
+                    CallLog.deleted_at.is_(None),
+                    CallLog.outcome.in_(
+                        [
+                            CallOutcome.TRANSFERRED_TO_STAFF,
+                            CallOutcome.EMERGENCY_TRANSFER,
+                        ]
+                    ),
+                )
+            )
+            .distinct()
+        )
+        transfer_hours = [int(row[0]) for row in transfer_hours_result.all()]
+
         return CallAnalytics(
             total_calls=total_calls,
             calls_today=calls_today,
@@ -218,6 +241,7 @@ class AnalyticsService:
             average_confidence_score=round(avg_confidence, 2),
             calls_by_outcome=calls_by_outcome,
             calls_by_hour=calls_by_hour,
+            transfer_hours=transfer_hours,
         )
 
     @traced(span_name="analytics.get_appointment_analytics")
@@ -601,22 +625,193 @@ class AnalyticsService:
 
         return summaries
 
+    @traced(span_name="analytics.get_chat_analytics")
+    async def get_chat_analytics(
+        self, clinic_id: UUID, days: int = 30
+    ) -> ChatAnalytics:
+        """Aggregate chat metrics for the past N days."""
+        cutoff_date = datetime.now(UTC) - timedelta(days=days)
+        today_start = datetime.now(UTC).replace(
+            hour=0, minute=0, second=0, microsecond=0
+        )
+
+        # Total chats in period (filter by channel="chat")
+        total_result = await self.db.execute(
+            select(func.count())
+            .select_from(Conversation)
+            .where(
+                and_(
+                    Conversation.clinic_id == clinic_id,
+                    Conversation.channel == "chat",
+                    Conversation.created_at >= cutoff_date,
+                )
+            )
+        )
+        total_chats = total_result.scalar_one()
+
+        # Chats today
+        today_result = await self.db.execute(
+            select(func.count())
+            .select_from(Conversation)
+            .where(
+                and_(
+                    Conversation.clinic_id == clinic_id,
+                    Conversation.channel == "chat",
+                    Conversation.created_at >= today_start,
+                )
+            )
+        )
+        chats_today = today_result.scalar_one()
+
+        # Average messages per chat
+        avg_messages_result = await self.db.execute(
+            select(func.avg(Conversation.total_messages))
+            .select_from(Conversation)
+            .where(
+                and_(
+                    Conversation.clinic_id == clinic_id,
+                    Conversation.channel == "chat",
+                    Conversation.created_at >= cutoff_date,
+                )
+            )
+        )
+        avg_messages = avg_messages_result.scalar_one() or 0.0
+
+        # Active sessions
+        active_result = await self.db.execute(
+            select(func.count())
+            .select_from(Conversation)
+            .where(
+                and_(
+                    Conversation.clinic_id == clinic_id,
+                    Conversation.channel == "chat",
+                    Conversation.session_active.is_(True),
+                )
+            )
+        )
+        active_sessions = active_result.scalar_one()
+
+        # Chats by intent
+        intent_result = await self.db.execute(
+            select(Conversation.intent, func.count())
+            .where(
+                and_(
+                    Conversation.clinic_id == clinic_id,
+                    Conversation.channel == "chat",
+                    Conversation.created_at >= cutoff_date,
+                    Conversation.intent.is_not(None),
+                )
+            )
+            .group_by(Conversation.intent)
+        )
+        chats_by_intent = {str(intent): count for intent, count in intent_result.all()}
+
+        # Chats by hour (last 24 hours)
+        last_24h = datetime.now(UTC) - timedelta(hours=24)
+        hourly_result = await self.db.execute(
+            select(
+                func.extract("hour", Conversation.created_at).label("hour"),
+                func.count().label("count"),
+            )
+            .where(
+                and_(
+                    Conversation.clinic_id == clinic_id,
+                    Conversation.channel == "chat",
+                    Conversation.created_at >= last_24h,
+                )
+            )
+            .group_by(func.extract("hour", Conversation.created_at))
+            .order_by(func.extract("hour", Conversation.created_at))
+        )
+        hourly_data = [
+            {"hour": int(hour), "count": count} for hour, count in hourly_result.all()
+        ]
+
+        # Fill in missing hours with 0
+        chats_by_hour_dict = {item["hour"]: item["count"] for item in hourly_data}
+        chats_by_hour = [
+            {"hour": h, "count": chats_by_hour_dict.get(h, 0)} for h in range(24)
+        ]
+
+        return ChatAnalytics(
+            total_chats=total_chats,
+            chats_today=chats_today,
+            average_messages_per_chat=round(avg_messages, 2),
+            active_sessions=active_sessions,
+            chats_by_intent=chats_by_intent,
+            chats_by_hour=chats_by_hour,
+        )
+
+    @traced(span_name="analytics.get_recent_chats")
+    async def get_recent_chats(
+        self, clinic_id: UUID, limit: int = 10
+    ) -> list[ChatLogSummary]:
+        """Get recent chat conversations for the dashboard table."""
+        result = await self.db.execute(
+            select(Conversation)
+            .where(
+                and_(
+                    Conversation.clinic_id == clinic_id,
+                    Conversation.channel == "chat",
+                )
+            )
+            .order_by(Conversation.created_at.desc())
+            .limit(limit)
+        )
+        conversations = result.scalars().all()
+
+        summaries = []
+        for conv in conversations:
+            summaries.append(
+                ChatLogSummary(
+                    id=str(conv.id),
+                    started_at=conv.created_at,
+                    user_identifier=conv.user_identifier,
+                    total_messages=conv.total_messages,
+                    intent=conv.intent,
+                    session_active=conv.session_active,
+                    summary=conv.summary,
+                )
+            )
+
+        return summaries
+
     @traced(span_name="analytics.get_dashboard_analytics")
     async def get_dashboard_analytics(self, clinic_id: UUID) -> DashboardAnalytics:
         """Get all dashboard analytics in parallel for better performance."""
         import asyncio
 
         # Run all analytics queries in parallel (4x faster!)
-        results = await asyncio.gather(
+        results: tuple[
+            CallAnalytics,
+            AppointmentAnalytics,
+            PatientAnalytics,
+            PIMSSyncAnalytics,
+            SentimentData,
+            list[CallLogSummary],
+            ChatAnalytics,
+            list[ChatLogSummary],
+        ] = await asyncio.gather(  # type: ignore[assignment]
             self.get_call_analytics(clinic_id),
             self.get_appointment_analytics(clinic_id),
             self.get_patient_analytics(clinic_id),
             self.get_pims_analytics(clinic_id),
             self.get_sentiment_analytics(clinic_id),
             self.get_recent_calls(clinic_id),
+            self.get_chat_analytics(clinic_id),
+            self.get_recent_chats(clinic_id),
         )
 
-        calls, appointments, patients, pims, sentiment, recent_calls = results
+        (
+            calls,
+            appointments,
+            patients,
+            pims,
+            sentiment,
+            recent_calls,
+            chats,
+            recent_chats,
+        ) = results
 
         return DashboardAnalytics(
             calls=calls,
@@ -625,4 +820,6 @@ class AnalyticsService:
             pims=pims,
             sentiment=sentiment,
             recent_calls=recent_calls,
+            chats=chats,
+            recent_chats=recent_chats,
         )

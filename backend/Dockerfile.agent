@@ -1,0 +1,32 @@
+# =============================================================================
+# PawPoint LiveKit Agent Dockerfile (Simplified for Development)
+# =============================================================================
+
+FROM python:3.13-slim
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PYTHONPATH=/app
+
+# Install uv and system dependencies
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libsndfile1 \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Copy dependency files and install
+COPY pyproject.toml uv.lock ./
+RUN uv sync --frozen
+
+# Copy application code
+COPY . .
+
+# Expose health check port
+EXPOSE 8089
+
+# Run the agent (use 'start' for production, 'dev' for local development)
+CMD ["uv", "run", "python", "-m", "livekit_agent.main", "start"]

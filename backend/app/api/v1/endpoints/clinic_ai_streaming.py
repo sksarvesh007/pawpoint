@@ -5,7 +5,7 @@ import time
 from collections.abc import AsyncIterator
 from datetime import UTC, datetime, timedelta
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Request, status
 from fastapi.responses import StreamingResponse
 from loguru import logger
 from redis.asyncio import Redis
@@ -258,6 +258,7 @@ async def stream_chat_response(
 @traced(span_name="endpoint.clinic_chat_stream")
 async def clinic_chat_stream(
     request: ChatRequest,
+    http_request: Request,
     clinic: ClinicDep,
     db: AsyncSession = Depends(get_session),
     redis: Redis = Depends(get_redis),
@@ -266,6 +267,9 @@ async def clinic_chat_stream(
 
     Returns Server-Sent Events (SSE) stream.
     """
+    # Get origin for CORS headers
+    origin = http_request.headers.get("origin", "*")
+
     return StreamingResponse(
         stream_chat_response(request, clinic, db, redis),
         media_type="text/event-stream",
@@ -273,5 +277,7 @@ async def clinic_chat_stream(
             "Cache-Control": "no-cache",
             "Connection": "keep-alive",
             "X-Accel-Buffering": "no",  # Disable nginx buffering
+            "Access-Control-Allow-Origin": origin,
+            "Access-Control-Allow-Credentials": "true",
         },
     )

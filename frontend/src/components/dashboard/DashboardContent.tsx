@@ -274,8 +274,9 @@ export function DashboardContent({
         <div className="space-y-6">
           <CallsChart
             data={analytics.calls.calls_by_hour}
+            chatData={analytics.chats?.chats_by_hour}
             emergencyTransfers={analytics.calls.emergency_transfers}
-            transferHours={[3, 15]}
+            transferHours={analytics.calls.transfer_hours}
           />
           <div className="grid grid-cols-2 gap-4">
             <div className="bg-white rounded-xl border border-zinc-200 p-5 shadow-sm">

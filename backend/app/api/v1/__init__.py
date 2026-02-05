@@ -7,10 +7,12 @@ from app.api.v1.endpoints import (
     analytics,
     auth,
     calls,
+    chats,
     clinic_ai,
     clinic_ai_streaming,
     clinics,
     demo_chat,
+    voice,
 )
 
 api_router = APIRouter()
@@ -18,6 +20,7 @@ api_router.include_router(auth.router, prefix="/auth", tags=["auth"])
 api_router.include_router(clinics.router, prefix="/clinics", tags=["clinics"])
 api_router.include_router(analytics.router, prefix="/analytics", tags=["analytics"])
 api_router.include_router(calls.router, prefix="/calls", tags=["calls"])
+api_router.include_router(chats.router, prefix="/chats", tags=["chats"])
 
 # Legacy endpoint (for backward compatibility)
 api_router.include_router(ai_chat.router)  # /ai/chat/message
@@ -30,3 +33,6 @@ api_router.include_router(clinic_ai.router, tags=["Clinic AI"])  # /{clinic-slug
 api_router.include_router(
     clinic_ai_streaming.router, tags=["Clinic AI"]
 )  # /{clinic-slug}/chat/stream
+
+# Voice endpoints (LiveKit integration)
+api_router.include_router(voice.router, tags=["Voice"])  # /{clinic-slug}/voice/*

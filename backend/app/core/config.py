@@ -142,7 +142,7 @@ class Settings(BaseSettings):
     # CORS - stored as comma-separated string, parsed via computed_field
     # -------------------------------------------------------------------------
     allowed_origins_str: str = Field(
-        default="http://localhost:3000,http://localhost:5173",
+        default="http://localhost:3000,http://localhost:5173,https://09192302800a.ngrok-free.app",
         alias="allowed_origins",
     )
 
@@ -188,13 +188,17 @@ class Settings(BaseSettings):
     twilio_auth_token: SecretStr | None = None
 
     # -------------------------------------------------------------------------
-    # AI / LLM Configuration
+    # AI / LLM Configuration (DeepSeek via OpenAI-compatible API)
     # -------------------------------------------------------------------------
-    # Default models for different tasks (Gemini-only setup)
-    llm_voice_model: str = "gemini-2.5-flash"  # Fast model for voice
-    llm_reasoning_model: str = "gemini-2.5-flash"  # Complex reasoning tasks
-    llm_default_model: str = "gemini-2.5-flash"  # Default for chat/email
-    llm_use_gemini_only: bool = True  # Set to False if using OpenAI too
+    deepseek_api_key: SecretStr | None = None
+    deepseek_base_url: str = "https://api.lkeap.cloud.tencent.com/v1"
+    deepseek_model: str = "deepseek-v3-0324"  # Default model for all tasks
+
+    # Legacy settings (kept for compatibility, but DeepSeek is preferred)
+    llm_voice_model: str = "deepseek-v3-0324"  # Fast model for voice
+    llm_reasoning_model: str = "deepseek-v3-0324"  # Complex reasoning tasks
+    llm_default_model: str = "deepseek-v3-0324"  # Default for chat/email
+    llm_use_deepseek: bool = True  # Use DeepSeek as primary LLM
 
     # LLM Usage limits
     llm_max_tokens: int = 4096  # Max tokens per request
@@ -225,6 +229,23 @@ class Settings(BaseSettings):
     ezyvet_client_id: str | None = None
     ezyvet_client_secret: SecretStr | None = None
     vetspire_api_key: SecretStr | None = None
+
+    # -------------------------------------------------------------------------
+    # LiveKit Voice AI Configuration
+    # -------------------------------------------------------------------------
+    livekit_api_key: str | None = None
+    livekit_api_secret: SecretStr | None = None
+    livekit_url: str = "http://livekit:7880"  # Internal Docker URL
+    livekit_ws_url: str = "ws://localhost:7880"  # WebSocket URL for browser
+
+    # Voice AI Provider Keys
+    assemblyai_api_key: SecretStr | None = None  # STT (speech-to-text)
+    cartesia_api_key: SecretStr | None = None  # TTS (text-to-speech)
+
+    # LiveKit Agent Configuration
+    livekit_agent_max_concurrent_jobs: int = 10  # Max concurrent calls per worker
+    livekit_agent_shutdown_timeout: float = 30.0  # Graceful shutdown timeout
+    livekit_token_ttl_minutes: int = 30  # Token validity period
 
     # -------------------------------------------------------------------------
     # OpenTelemetry / Observability

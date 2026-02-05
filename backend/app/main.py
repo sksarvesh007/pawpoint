@@ -145,6 +145,7 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"],  # Allow browser to access response headers (needed for SSE)
 )
 
 # Include API routers

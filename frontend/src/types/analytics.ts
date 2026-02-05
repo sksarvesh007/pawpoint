@@ -15,6 +15,7 @@ export interface CallAnalytics {
   average_confidence_score: number;
   calls_by_outcome: Record<string, number>;
   calls_by_hour: Array<{ hour: number; count: number }>;
+  transfer_hours: number[]; // UTC hours when transfers occurred
 }
 
 export interface AppointmentAnalytics {
@@ -61,6 +62,25 @@ export interface CallLogSummary {
   direction: string;
 }
 
+export interface ChatLogSummary {
+  id: string;
+  started_at: string;
+  user_identifier: string;
+  total_messages: number;
+  intent: string | null;
+  session_active: boolean;
+  summary: string | null;
+}
+
+export interface ChatAnalytics {
+  total_chats: number;
+  chats_today: number;
+  average_messages_per_chat: number;
+  active_sessions: number;
+  chats_by_intent: Record<string, number>;
+  chats_by_hour: Array<{ hour: number; count: number }>;
+}
+
 export interface DashboardAnalytics {
   calls: CallAnalytics;
   appointments: AppointmentAnalytics;
@@ -68,6 +88,8 @@ export interface DashboardAnalytics {
   pims: PIMSSyncAnalytics;
   sentiment: SentimentData;
   recent_calls: CallLogSummary[];
+  chats?: ChatAnalytics | null;
+  recent_chats?: ChatLogSummary[] | null;
 }
 
 export interface CallLogsResponse {
@@ -76,4 +98,32 @@ export interface CallLogsResponse {
   page: number;
   limit: number;
   total_pages: number;
+}
+
+export interface ChatLogsResponse {
+  items: ChatLogSummary[];
+  total: number;
+  page: number;
+  limit: number;
+  total_pages: number;
+}
+
+export interface MessageDetail {
+  id: string;
+  role: string;
+  content: string | null;
+  created_at: string;
+  agent_name: string | null;
+}
+
+export interface ChatLogDetail {
+  id: string;
+  started_at: string;
+  ended_at: string | null;
+  user_identifier: string;
+  total_messages: number;
+  intent: string | null;
+  session_active: boolean;
+  summary: string | null;
+  messages: MessageDetail[];
 }

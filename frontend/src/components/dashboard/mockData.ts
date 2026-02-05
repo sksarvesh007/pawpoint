@@ -50,6 +50,7 @@ export const MOCK_ANALYTICS: DashboardAnalytics = {
       { hour: 22, count: 1 },
       { hour: 23, count: 0 },
     ],
+    transfer_hours: [9, 15], // Hours when emergency transfers occurred
   },
   appointments: {
     total_appointments: 324,

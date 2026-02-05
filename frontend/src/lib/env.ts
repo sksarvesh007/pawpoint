@@ -13,7 +13,7 @@ export const env = {
      * Backend API URL for client-side calls (browser)
      * @default http://localhost:8000
      */
-    apiUrl: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000',
+    apiUrl: process.env.NEXT_PUBLIC_API_URL || '',  // Use relative URLs - proxied through Next.js
 
     /**
      * Backend API URL for server-side calls (inside Docker container)
@@ -47,7 +47,15 @@ export const env = {
      */
     features: {
         analytics: process.env.NEXT_PUBLIC_ENABLE_ANALYTICS === 'true',
-        voice: process.env.NEXT_PUBLIC_ENABLE_VOICE === 'true',
+        voice: process.env.NEXT_PUBLIC_ENABLE_VOICE !== 'false', // Enabled by default
+    },
+
+    /**
+     * LiveKit configuration for voice widget
+     * Set NEXT_PUBLIC_LIVEKIT_WS_URL in production (e.g., wss://your-project.livekit.cloud)
+     */
+    livekit: {
+        wsUrl: process.env.NEXT_PUBLIC_LIVEKIT_WS_URL || '',
     },
 
     /**

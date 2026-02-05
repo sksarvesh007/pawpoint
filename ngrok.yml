@@ -1,0 +1,13 @@
+version: "3"
+agent:
+    authtoken: 2wXsQjcSIlZBJ90QurZX8JrInSF_27Mho6AD8axyYy3rWcx5c
+tunnels:
+  frontend:
+    proto: http
+    addr: 3000
+  backend:
+    proto: http
+    addr: 8000
+  livekit:
+    proto: http
+    addr: 7880

@@ -31,6 +31,8 @@ services:
       - APP_ENV=development
       - DEBUG=true
       - REDIS_URL=redis://redis:6379/0  # Use 'redis' hostname inside Docker network
+      # CORS: Allow both local dev and production frontend URLs
+      - ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173,http://localhost:8000,https://pawpoint-psi.vercel.app
     env_file:
       - ./backend/.env # Make sure to run 'cp backend/.env.example backend/.env' first!
     depends_on:
@@ -57,6 +59,8 @@ services:
       - NODE_ENV=development
       - NEXT_PUBLIC_API_URL=http://localhost:8000
       - API_URL=http://backend:8000
+      - NEXT_PUBLIC_LIVEKIT_WS_URL=ws://localhost:7880
+      - NEXT_PUBLIC_ENABLE_VOICE=true
     depends_on:
       - backend
     restart: unless-stopped
@@ -96,6 +100,72 @@ services:
       timeout: 5s
       retries: 5
     restart: unless-stopped
+
+  # ===========================================================================
+  # LIVEKIT VOICE AI STACK
+  # ===========================================================================
+
+  # ---------------------------------------------------------------------------
+  # LiveKit Server - WebRTC Media Server
+  # Handles real-time audio/video communication
+  # ---------------------------------------------------------------------------
+  livekit:
+    image: livekit/livekit-server:latest
+    ports:
+      - "7880:7880"               # HTTP/WebSocket API
+      - "7881:7881"               # RTC over TCP
+      - "50000-50020:50000-50020/udp"  # WebRTC UDP range (smaller for dev)
+    volumes:
+      - ./livekit.yaml:/livekit.yaml:ro
+    command: --config /livekit.yaml
+    depends_on:
+      - redis
+    environment:
+      LIVEKIT_KEYS: "${LIVEKIT_API_KEY}: ${LIVEKIT_API_SECRET}"
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
+  # LiveKit SIP Service - Phone Call Integration
+  # Routes Twilio SIP trunk calls to LiveKit rooms
+  # ---------------------------------------------------------------------------
+  livekit-sip:
+    image: livekit/sip:latest
+    ports:
+      - "5060:5060/udp"           # SIP signaling
+    volumes:
+      - ./livekit-sip.yaml:/sip/config.yaml:ro
+    environment:
+      - LIVEKIT_URL=ws://livekit:7880
+      - LIVEKIT_API_KEY=${LIVEKIT_API_KEY}
+      - LIVEKIT_API_SECRET=${LIVEKIT_API_SECRET}
+      - SIP_REDIS_ADDRESS=redis:6379
+    depends_on:
+      - livekit
+      - redis
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
+  # LiveKit Agent Worker - Voice AI Processing
+  # NOTE: Run locally for development (heavy ML dependencies)
+  # cd backend && uv run python -m livekit_agent.main dev
+  # ---------------------------------------------------------------------------
+  # livekit-agent:
+  #   build:
+  #     context: ./backend
+  #     dockerfile: Dockerfile.agent
+  #   environment:
+  #     - LIVEKIT_URL=ws://livekit:7880
+  #     - LIVEKIT_API_KEY=${LIVEKIT_API_KEY}
+  #     - LIVEKIT_API_SECRET=${LIVEKIT_API_SECRET}
+  #     - DATABASE_URL=postgresql+asyncpg://pawpoint:localdevonly@db:5432/pawpoint
+  #     - REDIS_URL=redis://redis:6379/0
+  #     - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+  #     - ASSEMBLYAI_API_KEY=${ASSEMBLYAI_API_KEY}
+  #     - CARTESIA_API_KEY=${CARTESIA_API_KEY}
+  #   depends_on:
+  #     - livekit
+  #     - db
+  #     - redis
 
   # ===========================================================================
   # OBSERVABILITY STACK
@@ -198,4 +268,5 @@ volumes:
   redis_data:
   tempo_data:
   loki_data:
+  livekit_data:
 

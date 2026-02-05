@@ -20,6 +20,7 @@ import {
   LayoutGrid,
   HelpCircle,
   Shield,
+  Mic,
 } from "lucide-react";
 import { getClinicInfo } from "@/lib/api/clinic";
 import { logout } from "@/lib/api/auth";
@@ -100,9 +101,11 @@ export function Sidebar({
         },
         { href: "/dashboard/patients", label: "Patients", icon: PawPrint },
         { href: "/dashboard/calls", label: "Call Log", icon: Phone },
+        { href: "/dashboard/chats", label: "Chat Log", icon: MessageCircle },
+        { href: "/dashboard/voice", label: "Voice Bot", icon: Mic },
         {
           href: clinicSlug ? `/${clinicSlug}/chat` : "#",
-          label: "Chat",
+          label: "Chat Widget",
           icon: MessageCircle,
           external: true,
         },

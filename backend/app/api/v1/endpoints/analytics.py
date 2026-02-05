@@ -92,4 +92,16 @@ async def stream_dashboard_analytics(
                 "data": '{"error": "Stream error occurred"}',
             }
 
-    return EventSourceResponse(event_generator())
+    # Get origin from request for CORS
+    origin = request.headers.get("origin", "*")
+
+    return EventSourceResponse(
+        event_generator(),
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+            "Access-Control-Allow-Origin": origin,
+            "Access-Control-Allow-Credentials": "true",
+        },
+    )

@@ -18,7 +18,8 @@ class CallAnalytics(BaseModel):
     appointments_booked: int
     average_confidence_score: float
     calls_by_outcome: dict[str, int]  # outcome -> count
-    calls_by_hour: list[dict[str, int]]  # hourly distribution for chart
+    calls_by_hour: list[dict[str, int]]  # hourly distribution for chart (UTC hours)
+    transfer_hours: list[int]  # hours when transfers occurred (UTC)
 
 
 class AppointmentAnalytics(BaseModel):
@@ -75,6 +76,29 @@ class CallLogSummary(BaseModel):
     direction: str
 
 
+class ChatLogSummary(BaseModel):
+    """Summary of a single chat conversation for recent chats table."""
+
+    id: str
+    started_at: datetime
+    user_identifier: str
+    total_messages: int
+    intent: str | None
+    session_active: bool
+    summary: str | None
+
+
+class ChatAnalytics(BaseModel):
+    """Chat analytics metrics."""
+
+    total_chats: int
+    chats_today: int
+    average_messages_per_chat: float
+    active_sessions: int
+    chats_by_intent: dict[str, int]  # intent -> count
+    chats_by_hour: list[dict[str, int]]  # hourly distribution for chart
+
+
 class DashboardAnalytics(BaseModel):
     """Complete dashboard analytics."""
 
@@ -84,3 +108,5 @@ class DashboardAnalytics(BaseModel):
     pims: PIMSSyncAnalytics
     sentiment: SentimentData
     recent_calls: list[CallLogSummary]
+    chats: ChatAnalytics | None = None
+    recent_chats: list[ChatLogSummary] | None = None

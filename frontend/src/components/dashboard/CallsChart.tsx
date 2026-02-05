@@ -1,12 +1,14 @@
 /**
- * Call volume chart showing 24-hour call and chat distribution.
+ * Traffic chart showing 24-hour call and chat distribution.
  * Uses Chart.js for smooth, professional visualization.
+ * Chat data is optional - shows zeros until actual data is available.
+ * Data comes from backend in UTC - converted to local timezone for display.
  */
 
 "use client";
 
 import { Activity } from "lucide-react";
-import { useRef } from "react";
+import { useRef, useMemo } from "react";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -35,16 +37,75 @@ ChartJS.register(
 
 interface CallsChartProps {
   data: Array<{ hour: number; count: number }>;
+  chatData?: Array<{ hour: number; count: number }>;
   emergencyTransfers?: number;
-  transferHours?: number[];
+  transferHours?: number[]; // UTC hours when transfers occurred
+}
+
+/**
+ * Convert UTC hour to local hour based on browser timezone.
+ */
+function utcToLocalHour(utcHour: number): number {
+  // getTimezoneOffset returns minutes, negative for east of UTC
+  const offsetMinutes = new Date().getTimezoneOffset();
+  const offsetHours = -offsetMinutes / 60; // Convert to positive hours for east
+  return (utcHour + offsetHours + 24) % 24;
+}
+
+/**
+ * Convert local hour to UTC hour.
+ */
+function localToUtcHour(localHour: number): number {
+  const offsetMinutes = new Date().getTimezoneOffset();
+  const offsetHours = -offsetMinutes / 60;
+  return (localHour - offsetHours + 24) % 24;
+}
+
+/**
+ * Rotate hourly data from UTC to local timezone order.
+ * Data comes indexed by UTC hour (0-23), we reorder to local hours.
+ */
+function convertToLocalTimezone(
+  utcData: Array<{ hour: number; count: number }>,
+): Array<{ hour: number; count: number }> {
+  // Create a map of UTC hour -> count
+  const utcMap = new Map(utcData.map((d) => [d.hour, d.count]));
+
+  // Build array in local hour order (0-23)
+  return Array.from({ length: 24 }, (_, localHour) => {
+    const utcHour = Math.floor(localToUtcHour(localHour));
+    return {
+      hour: localHour,
+      count: utcMap.get(utcHour) || 0,
+    };
+  });
+}
+
+/**
+ * Convert UTC transfer hours to local hours.
+ */
+function convertTransferHoursToLocal(utcHours: number[]): number[] {
+  return utcHours.map((h) => Math.floor(utcToLocalHour(h)));
 }
 
 export function CallsChart({
   data,
-  emergencyTransfers = 2,
-  transferHours = [3, 15],
+  chatData,
+  emergencyTransfers = 0,
+  transferHours = [],
 }: CallsChartProps) {
   const chartRef = useRef<ChartJS<"line">>(null);
+
+  // Convert data from UTC to local timezone
+  const localData = useMemo(() => convertToLocalTimezone(data || []), [data]);
+  const localChatData = useMemo(
+    () => (chatData ? convertToLocalTimezone(chatData) : null),
+    [chatData],
+  );
+  const localTransferHours = useMemo(
+    () => convertTransferHoursToLocal(transferHours),
+    [transferHours],
+  );
 
   if (!data || data.length === 0) {
     return (
@@ -59,34 +120,29 @@ export function CallsChart({
     );
   }
 
-  const labels = data.map((item) =>
+  const labels = localData.map((item) =>
     item.hour % 4 === 0 ? `${item.hour}:00` : "",
   );
 
-  const generateChatData = () => {
-    return data.map((item) => {
-      const base = Math.floor(item.count * 0.4);
-      const variance = Math.floor(Math.random() * 5) - 2;
-      return Math.max(0, base + variance);
-    });
-  };
-
-  const chatData = generateChatData();
-
-  const callsPointRadius = data.map((item) =>
-    transferHours.includes(item.hour) ? 8 : 0,
+  const callsPointRadius = localData.map((item) =>
+    localTransferHours.includes(item.hour) ? 8 : 0,
   );
 
-  const callsPointBackgroundColor = data.map((item) =>
-    transferHours.includes(item.hour) ? "#E11D48" : "transparent",
+  const callsPointBackgroundColor = localData.map((item) =>
+    localTransferHours.includes(item.hour) ? "#E11D48" : "transparent",
   );
 
-  const chartData: ChartData<"line"> = {
+  // Use provided chat data or default to zeros
+  const chatsDataPoints = localChatData
+    ? localChatData.map((item) => item.count)
+    : localData.map(() => 0);
+
+  const chartDataConfig: ChartData<"line"> = {
     labels,
     datasets: [
       {
         label: "Calls",
-        data: data.map((item) => item.count),
+        data: localData.map((item) => item.count),
         borderColor: "#E11D48",
         backgroundColor: (context) => {
           const ctx = context.chart.ctx;
@@ -110,7 +166,7 @@ export function CallsChart({
       },
       {
         label: "Chats",
-        data: chatData,
+        data: chatsDataPoints,
         borderColor: "#8B5CF6",
         backgroundColor: (context) => {
           const ctx = context.chart.ctx;
@@ -164,7 +220,7 @@ export function CallsChart({
         displayColors: true,
         callbacks: {
           title: (items) => {
-            const hour = data[items[0].dataIndex]?.hour;
+            const hour = localData[items[0].dataIndex]?.hour;
             return `${hour}:00`;
           },
           label: (context) => {
@@ -173,9 +229,9 @@ export function CallsChart({
             return ` ${label}: ${value}`;
           },
           afterBody: (items) => {
-            const hour = data[items[0].dataIndex]?.hour;
-            if (transferHours.includes(hour)) {
-              return [`\n⚠️ ${emergencyTransfers} transfers at this hour`];
+            const hour = localData[items[0].dataIndex]?.hour;
+            if (localTransferHours.includes(hour) && emergencyTransfers > 0) {
+              return [`\n⚠️ Transfer occurred at this hour`];
             }
             return [];
           },
@@ -211,7 +267,7 @@ export function CallsChart({
           font: {
             size: 11,
           },
-          stepSize: 10,
+          stepSize: 1,
         },
         beginAtZero: true,
       },
@@ -227,16 +283,18 @@ export function CallsChart({
           </div>
           Traffic Overview (Last 24 Hours)
         </h3>
-        <div className="flex items-center gap-2 text-xs text-zinc-500">
-          <span className="flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full bg-rose-500"></span>
-            Transfer point
-          </span>
-        </div>
+        {localTransferHours.length > 0 && (
+          <div className="flex items-center gap-2 text-xs text-zinc-500">
+            <span className="flex items-center gap-1">
+              <span className="w-2 h-2 rounded-full bg-rose-500"></span>
+              Transfer point
+            </span>
+          </div>
+        )}
       </div>
 
       <div className="h-72">
-        <Line ref={chartRef} data={chartData} options={options} />
+        <Line ref={chartRef} data={chartDataConfig} options={options} />
       </div>
     </div>
   );

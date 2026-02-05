@@ -57,6 +57,13 @@ class CallOutcome(StrEnum):
     OTHER = "other"
 
 
+class CallChannel(StrEnum):
+    """Channel through which the call was made."""
+
+    PHONE = "phone"  # Traditional phone call via Twilio SIP
+    WEB_VOICE = "web_voice"  # Browser-based voice widget via WebRTC
+
+
 class CallLog(Base, TimestampMixin, SoftDeleteMixin):
     """
     Call log model.
@@ -81,6 +88,28 @@ class CallLog(Base, TimestampMixin, SoftDeleteMixin):
         unique=True,
         index=True,
         comment="Twilio Call SID for reference",
+    )
+
+    # LiveKit identification
+    livekit_room_name: Mapped[str | None] = mapped_column(
+        String(100),
+        nullable=True,
+        index=True,
+        comment="LiveKit room name for the call session",
+    )
+    livekit_participant_id: Mapped[str | None] = mapped_column(
+        String(100),
+        nullable=True,
+        comment="LiveKit participant ID for the caller",
+    )
+
+    # Call channel (phone vs web voice)
+    channel: Mapped[CallChannel] = mapped_column(
+        Enum(CallChannel, values_callable=lambda e: [x.value for x in e]),
+        default=CallChannel.PHONE,
+        nullable=False,
+        index=True,
+        comment="Channel: phone (Twilio SIP) or web_voice (WebRTC)",
     )
 
     # Call details
@@ -266,4 +295,5 @@ class CallLog(Base, TimestampMixin, SoftDeleteMixin):
         Index("ix_call_logs_clinic_date", "clinic_id", "started_at"),
         Index("ix_call_logs_clinic_outcome", "clinic_id", "outcome"),
         Index("ix_call_logs_follow_up", "clinic_id", "requires_follow_up"),
+        Index("ix_call_logs_clinic_channel", "clinic_id", "channel"),
     )
