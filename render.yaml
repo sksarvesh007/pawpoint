@@ -1,0 +1,99 @@
+# =============================================================================
+# Render Blueprint - PawPoint Backend Deployment
+# Deploy: Connect repo to Render and it auto-detects this file
+# =============================================================================
+
+services:
+  # ---------------------------------------------------------------------------
+  # Backend API Service
+  # ---------------------------------------------------------------------------
+  - type: web
+    name: pawpoint-api
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    dockerTarget: production
+    plan: free
+    region: oregon
+    healthCheckPath: /health
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: DEBUG
+        value: "false"
+      - key: HOST
+        value: "0.0.0.0"
+      - key: PORT
+        value: "8000"
+      # Database - Set this after creating Neon DB
+      - key: DATABASE_URL
+        sync: false
+      # Security - Generate with: openssl rand -hex 32
+      - key: SECRET_KEY
+        generateValue: true
+      # CORS - Your Vercel frontend URL (include all possible origins)
+      - key: ALLOWED_ORIGINS
+        value: "https://pawpoint-psi.vercel.app,https://www.pawpoint-psi.vercel.app,http://localhost:3000,http://localhost:5173"
+      # LiveKit Cloud credentials (get from cloud.livekit.io)
+      - key: LIVEKIT_API_KEY
+        sync: false
+      - key: LIVEKIT_API_SECRET
+        sync: false
+      - key: LIVEKIT_URL
+        sync: false
+      # DeepSeek LLM (primary AI provider)
+      - key: DEEPSEEK_API_KEY
+        sync: false
+      - key: DEEPSEEK_BASE_URL
+        value: "https://api.lkeap.cloud.tencent.com/v1"
+      - key: DEEPSEEK_MODEL
+        value: "deepseek-v3-0324"
+      # Voice providers (optional)
+      - key: ASSEMBLYAI_API_KEY
+        sync: false
+      - key: CARTESIA_API_KEY
+        sync: false
+      # Redis - Use Render Redis or external Redis service
+      # For free tier, you can use Upstash Redis (free tier available)
+      - key: REDIS_URL
+        sync: false
+      # Disable telemetry for free tier (no Grafana Cloud)
+      - key: OTEL_ENABLED
+        value: "false"
+      - key: PROMETHEUS_ENABLED
+        value: "false"
+
+  # ---------------------------------------------------------------------------
+  # LiveKit Agent (Background Worker)
+  # ---------------------------------------------------------------------------
+  - type: worker
+    name: pawpoint-livekit-agent
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile.agent
+    dockerContext: ./backend
+    plan: free
+    region: oregon
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: LIVEKIT_API_KEY
+        sync: false
+      - key: LIVEKIT_API_SECRET
+        sync: false
+      - key: LIVEKIT_URL
+        sync: false
+      # Redis (same as API service)
+      - key: REDIS_URL
+        sync: false
+      # DeepSeek LLM
+      - key: DEEPSEEK_API_KEY
+        sync: false
+      - key: DEEPSEEK_BASE_URL
+        value: "https://api.lkeap.cloud.tencent.com/v1"
+      - key: DEEPSEEK_MODEL
+        value: "deepseek-v3-0324"
+      # Voice providers
+      - key: ASSEMBLYAI_API_KEY
+        sync: false
+      - key: CARTESIA_API_KEY
+        sync: false

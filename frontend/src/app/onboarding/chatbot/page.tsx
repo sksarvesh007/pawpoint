@@ -66,7 +66,7 @@ export default function ChatbotOnboardingPage() {
     "hit by car",
   ]);
   const [newKeyword, setNewKeyword] = useState("");
-  const [emergencyMessage, _setEmergencyMessage] = useState(
+  const [emergencyMessage] = useState(
     "I'm transferring you to our emergency line right away."
   );
   const [allowBooking, setAllowBooking] = useState(true);

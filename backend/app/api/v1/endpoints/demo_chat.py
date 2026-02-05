@@ -8,7 +8,7 @@ import json
 import time
 from collections.abc import AsyncIterator
 
-from fastapi import APIRouter, status
+from fastapi import APIRouter, Request, status
 from fastapi.responses import StreamingResponse
 from httpx import HTTPStatusError
 from loguru import logger
@@ -89,8 +89,8 @@ async def stream_demo_response(
         logger.info(
             f"[POST /api/v1/demo-clinic/chat/stream] Demo chat request - Message: {message[:50]}..."
         )
-        # Get the model
-        model = ModelFactory.get_model_for_task("faq", channel="chat")
+        # Get the model (using DeepSeek)
+        _ = ModelFactory.get_model_for_task("faq", channel="chat")  # Validates API key
 
         # Build system prompt with demo clinic data
         system_prompt = build_faq_system_prompt(DEMO_CLINIC_DATA)
@@ -101,11 +101,29 @@ async def stream_demo_response(
         conv_id = conversation_id or str(uuid.uuid4())
         yield f"data: {json.dumps({'type': 'conversation_id', 'conversation_id': conv_id})}\n\n"
 
-        # Create a simple agent for streaming
+        # Create a simple agent for streaming with DeepSeek
+        from openai import AsyncOpenAI
         from pydantic_ai import Agent
+        from pydantic_ai.models.openai import OpenAIChatModel
+        from pydantic_ai.providers.openai import OpenAIProvider
+
+        from app.core.config import settings
+
+        # Configure OpenAI client for DeepSeek API
+        deepseek_client = AsyncOpenAI(
+            api_key=settings.deepseek_api_key.get_secret_value()
+            if settings.deepseek_api_key
+            else "",
+            base_url=settings.deepseek_base_url,
+        )
+        deepseek_provider = OpenAIProvider(openai_client=deepseek_client)
+        deepseek_model = OpenAIChatModel(
+            settings.deepseek_model,
+            provider=deepseek_provider,
+        )
 
         demo_agent = Agent(
-            model=model,
+            model=deepseek_model,
             system_prompt=system_prompt,
         )
 
@@ -167,7 +185,10 @@ async def stream_demo_response(
     description="Send a message to the demo chatbot and receive streaming AI response. No authentication required.",
 )
 @traced(span_name="endpoint.demo_chat_stream")
-async def demo_chat_stream(request: DemoChatRequest) -> StreamingResponse:
+async def demo_chat_stream(
+    request: DemoChatRequest,
+    http_request: Request,
+) -> StreamingResponse:
     """Stream chat response from demo AI assistant.
 
     This endpoint is specifically for the /demo page and doesn't require
@@ -176,6 +197,9 @@ async def demo_chat_stream(request: DemoChatRequest) -> StreamingResponse:
     Returns:
         Server-Sent Events (SSE) stream with AI response
     """
+    # Get origin for CORS headers
+    origin = http_request.headers.get("origin", "*")
+
     return StreamingResponse(
         stream_demo_response(request.message, request.conversation_id),
         media_type="text/event-stream",
@@ -183,5 +207,7 @@ async def demo_chat_stream(request: DemoChatRequest) -> StreamingResponse:
             "Cache-Control": "no-cache",
             "Connection": "keep-alive",
             "X-Accel-Buffering": "no",
+            "Access-Control-Allow-Origin": origin,
+            "Access-Control-Allow-Credentials": "true",
         },
     )

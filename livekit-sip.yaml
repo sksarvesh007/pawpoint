@@ -1,0 +1,53 @@
+# =============================================================================
+# LiveKit SIP Service Configuration
+# Routes Twilio SIP trunk calls to LiveKit rooms
+# =============================================================================
+
+# Redis configuration for SIP service (required)
+redis:
+  address: redis:6379
+
+# SIP server configuration
+sip:
+  # Listen address for SIP signaling
+  listen_address: "0.0.0.0:5060"
+
+  # SIP trunks - configure your Twilio SIP trunk here
+  # In production, replace with your Twilio credentials
+  trunks:
+    # Example Twilio SIP trunk configuration
+    - name: "twilio-trunk"
+      # Twilio SIP domain (e.g., your-account.sip.twilio.com)
+      host: "${TWILIO_SIP_DOMAIN:-your-account.sip.twilio.com}"
+
+      # Authentication (optional, depending on Twilio setup)
+      # username: "${TWILIO_SIP_USERNAME}"
+      # password: "${TWILIO_SIP_PASSWORD}"
+
+      # Inbound rules - map phone numbers to rooms
+      inbound_rules:
+        # Default rule: create room based on dialed number
+        - name: "default"
+          # Match all incoming calls
+          pattern: ".*"
+
+          # Room template: creates room with clinic phone number
+          room_template: "voice-clinic-{{.to}}"
+
+          # Add metadata for the agent to identify the clinic
+          room_metadata: |
+            {
+              "channel": "phone",
+              "dialed_number": "{{.to}}",
+              "caller_phone": "{{.from}}"
+            }
+
+# Logging
+logging:
+  level: info
+
+# Note: In production, you'll need to:
+# 1. Configure your Twilio account with a SIP trunk
+# 2. Point the SIP trunk to this server's IP and port 5060
+# 3. Set up proper authentication and TLS
+# 4. Configure DNS/firewall for SIP traffic

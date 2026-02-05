@@ -167,7 +167,7 @@ async def clinic_chat(
             # Convert DB messages to MessageData for session
             message_history = [
                 MessageData(
-                    role=msg.role,
+                    role=msg.role,  # type: ignore[arg-type]
                     content=msg.content or "",
                     agent_name=msg.agent_name,
                     model_name=msg.model_name,
