@@ -28,6 +28,8 @@ settings = get_settings()
 if settings.database_url:
     # For Alembic migrations, use sync psycopg2 driver
     sync_url = settings.database_url.replace("postgresql+asyncpg://", "postgresql://")
+    # Convert ssl parameter for psycopg2 (asyncpg uses ssl=, psycopg2 uses sslmode=)
+    sync_url = sync_url.replace("?ssl=", "?sslmode=").replace("&ssl=", "&sslmode=")
     config.set_main_option("sqlalchemy.url", sync_url)
 
 
