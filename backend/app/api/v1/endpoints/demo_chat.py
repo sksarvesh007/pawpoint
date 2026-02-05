@@ -111,7 +111,9 @@ async def stream_demo_response(
 
         # Configure OpenAI client for DeepSeek API
         deepseek_client = AsyncOpenAI(
-            api_key=settings.deepseek_api_key.get_secret_value() if settings.deepseek_api_key else "",
+            api_key=settings.deepseek_api_key.get_secret_value()
+            if settings.deepseek_api_key
+            else "",
             base_url=settings.deepseek_base_url,
         )
         deepseek_provider = OpenAIProvider(openai_client=deepseek_client)

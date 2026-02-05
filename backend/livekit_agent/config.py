@@ -45,7 +45,9 @@ class AgentSettings(BaseSettings):
     # Voice AI Providers
     assemblyai_api_key: SecretStr  # STT
     cartesia_api_key: SecretStr  # TTS
-    cartesia_voice_id: str = "79a125e8-cd45-4c13-8a67-188112f4dd22"  # Default Cartesia voice
+    cartesia_voice_id: str = (
+        "79a125e8-cd45-4c13-8a67-188112f4dd22"  # Default Cartesia voice
+    )
 
     # Agent Configuration
     max_concurrent_jobs: int = 10
@@ -61,7 +63,7 @@ class AgentSettings(BaseSettings):
 @lru_cache
 def get_agent_settings() -> AgentSettings:
     """Get cached agent settings instance."""
-    return AgentSettings()
+    return AgentSettings()  # type: ignore[call-arg]
 
 
 agent_settings = get_agent_settings()

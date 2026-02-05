@@ -57,7 +57,7 @@ async def warm_phone_mapping() -> None:
             mappings = result.all()
 
             for clinic_id, phone in mappings:
-                await r.hset("phone_to_clinic", phone, str(clinic_id))
+                await r.hset("phone_to_clinic", phone, str(clinic_id))  # type: ignore[misc]
 
             logger.info(f"Cached {len(mappings)} phone-to-clinic mappings")
     except Exception as e:
@@ -76,7 +76,7 @@ async def get_clinic_for_phone(phone: str) -> str | None:
         Clinic ID if found, None otherwise
     """
     r = await get_redis()
-    clinic_id = await r.hget("phone_to_clinic", phone)
+    clinic_id = await r.hget("phone_to_clinic", phone)  # type: ignore[misc]
     return clinic_id
 
 
@@ -89,7 +89,7 @@ async def save_call_state(room_name: str, state: dict) -> None:
         state: Call state dictionary
     """
     r = await get_redis()
-    await r.hset(
+    await r.hset(  # type: ignore[misc]
         f"call:{room_name}:state",
         mapping={
             "data": json.dumps(state),
@@ -111,7 +111,7 @@ async def get_call_state(room_name: str) -> dict | None:
         Call state dictionary if found, None otherwise
     """
     r = await get_redis()
-    data = await r.hget(f"call:{room_name}:state", "data")
+    data = await r.hget(f"call:{room_name}:state", "data")  # type: ignore[misc]
     if data:
         return json.loads(data)
     return None

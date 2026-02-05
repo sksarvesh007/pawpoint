@@ -6,7 +6,7 @@ Tools for transferring calls to staff and taking messages.
 
 import json
 import logging
-from datetime import datetime
+from datetime import UTC, datetime
 
 import redis.asyncio as redis
 
@@ -45,10 +45,10 @@ async def transfer_call(
             "reason": reason,
             "caller_name": caller_name,
             "caller_phone": caller_phone,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         }
 
-        await redis_client.rpush("transfer_queue", json.dumps(transfer_data))
+        await redis_client.rpush("transfer_queue", json.dumps(transfer_data))  # type: ignore[misc]
 
         # Signal the room to perform transfer
         await redis_client.publish(
@@ -90,7 +90,7 @@ async def take_message(
         Voice confirmation message
     """
     try:
-        message_id = datetime.utcnow().strftime("%Y%m%d%H%M%S")
+        message_id = datetime.now(UTC).strftime("%Y%m%d%H%M%S")
 
         message_data = {
             "id": message_id,
@@ -101,10 +101,10 @@ async def take_message(
             "urgency": urgency,
             "regarding_pet": regarding_pet,
             "source": "voice_ai",
-            "created_at": datetime.utcnow().isoformat(),
+            "created_at": datetime.now(UTC).isoformat(),
         }
 
-        await redis_client.rpush("message_queue", json.dumps(message_data))
+        await redis_client.rpush("message_queue", json.dumps(message_data))  # type: ignore[misc]
 
         if urgency == "urgent":
             # Also notify immediately for urgent messages

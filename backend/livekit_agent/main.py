@@ -13,13 +13,7 @@ import logging
 import os
 from datetime import UTC, datetime
 
-from livekit.agents import (
-    Agent,
-    AgentSession,
-    JobContext,
-    WorkerOptions,
-    cli,
-)
+from livekit.agents import Agent, AgentSession, JobContext, WorkerOptions, cli
 from livekit.plugins import assemblyai, cartesia, openai, silero
 from sqlalchemy import select
 
@@ -172,7 +166,9 @@ async def entrypoint(ctx: JobContext):
         logger.warning(f"Voice not enabled for clinic: {clinic_id}")
         return
 
-    logger.info(f"Loaded clinic: {clinic['name']} (voice_enabled={clinic['voice_enabled']})")
+    logger.info(
+        f"Loaded clinic: {clinic['name']} (voice_enabled={clinic['voice_enabled']})"
+    )
 
     # Record call start
     record_call_start(clinic_id, channel)
@@ -210,19 +206,25 @@ async def entrypoint(ctx: JobContext):
     )
     logger.info("  - STT: AssemblyAI initialized")
 
-    logger.info(f"  - LLM: Initializing DeepSeek with base_url={agent_settings.deepseek_base_url}")
+    logger.info(
+        f"  - LLM: Initializing DeepSeek with base_url={agent_settings.deepseek_base_url}"
+    )
     llm = openai.LLM(
         model=agent_settings.deepseek_model,
         api_key=agent_settings.deepseek_api_key.get_secret_value(),
         base_url=agent_settings.deepseek_base_url,
     )
-    logger.info(f"  - LLM: DeepSeek {agent_settings.deepseek_model} initialized successfully")
+    logger.info(
+        f"  - LLM: DeepSeek {agent_settings.deepseek_model} initialized successfully"
+    )
 
     tts = cartesia.TTS(
         api_key=agent_settings.cartesia_api_key.get_secret_value(),
         voice=agent_settings.cartesia_voice_id,
     )
-    logger.info(f"  - TTS: Cartesia initialized (voice: {agent_settings.cartesia_voice_id})")
+    logger.info(
+        f"  - TTS: Cartesia initialized (voice: {agent_settings.cartesia_voice_id})"
+    )
 
     vad = silero.VAD.load()
     logger.info("  - VAD: Silero initialized")
@@ -272,12 +274,15 @@ async def entrypoint(ctx: JobContext):
     except Exception as e:
         logger.error(f"session.say() failed: {e}")
         import traceback
+
         logger.error(traceback.format_exc())
 
 
 if __name__ == "__main__":
     # Set API keys as environment variables (some plugins may read from env)
-    os.environ["ASSEMBLYAI_API_KEY"] = agent_settings.assemblyai_api_key.get_secret_value()
+    os.environ["ASSEMBLYAI_API_KEY"] = (
+        agent_settings.assemblyai_api_key.get_secret_value()
+    )
     os.environ["CARTESIA_API_KEY"] = agent_settings.cartesia_api_key.get_secret_value()
     os.environ["OPENAI_API_KEY"] = agent_settings.deepseek_api_key.get_secret_value()
 

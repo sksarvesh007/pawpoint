@@ -17,7 +17,13 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
-from app.models.call_log import CallChannel, CallDirection, CallLog, CallStatus
+from app.models.call_log import (
+    CallChannel,
+    CallDirection,
+    CallLog,
+    CallOutcome,
+    CallStatus,
+)
 from app.models.clinic import Clinic
 
 logger = logging.getLogger(__name__)
@@ -279,7 +285,7 @@ class VoiceService:
             call_log.duration_seconds = int((now - call_log.started_at).total_seconds())
 
         if outcome:
-            call_log.outcome = outcome
+            call_log.outcome = CallOutcome(outcome)
         if transcript:
             call_log.transcript = transcript
         if summary:

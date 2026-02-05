@@ -7,7 +7,7 @@ Uses async writes via Redis queue for responsiveness.
 
 import json
 import logging
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from uuid import uuid4
 
 import redis.asyncio as redis
@@ -56,11 +56,14 @@ async def check_available_appointments(
 
     try:
         # Get existing appointments for the date
+        # Create start and end of day boundaries for the target date
+        from sqlalchemy import Date, cast
+
         existing = await db.execute(
-            select(Appointment.scheduled_time).where(
+            select(Appointment.start_time).where(
                 and_(
                     Appointment.clinic_id == clinic_id,
-                    Appointment.scheduled_date == target_date,
+                    cast(Appointment.start_time, Date) == target_date,
                     Appointment.status.in_(
                         [
                             AppointmentStatus.SCHEDULED,
@@ -71,7 +74,8 @@ async def check_available_appointments(
                 )
             )
         )
-        booked_times = {row[0] for row in existing.all()}
+        # Extract time strings from start_time datetimes
+        booked_times = {row[0].strftime("%H:%M") for row in existing.all()}
 
         # Generate available slots (9 AM to 5 PM, 30-minute intervals)
         available_slots = []
@@ -157,10 +161,10 @@ async def book_appointment(
             "phone": phone,
             "owner_email": owner_email,
             "source": "voice_ai",
-            "created_at": datetime.utcnow().isoformat(),
+            "created_at": datetime.now(UTC).isoformat(),
         }
 
-        await redis_client.rpush("booking_queue", json.dumps(booking_data))
+        await redis_client.rpush("booking_queue", json.dumps(booking_data))  # type: ignore[misc]
 
         return (
             f"I've scheduled an appointment for {pet_name} on {formatted_date} at {formatted_time}. "
@@ -226,11 +230,11 @@ async def cancel_appointment(
 
         # Cancel the appointment
         appointment.status = AppointmentStatus.CANCELLED
-        appointment.cancelled_at = datetime.utcnow()
+        appointment.cancelled_at = datetime.now(UTC)
         appointment.cancellation_reason = "Cancelled via voice AI"
         await db.commit()
 
-        return f"I've cancelled your appointment for {appointment.scheduled_date.strftime('%B %d')}. Would you like to schedule a new appointment?"
+        return f"I've cancelled your appointment for {appointment.start_time.strftime('%B %d')}. Would you like to schedule a new appointment?"
 
     except Exception as e:
         logger.error(f"Cancellation error: {e}")
@@ -291,10 +295,17 @@ async def reschedule_appointment(
         formatted_time = datetime.strptime(new_time, "%H:%M").strftime("%-I:%M %p")
 
         # Update appointment
-        old_date = appointment.scheduled_date.strftime("%B %d")
-        appointment.scheduled_date = target_date
-        appointment.scheduled_time = new_time
-        appointment.updated_at = datetime.utcnow()
+        old_date = appointment.start_time.strftime("%B %d")
+        # Combine new date and time into start_time
+        new_time_obj = datetime.strptime(new_time, "%H:%M").time()
+        appointment.start_time = datetime.combine(target_date, new_time_obj).replace(
+            tzinfo=UTC
+        )
+        # Update end_time (assuming same duration)
+        if appointment.duration_minutes:
+            appointment.end_time = appointment.start_time + timedelta(
+                minutes=appointment.duration_minutes
+            )
         await db.commit()
 
         return (

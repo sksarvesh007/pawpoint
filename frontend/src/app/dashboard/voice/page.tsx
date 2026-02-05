@@ -84,16 +84,16 @@ function VoiceBotInterface({ clinicSlug, clinicName }: VoiceBotInterfaceProps) {
 
     const [callDuration, setCallDuration] = useState(0);
 
-    // Call duration timer
+    // Call duration timer - resets when call starts
     useEffect(() => {
-        let interval: NodeJS.Timeout;
-        if (isInCall) {
-            interval = setInterval(() => {
-                setCallDuration((prev) => prev + 1);
-            }, 1000);
-        } else {
-            setCallDuration(0);
+        if (!isInCall) {
+            return;
         }
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- Intentional reset when call starts
+        setCallDuration(0);
+        const interval = setInterval(() => {
+            setCallDuration((prev) => prev + 1);
+        }, 1000);
         return () => clearInterval(interval);
     }, [isInCall]);
 

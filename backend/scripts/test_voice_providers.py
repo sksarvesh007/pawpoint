@@ -20,9 +20,9 @@ from livekit_agent.config import agent_settings
 
 
 def print_header(title: str):
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f"  {title}")
-    print(f"{'='*60}\n")
+    print(f"{'=' * 60}\n")
 
 
 def print_success(msg: str):
@@ -77,6 +77,7 @@ async def test_silero_vad():
     except Exception as e:
         print_error(f"Silero VAD error: {e}")
         import traceback
+
         traceback.print_exc()
         return False
 
@@ -95,13 +96,14 @@ async def test_assemblyai_stt():
         print_success(f"AssemblyAI STT initialized: {type(stt)}")
 
         # Try to get capabilities
-        if hasattr(stt, 'capabilities'):
+        if hasattr(stt, "capabilities"):
             print_info(f"Capabilities: {stt.capabilities}")
 
         return True
     except Exception as e:
         print_error(f"AssemblyAI STT error: {e}")
         import traceback
+
         traceback.print_exc()
         return False
 
@@ -129,9 +131,7 @@ async def test_deepseek_llm():
 
         payload = {
             "model": model,
-            "messages": [
-                {"role": "user", "content": "Say hello in one word."}
-            ],
+            "messages": [{"role": "user", "content": "Say hello in one word."}],
             "max_tokens": 50,
         }
 
@@ -139,7 +139,11 @@ async def test_deepseek_llm():
             async with session.post(url, json=payload, headers=headers) as resp:
                 if resp.status == 200:
                     data = await resp.json()
-                    text = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+                    text = (
+                        data.get("choices", [{}])[0]
+                        .get("message", {})
+                        .get("content", "")
+                    )
                     print_success(f"DeepSeek API response: {text.strip()[:100]}")
                     return True
                 else:
@@ -149,6 +153,7 @@ async def test_deepseek_llm():
     except Exception as e:
         print_error(f"DeepSeek LLM error: {e}")
         import traceback
+
         traceback.print_exc()
         return False
 
@@ -193,7 +198,9 @@ async def test_cartesia_tts():
             async with session.post(url, json=payload, headers=headers) as resp:
                 if resp.status == 200:
                     audio_data = await resp.read()
-                    print_success(f"Cartesia TTS synthesized {len(audio_data)} bytes of audio")
+                    print_success(
+                        f"Cartesia TTS synthesized {len(audio_data)} bytes of audio"
+                    )
                     return True
                 else:
                     error_text = await resp.text()
@@ -202,6 +209,7 @@ async def test_cartesia_tts():
     except Exception as e:
         print_error(f"Cartesia TTS error: {e}")
         import traceback
+
         traceback.print_exc()
         return False
 
@@ -214,7 +222,9 @@ async def test_livekit_connection():
         from livekit import api
 
         livekit_api = api.LiveKitAPI(
-            url=agent_settings.livekit_url.replace("ws://", "http://").replace("wss://", "https://"),
+            url=agent_settings.livekit_url.replace("ws://", "http://").replace(
+                "wss://", "https://"
+            ),
             api_key=agent_settings.livekit_api_key,
             api_secret=agent_settings.livekit_api_secret.get_secret_value(),
         )
@@ -231,24 +241,25 @@ async def test_livekit_connection():
     except Exception as e:
         print_error(f"LiveKit connection error: {e}")
         import traceback
+
         traceback.print_exc()
         return False
 
 
 async def main():
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("  VOICE AI PROVIDER TEST SUITE")
-    print("="*60)
+    print("=" * 60)
 
     results = {}
 
     # Run all tests
-    results['config'] = await test_config()
-    results['silero_vad'] = await test_silero_vad()
-    results['assemblyai_stt'] = await test_assemblyai_stt()
-    results['deepseek_llm'] = await test_deepseek_llm()
-    results['cartesia_tts'] = await test_cartesia_tts()
-    results['livekit'] = await test_livekit_connection()
+    results["config"] = await test_config()
+    results["silero_vad"] = await test_silero_vad()
+    results["assemblyai_stt"] = await test_assemblyai_stt()
+    results["deepseek_llm"] = await test_deepseek_llm()
+    results["cartesia_tts"] = await test_cartesia_tts()
+    results["livekit"] = await test_livekit_connection()
 
     # Summary
     print_header("TEST SUMMARY")

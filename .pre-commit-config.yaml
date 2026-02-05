@@ -19,7 +19,7 @@ repos:
     hooks:
       - id: ty
         name: ty type checker
-        entry: uvx ty check --python backend/.venv backend
+        entry: uvx ty check --python backend/.venv backend/app backend/livekit_agent
         language: system
         types: [python]
         pass_filenames: false

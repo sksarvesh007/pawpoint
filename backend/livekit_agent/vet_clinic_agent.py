@@ -147,7 +147,7 @@ class VetClinicAgent(Agent):
                 )
             )
             self.cached_providers = [
-                {"id": str(p.id), "name": p.name, "specialty": p.specialty}
+                {"id": str(p.id), "name": p.full_name, "specialties": p.specialties}
                 for p in result.scalars().all()
             ]
 
