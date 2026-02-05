@@ -51,20 +51,18 @@ FROM base AS production
 RUN groupadd --gid 1000 appgroup && \
     useradd --uid 1000 --gid appgroup --shell /bin/bash --create-home appuser
 
-# Copy dependency files
-COPY pyproject.toml uv.lock ./
-
-# Install only production dependencies (no dev group)
-RUN uv sync --frozen --no-dev
-
-# Copy application code
+# Copy dependency files and application code
+COPY --chown=appuser:appgroup pyproject.toml uv.lock ./
 COPY --chown=appuser:appgroup . .
 
 # Make entrypoint executable
 RUN chmod +x entrypoint.sh
 
-# Switch to non-root user
+# Switch to non-root user BEFORE installing dependencies
 USER appuser
+
+# Install only production dependencies (no dev group)
+RUN uv sync --frozen --no-dev
 
 # Expose port
 EXPOSE 8000
