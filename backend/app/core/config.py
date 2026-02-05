@@ -246,6 +246,7 @@ class Settings(BaseSettings):
     livekit_agent_max_concurrent_jobs: int = 10  # Max concurrent calls per worker
     livekit_agent_shutdown_timeout: float = 30.0  # Graceful shutdown timeout
     livekit_token_ttl_minutes: int = 30  # Token validity period
+    livekit_agent_embedded: bool = True  # Run agent embedded in FastAPI process
 
     # -------------------------------------------------------------------------
     # OpenTelemetry / Observability

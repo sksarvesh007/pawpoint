@@ -83,7 +83,34 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         logger.error("Application cannot start without a Redis connection")
         raise
 
+    # Start embedded LiveKit agent if enabled
+    agent_task = None
+    if settings.livekit_agent_embedded:
+        try:
+            from livekit_agent.embedded import start_embedded_agent
+
+            agent_task = await start_embedded_agent()
+            if agent_task:
+                logger.info("Embedded LiveKit agent started")
+            else:
+                logger.info(
+                    "Embedded LiveKit agent not started (disabled or misconfigured)"
+                )
+        except Exception as e:
+            logger.error("Failed to start embedded LiveKit agent: {}", str(e))
+            # Don't fail the app startup - voice features will be unavailable
+
     yield
+
+    # Shutdown embedded agent
+    if agent_task:
+        try:
+            from livekit_agent.embedded import stop_embedded_agent
+
+            await stop_embedded_agent(agent_task)
+            logger.info("Embedded LiveKit agent stopped")
+        except Exception as e:
+            logger.error("Error stopping embedded agent: {}", str(e))
 
     # Shutdown
     await close_redis()
