@@ -132,7 +132,7 @@ class Clinic(Base, TimestampMixin, SoftDeleteMixin):
     )
     voice_enabled: Mapped[bool] = mapped_column(
         Boolean,
-        default=False,
+        default=True,
         nullable=False,
     )
     voice_settings: Mapped[dict | None] = mapped_column(
