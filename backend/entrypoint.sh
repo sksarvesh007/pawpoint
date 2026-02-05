@@ -7,7 +7,7 @@
 set -e
 
 echo "Running database migrations..."
-uv run alembic upgrade head
+uv run --no-sync alembic upgrade head
 
 echo "Starting FastAPI server..."
-exec uv run fastapi run --host 0.0.0.0 --port "${PORT:-8000}"
+exec uv run --no-sync fastapi run --host 0.0.0.0 --port "${PORT:-8000}"
