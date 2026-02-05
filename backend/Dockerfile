@@ -60,11 +60,14 @@ RUN uv sync --frozen --no-dev
 # Copy application code
 COPY --chown=appuser:appgroup . .
 
+# Make entrypoint executable
+RUN chmod +x entrypoint.sh
+
 # Switch to non-root user
 USER appuser
 
 # Expose port
 EXPOSE 8000
 
-# Production command with uvicorn
-CMD ["uv", "run", "fastapi", "run", "--host", "0.0.0.0", "--port", "8000"]
+# Production entrypoint (runs migrations then starts server)
+CMD ["./entrypoint.sh"]
