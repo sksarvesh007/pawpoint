@@ -141,6 +141,7 @@ async def get_db_session() -> AsyncGenerator[AsyncSession]:
         async with get_db_session() as session:
             result = await session.execute(...)
     """
+    assert settings.database_url, "DATABASE_URL must be set"
     task_engine = create_async_engine(
         settings.database_url,
         echo=False,

@@ -283,7 +283,7 @@ class AppointmentService:
         self,
         clinic_id: UUID,
         appointment_id: UUID,
-        status: str,
+        status: str | AppointmentStatus,
         cancellation_reason: str | None = None,
     ) -> Appointment | None:
         """Update appointment status."""
@@ -300,9 +300,12 @@ class AppointmentService:
         if not appointment:
             return None
 
-        appointment.status = status
+        resolved_status = (
+            AppointmentStatus(status) if isinstance(status, str) else status
+        )
+        appointment.status = resolved_status
 
-        if status == AppointmentStatus.CANCELLED:
+        if resolved_status == AppointmentStatus.CANCELLED:
             appointment.cancelled_at = datetime.now(UTC)
             appointment.cancellation_reason = cancellation_reason
 

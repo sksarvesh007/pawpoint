@@ -32,7 +32,9 @@ class PIMSService:
         if not clinic:
             raise ValueError("Clinic not found")
 
-        clinic.pims_type = pims_type
+        clinic.pims_type = (
+            PIMSType(pims_type) if isinstance(pims_type, str) else pims_type
+        )
         clinic.pims_credentials_encrypted = encrypt_credentials(credentials)
         clinic.pims_connection_status = PIMSConnectionStatus.DISCONNECTED
 

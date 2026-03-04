@@ -5,7 +5,6 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { env } from "@/lib/env";
 import { Logo, NAVBAR_HEIGHT } from "@/components/Logo";
-import type { ErrorResponse } from "@/types/auth";
 
 export default function LoginPage() {
   const router = useRouter();

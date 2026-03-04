@@ -199,7 +199,7 @@ class CallLog(Base, TimestampMixin, SoftDeleteMixin):
         nullable=True,
         comment="AI-generated call summary",
     )
-    key_points: Mapped[list | None] = mapped_column(
+    key_points: Mapped[list | dict | None] = mapped_column(
         JSONB,
         nullable=True,
         comment="Extracted key points from the call",

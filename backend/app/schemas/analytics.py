@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class CallAnalytics(BaseModel):
@@ -74,6 +74,25 @@ class CallLogSummary(BaseModel):
     sentiment: str | None
     ai_confidence_score: float | None
     direction: str
+
+
+class CallLogDetail(BaseModel):
+    """Full detail of a single call log including transcript and recording."""
+
+    id: str
+    started_at: datetime
+    ended_at: datetime | None = None
+    caller_phone_number: str | None = None
+    duration_seconds: int | None = None
+    direction: str
+    outcome: str
+    sentiment: str | None = None
+    ai_confidence_score: float | None = None
+    transcript: str | None = None
+    recording_url: str | None = None
+    summary: str | None = None
+    key_points: list[str] = Field(default_factory=list)
+    actions_taken: list[str] = Field(default_factory=list)
 
 
 class ChatLogSummary(BaseModel):
