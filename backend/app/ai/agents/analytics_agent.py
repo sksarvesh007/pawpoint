@@ -29,7 +29,7 @@ Extract the following structured information:
 Be accurate and concise. Base your analysis only on what is in the transcript."""
 
 
-def create_analytics_agent() -> Agent[None, ChatAnalysisResult]:
+def create_analytics_agent() -> Agent:
     """Create an analytics agent configured with DeepSeek.
 
     Returns a fresh agent instance. Called from Celery tasks

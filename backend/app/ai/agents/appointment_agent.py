@@ -4,6 +4,7 @@ Handles patient search, slot availability, and appointment creation
 through conversational interaction.
 """
 
+from datetime import date as date_type, datetime
 from typing import Any
 
 from loguru import logger
@@ -117,10 +118,11 @@ async def get_available_slots(
     from app.services.appointment import AppointmentService
 
     service = AppointmentService(ctx.deps.db_session)
+    parsed_date = date_type.fromisoformat(date)
     slots = await service.get_available_slots(
         ctx.deps.clinic_id,
         PyUUID(provider_id),
-        date,
+        parsed_date,
     )
 
     return [
@@ -163,11 +165,13 @@ async def book_appointment(
     service = AppointmentService(ctx.deps.db_session)
 
     try:
+        parsed_start = datetime.fromisoformat(start_time)
+        parsed_end = datetime.fromisoformat(end_time)
         data = AppointmentCreate(
             patient_id=PyUUID(patient_id),
             provider_id=PyUUID(provider_id),
-            start_time=start_time,
-            end_time=end_time,
+            start_time=parsed_start,
+            end_time=parsed_end,
             appointment_type=appointment_type,
             reason=reason,
         )
@@ -228,19 +232,13 @@ async def check_appointment_status(
         return {"error": "Appointment not found"}
 
     return {
-        "id": str(appointment.id),
-        "start_time": str(appointment.start_time),
-        "end_time": str(appointment.end_time),
-        "status": appointment.status.value
-        if hasattr(appointment.status, "value")
-        else str(appointment.status),
-        "appointment_type": appointment.appointment_type.value
-        if hasattr(appointment.appointment_type, "value")
-        else str(appointment.appointment_type),
-        "patient_name": appointment.patient.name if appointment.patient else None,
-        "provider_name": f"{appointment.provider.first_name} {appointment.provider.last_name}"
-        if appointment.provider
-        else None,
+        "id": str(appointment["id"]),
+        "start_time": str(appointment["start_time"]),
+        "end_time": str(appointment["end_time"]),
+        "status": str(appointment.get("status", "")),
+        "appointment_type": str(appointment.get("appointment_type", "")),
+        "patient_name": appointment.get("patient_name"),
+        "provider_name": appointment.get("provider_name"),
     }
 
 

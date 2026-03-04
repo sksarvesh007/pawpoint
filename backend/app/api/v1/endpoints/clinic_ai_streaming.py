@@ -208,7 +208,7 @@ async def stream_chat_response(
                     await tool_event_queue.put(
                         {
                             "type": "tool_result",
-                            "tool_name": event.tool_name,
+                            "tool_name": getattr(event, "tool_name", "unknown"),
                             "success": True,
                         }
                     )
@@ -297,7 +297,9 @@ async def stream_chat_response(
     except Exception as e:
         await db.rollback()
         logger.error(f"Chat stream error: {e}")
-        user_message = "I'm sorry, I'm having trouble right now. Please try again in a moment."
+        user_message = (
+            "I'm sorry, I'm having trouble right now. Please try again in a moment."
+        )
         yield f"data: {json.dumps({'type': 'error', 'message': user_message})}\n\n"
 
 

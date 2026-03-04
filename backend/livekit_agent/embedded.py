@@ -14,6 +14,7 @@ Usage (from FastAPI lifespan):
 """
 
 import asyncio
+import contextlib
 import logging
 import os
 from typing import Any
@@ -116,7 +117,7 @@ async def start_embedded_agent() -> asyncio.Task[Any] | None:
     async def run_worker() -> None:
         """Run the worker and handle exceptions."""
         try:
-            await _worker.run()  # type: ignore[union-attr]
+            await _worker.run()
         except asyncio.CancelledError:
             logger.info("Embedded agent task cancelled")
         except Exception as e:
@@ -162,10 +163,8 @@ async def stop_embedded_agent(task: asyncio.Task[Any] | None = None) -> None:
     # Cancel the task if still running
     if not task_to_stop.done():
         task_to_stop.cancel()
-        try:
+        with contextlib.suppress(TimeoutError, asyncio.CancelledError):
             await asyncio.wait_for(task_to_stop, timeout=5.0)
-        except (TimeoutError, asyncio.CancelledError):
-            pass
 
     _worker = None
     _agent_task = None

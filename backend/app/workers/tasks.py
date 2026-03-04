@@ -105,10 +105,11 @@ async def _analyze_chat_conversation(task, conversation_id: str) -> dict:
     # Run LLM analysis
     try:
         from app.ai.agents.analytics_agent import create_analytics_agent
+        from app.schemas.chat_analysis import ChatAnalysisResult
 
         agent = create_analytics_agent()
         result = await agent.run(transcript)
-        analysis_result = result.output
+        analysis_result: ChatAnalysisResult = result.output  # type: ignore[assignment]
 
         # Store results
         async with get_db_session() as db:
@@ -427,7 +428,7 @@ async def _sync_appointments_from_pims(task, clinic_id: str, days_ahead: int) ->
     from app.adapters.pims.errors import PIMSError
     from app.adapters.pims.factory import get_pims_adapter
     from app.db import get_db_session
-    from app.models.appointment import Appointment
+    from app.models.appointment import Appointment, AppointmentStatus
     from app.models.clinic import Clinic
     from app.models.patient import Patient
     from app.models.pims_sync_log import PIMSSyncLog, SyncEntityType, SyncType
@@ -514,7 +515,7 @@ async def _sync_appointments_from_pims(task, clinic_id: str, days_ahead: int) ->
                     if pims_appt.end_time:
                         local_appt.end_time = pims_appt.end_time
                     if pims_appt.status:
-                        local_appt.status = pims_appt.status
+                        local_appt.status = AppointmentStatus(pims_appt.status)
                     local_appt.patient_id = patient_id
                     local_appt.provider_id = provider_id
                     local_appt.mark_synced(pims_appt.pims_id)

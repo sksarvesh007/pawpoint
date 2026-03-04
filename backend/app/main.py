@@ -178,7 +178,7 @@ app.add_middleware(RequestLoggingMiddleware)  # type: ignore[arg-type]
 app.add_middleware(SecurityHeadersMiddleware, is_production=settings.is_production)  # type: ignore[arg-type]
 
 # GZip compression for responses >= 1KB
-app.add_middleware(GZipMiddleware, minimum_size=1000)
+app.add_middleware(GZipMiddleware, minimum_size=1000)  # type: ignore[arg-type]
 
 # CORS configuration from settings
 app.add_middleware(

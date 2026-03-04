@@ -37,6 +37,7 @@ def _set_auth_cookie(response: Response, access_token: str) -> None:
         path="/",
     )
 
+
 # Rate limiter instance - uses the app's limiter state
 limiter = Limiter(key_func=get_remote_address)
 
