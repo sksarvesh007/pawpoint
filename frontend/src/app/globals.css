@@ -44,6 +44,12 @@
   }
 }
 
+/* Dashboard dark mode overrides (class-based via next-themes) */
+.dark {
+  --background: #0F1419;
+  --foreground: #E4E7EB;
+}
+
 html {
   font-size: 80%;
 }

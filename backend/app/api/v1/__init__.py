@@ -5,6 +5,7 @@ from fastapi import APIRouter
 from app.api.v1.endpoints import (
     ai_chat,
     analytics,
+    appointments,
     auth,
     calls,
     chats,
@@ -12,6 +13,9 @@ from app.api.v1.endpoints import (
     clinic_ai_streaming,
     clinics,
     demo_chat,
+    patients,
+    pims,
+    providers,
     voice,
 )
 
@@ -21,6 +25,12 @@ api_router.include_router(clinics.router, prefix="/clinics", tags=["clinics"])
 api_router.include_router(analytics.router, prefix="/analytics", tags=["analytics"])
 api_router.include_router(calls.router, prefix="/calls", tags=["calls"])
 api_router.include_router(chats.router, prefix="/chats", tags=["chats"])
+api_router.include_router(patients.router, prefix="/patients", tags=["patients"])
+api_router.include_router(
+    appointments.router, prefix="/appointments", tags=["appointments"]
+)
+api_router.include_router(providers.router, prefix="/providers", tags=["providers"])
+api_router.include_router(pims.router, prefix="/pims", tags=["pims"])
 
 # Legacy endpoint (for backward compatibility)
 api_router.include_router(ai_chat.router)  # /ai/chat/message

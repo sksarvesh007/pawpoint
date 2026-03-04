@@ -8,9 +8,10 @@ Stores transcripts, recordings, and call outcomes.
 from datetime import datetime
 from enum import StrEnum
 from typing import TYPE_CHECKING
+from uuid import UUID as PyUUID
 
-from sqlalchemy import Enum, Float, ForeignKey, Index, Integer, String, Text
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy import Boolean, Enum, Float, ForeignKey, Index, Integer, String, Text
+from sqlalchemy.dialects.postgresql import JSONB, UUID as PgUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, SoftDeleteMixin, TimestampMixin
@@ -75,7 +76,7 @@ class CallLog(Base, TimestampMixin, SoftDeleteMixin):
     __tablename__ = "call_logs"
 
     # Foreign keys
-    clinic_id: Mapped[str] = mapped_column(
+    clinic_id: Mapped[PyUUID] = mapped_column(
         ForeignKey("clinics.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
@@ -149,8 +150,8 @@ class CallLog(Base, TimestampMixin, SoftDeleteMixin):
         nullable=True,
         comment="Identified caller name (from patient lookup)",
     )
-    patient_id_matched: Mapped[str | None] = mapped_column(
-        String(36),
+    patient_id_matched: Mapped[PyUUID | None] = mapped_column(
+        PgUUID(as_uuid=True),
         nullable=True,
         comment="Patient ID if caller was matched to existing patient",
     )
@@ -171,6 +172,7 @@ class CallLog(Base, TimestampMixin, SoftDeleteMixin):
 
     # AI interaction
     ai_handled: Mapped[bool] = mapped_column(
+        Boolean,
         default=True,
         nullable=False,
         comment="Whether AI handled the call (vs transferred immediately)",
@@ -240,14 +242,15 @@ class CallLog(Base, TimestampMixin, SoftDeleteMixin):
     )
 
     # Staff review
-    reviewed_by_user_id: Mapped[str | None] = mapped_column(
-        String(36),
+    reviewed_by_user_id: Mapped[PyUUID | None] = mapped_column(
+        PgUUID(as_uuid=True),
         nullable=True,
         comment="Staff member who reviewed the call",
     )
     reviewed_at: Mapped[datetime | None] = mapped_column(nullable=True)
     review_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     requires_follow_up: Mapped[bool] = mapped_column(
+        Boolean,
         default=False,
         nullable=False,
         index=True,

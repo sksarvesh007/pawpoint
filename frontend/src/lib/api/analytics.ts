@@ -5,6 +5,7 @@
 import { env } from "@/lib/env";
 import type {
   CallLogsResponse,
+  CallLogDetail,
   DashboardAnalytics,
   CallAnalytics,
 } from "@/types/analytics";
@@ -60,6 +61,24 @@ export async function getRecentCalls(
 
   if (!response.ok) {
     throw new Error(`Failed to fetch call logs: ${response.statusText}`);
+  }
+
+  return response.json();
+}
+
+export async function getCallLogDetail(callId: string): Promise<CallLogDetail> {
+  const response = await fetch(
+    `${API_BASE_URL}/api/v1/calls/${callId}`,
+    {
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch call detail: ${response.statusText}`);
   }
 
   return response.json();

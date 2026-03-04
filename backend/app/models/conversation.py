@@ -14,6 +14,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.models.base import Base, TimestampMixin
 
 if TYPE_CHECKING:
+    from app.models.chat_analysis import ChatAnalysis
     from app.models.clinic import Clinic
     from app.models.message import Message
 
@@ -119,6 +120,12 @@ class Conversation(Base, TimestampMixin):
         back_populates="conversation",
         cascade="all, delete-orphan",
         order_by="Message.created_at",
+    )
+    analysis: Mapped["ChatAnalysis | None"] = relationship(
+        "ChatAnalysis",
+        back_populates="conversation",
+        uselist=False,
+        cascade="all, delete-orphan",
     )
 
     # Indexes for common queries

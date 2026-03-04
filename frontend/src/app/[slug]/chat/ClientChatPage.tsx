@@ -129,7 +129,7 @@ export default function ClientChatPage({
         <Chatbot
           clinicSlug={slug}
           clinicName={clinicInfo.clinic_name}
-          greetingMessage={clinicInfo.greeting_message}
+          greetingMessage={clinicInfo.greeting_message.replace(/\{clinic_name\}/g, clinicInfo.clinic_name)}
           userIdentifier={userIdentifier}
           clinicInfo={{
             phone: clinicInfo.phone,

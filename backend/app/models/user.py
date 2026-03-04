@@ -8,6 +8,7 @@ Users can belong to multiple clinics through the UserClinic association.
 from datetime import datetime
 from enum import StrEnum
 from typing import TYPE_CHECKING
+from uuid import UUID as PyUUID
 
 from sqlalchemy import Boolean, Column, Enum, ForeignKey, String, Table, Text
 from sqlalchemy.dialects.postgresql import UUID
@@ -122,11 +123,14 @@ class User(Base, TimestampMixin, SoftDeleteMixin):
         """Get user's full name."""
         return f"{self.first_name} {self.last_name}"
 
-    def has_clinic_access(self, clinic_id: str) -> bool:
+    def has_clinic_access(self, clinic_id: PyUUID | str) -> bool:
         """Check if user has access to a specific clinic."""
         if self.role == UserRole.SUPER_ADMIN:
             return True
-        return any(str(c.id) == clinic_id for c in self.clinics)
+        target = (
+            PyUUID(str(clinic_id)) if not isinstance(clinic_id, PyUUID) else clinic_id
+        )
+        return any(c.id == target for c in self.clinics)
 
     def __repr__(self) -> str:
         return f"<User(id={self.id}, email={self.email}, role={self.role})>"

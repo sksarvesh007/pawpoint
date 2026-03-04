@@ -70,15 +70,44 @@ export interface ChatLogSummary {
   intent: string | null;
   session_active: boolean;
   summary: string | null;
+  sentiment: string | null;
+  resolution_status: string | null;
+  primary_topic: string | null;
 }
 
-export interface ChatAnalytics {
+export interface ChatSentimentData {
+  positive_chats: number;
+  neutral_chats: number;
+  negative_chats: number;
+  average_sentiment_score: number;
+}
+
+export interface EnhancedChatAnalytics {
   total_chats: number;
   chats_today: number;
   average_messages_per_chat: number;
   active_sessions: number;
   chats_by_intent: Record<string, number>;
   chats_by_hour: Array<{ hour: number; count: number }>;
+  sentiment: ChatSentimentData | null;
+  resolution_rate: number | null;
+  top_topics: Array<{ topic: string; count: number }> | null;
+  satisfaction_distribution: Record<string, number> | null;
+  analyzed_count: number;
+}
+
+export interface ChatAnalysisDetail {
+  sentiment: string;
+  sentiment_score: number;
+  resolution_status: string;
+  user_satisfaction: string;
+  primary_topic: string;
+  topics: string[];
+  entities: Record<string, unknown>;
+  key_points: string[];
+  suggested_followup: string | null;
+  analyzed_at: string | null;
+  status: string;
 }
 
 export interface DashboardAnalytics {
@@ -88,8 +117,25 @@ export interface DashboardAnalytics {
   pims: PIMSSyncAnalytics;
   sentiment: SentimentData;
   recent_calls: CallLogSummary[];
-  chats?: ChatAnalytics | null;
+  chats?: EnhancedChatAnalytics | null;
   recent_chats?: ChatLogSummary[] | null;
+}
+
+export interface CallLogDetail {
+  id: string;
+  started_at: string;
+  ended_at: string | null;
+  caller_phone_number: string | null;
+  duration_seconds: number | null;
+  direction: string;
+  outcome: string;
+  sentiment: string | null;
+  ai_confidence_score: number | null;
+  transcript: string | null;
+  recording_url: string | null;
+  summary: string | null;
+  key_points: string[];
+  actions_taken: string[];
 }
 
 export interface CallLogsResponse {
@@ -126,4 +172,5 @@ export interface ChatLogDetail {
   session_active: boolean;
   summary: string | null;
   messages: MessageDetail[];
+  analysis: ChatAnalysisDetail | null;
 }

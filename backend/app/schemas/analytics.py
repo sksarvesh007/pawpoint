@@ -86,17 +86,34 @@ class ChatLogSummary(BaseModel):
     intent: str | None
     session_active: bool
     summary: str | None
+    sentiment: str | None = None
+    resolution_status: str | None = None
+    primary_topic: str | None = None
 
 
-class ChatAnalytics(BaseModel):
-    """Chat analytics metrics."""
+class ChatSentimentData(BaseModel):
+    """Chat sentiment distribution from AI analysis."""
+
+    positive_chats: int = 0
+    neutral_chats: int = 0
+    negative_chats: int = 0
+    average_sentiment_score: float = 0.0
+
+
+class EnhancedChatAnalytics(BaseModel):
+    """Chat analytics with AI-derived sentiment, resolution, and topics."""
 
     total_chats: int
     chats_today: int
     average_messages_per_chat: float
     active_sessions: int
-    chats_by_intent: dict[str, int]  # intent -> count
-    chats_by_hour: list[dict[str, int]]  # hourly distribution for chart
+    chats_by_intent: dict[str, int]
+    chats_by_hour: list[dict[str, int]]
+    sentiment: ChatSentimentData | None = None
+    resolution_rate: float | None = None
+    top_topics: list[dict[str, int | str]] | None = None
+    satisfaction_distribution: dict[str, int] | None = None
+    analyzed_count: int = 0
 
 
 class DashboardAnalytics(BaseModel):
@@ -108,5 +125,5 @@ class DashboardAnalytics(BaseModel):
     pims: PIMSSyncAnalytics
     sentiment: SentimentData
     recent_calls: list[CallLogSummary]
-    chats: ChatAnalytics | None = None
+    chats: EnhancedChatAnalytics | None = None
     recent_chats: list[ChatLogSummary] | None = None

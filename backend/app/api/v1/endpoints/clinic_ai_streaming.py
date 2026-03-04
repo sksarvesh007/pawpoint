@@ -1,17 +1,27 @@
 """Streaming endpoint for clinic AI chat."""
 
+import asyncio
 import json
 import time
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterable, AsyncIterator
 from datetime import UTC, datetime, timedelta
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, Request, status
-from fastapi.responses import StreamingResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from loguru import logger
+from pydantic import BaseModel
+from pydantic_ai import (
+    AgentStreamEvent,
+    FunctionToolCallEvent,
+    FunctionToolResultEvent,
+    RunContext,
+)
 from redis.asyncio import Redis
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.ai.agents import AgentDependencies, create_faq_agent
+from app.ai.agents import AgentDependencies, create_clinic_agent
 from app.ai.state import (
     ConversationContext,
     ConversationSession,
@@ -30,6 +40,7 @@ from app.core.instrumentation import (
 )
 from app.core.redis import get_redis
 from app.db import get_db as get_session
+from app.models.conversation import Conversation
 
 router = APIRouter()
 
@@ -91,7 +102,7 @@ async def stream_chat_response(
                         clinic_id=conversation.clinic_id,
                         channel="chat",
                         user_identifier=conversation.user_identifier,
-                        current_agent="faq",
+                        current_agent="clinic_assistant",
                         intent=conversation.intent,
                         metadata=conversation.context,
                     ),
@@ -108,7 +119,7 @@ async def stream_chat_response(
                 clinic_id=clinic.id,
                 channel="chat",
                 user_identifier=request.user_identifier,
-                context={"agent": "faq"},
+                context={"agent": "clinic_assistant"},
                 extra_data={"source": "clinic_chat_stream", "clinic_slug": clinic.slug},
             )
             conversation_id = conversation.id
@@ -123,7 +134,7 @@ async def stream_chat_response(
                     clinic_id=clinic.id,
                     channel="chat",
                     user_identifier=request.user_identifier,
-                    current_agent="faq",
+                    current_agent="clinic_assistant",
                     metadata={},
                 ),
                 message_history=[],
@@ -167,29 +178,64 @@ async def stream_chat_response(
             pims_adapter=None,
         )
 
-        # Create FAQ agent with clinic-specific prompt
-        faq_agent = create_faq_agent(clinic_data=clinic_data)
+        # Create clinic assistant agent with all tools
+        clinic_agent = create_clinic_agent(clinic_data=clinic_data)
 
         # Send conversation_id first
         yield f"data: {json.dumps({'type': 'conversation_id', 'conversation_id': str(conversation_id)})}\n\n"
 
-        # Stream the response
+        # Stream the response with tool call events
         full_response = ""
         total_tokens = 0
         llm_start_time = time.perf_counter()
 
-        async with faq_agent.agent.run_stream(
+        # Queue to receive tool events from event_stream_handler
+        tool_event_queue: asyncio.Queue[dict[str, object]] = asyncio.Queue()
+
+        async def event_stream_handler(
+            _ctx: RunContext[AgentDependencies],
+            event_stream: AsyncIterable[AgentStreamEvent],
+        ) -> None:
+            async for event in event_stream:
+                if isinstance(event, FunctionToolCallEvent):
+                    await tool_event_queue.put(
+                        {
+                            "type": "tool_call",
+                            "tool_name": event.part.tool_name,
+                        }
+                    )
+                elif isinstance(event, FunctionToolResultEvent):
+                    await tool_event_queue.put(
+                        {
+                            "type": "tool_result",
+                            "tool_name": event.tool_name,
+                            "success": True,
+                        }
+                    )
+
+        async with clinic_agent.agent.run_stream(
             user_prompt=request.message,
             deps=deps,
             message_history=[
                 {"role": msg.role, "content": msg.content}
                 for msg in session.message_history  # Use all messages in session
             ],
+            event_stream_handler=event_stream_handler,
         ) as stream_result:
             async for chunk in stream_result.stream_text():
+                # Drain any pending tool events before sending text
+                while not tool_event_queue.empty():
+                    tool_event = tool_event_queue.get_nowait()
+                    yield f"data: {json.dumps(tool_event)}\n\n"
+
                 full_response += chunk
                 # Send token chunk
                 yield f"data: {json.dumps({'type': 'token', 'content': chunk})}\n\n"
+
+            # Drain remaining tool events after text stream ends
+            while not tool_event_queue.empty():
+                tool_event = tool_event_queue.get_nowait()
+                yield f"data: {json.dumps(tool_event)}\n\n"
 
             # Get usage info if available
             try:
@@ -208,14 +254,18 @@ async def stream_chat_response(
         llm_duration = time.perf_counter() - llm_start_time
         chat_response_duration_seconds.record(
             llm_duration,
-            {"clinic_id": str(clinic.id), "agent": "faq_agent", "streaming": "true"},
+            {
+                "clinic_id": str(clinic.id),
+                "agent": "clinic_assistant",
+                "streaming": "true",
+            },
         )
 
         # Save assistant message
         assistant_message = MessageData(
             role="assistant",
             content=full_response,
-            agent_name="faq_agent",
+            agent_name="clinic_assistant",
             model_name=None,
             timestamp=datetime.now(UTC),
         )
@@ -246,7 +296,9 @@ async def stream_chat_response(
 
     except Exception as e:
         await db.rollback()
-        yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
+        logger.error(f"Chat stream error: {e}")
+        user_message = "I'm sorry, I'm having trouble right now. Please try again in a moment."
+        yield f"data: {json.dumps({'type': 'error', 'message': user_message})}\n\n"
 
 
 @router.post(
@@ -281,3 +333,67 @@ async def clinic_chat_stream(
             "Access-Control-Allow-Credentials": "true",
         },
     )
+
+
+class EndChatRequest(BaseModel):
+    """Request body for ending a chat session."""
+
+    conversation_id: UUID
+
+
+@router.post(
+    "/{clinic_slug}/chat/end",
+    status_code=status.HTTP_200_OK,
+    summary="End a chat session and trigger analysis",
+)
+@traced(span_name="endpoint.clinic_chat_end")
+async def end_chat_session(
+    request: EndChatRequest,
+    clinic: ClinicDep,
+    db: AsyncSession = Depends(get_session),
+    redis: Redis = Depends(get_redis),
+) -> JSONResponse:
+    """End a chat session, clean up Redis, and enqueue analysis.
+
+    Called when user closes the chat tab/window via sendBeacon.
+    """
+    # Verify conversation belongs to this clinic
+    result = await db.execute(
+        select(Conversation).where(
+            Conversation.id == request.conversation_id,
+            Conversation.clinic_id == clinic.id,
+            Conversation.channel == "chat",
+        )
+    )
+    conversation = result.scalar_one_or_none()
+
+    if not conversation:
+        return JSONResponse(
+            status_code=status.HTTP_404_NOT_FOUND,
+            content={"detail": "Conversation not found"},
+        )
+
+    # Already ended — return early
+    if not conversation.session_active:
+        return JSONResponse(content={"status": "already_ended"})
+
+    # End conversation in DB
+    history_manager = HistoryManager(db)
+    await history_manager.end_conversation(request.conversation_id)
+
+    # Delete Redis session
+    session_manager = SessionManager(redis)
+    await session_manager.delete_session(request.conversation_id)
+
+    await db.commit()
+
+    # Enqueue analysis task
+    try:
+        from app.workers.tasks import analyze_chat_conversation
+
+        analyze_chat_conversation.delay(str(request.conversation_id))
+        logger.info(f"Enqueued analysis for conversation {request.conversation_id}")
+    except Exception as e:
+        logger.warning(f"Failed to enqueue analysis task: {e}")
+
+    return JSONResponse(content={"status": "ended"})

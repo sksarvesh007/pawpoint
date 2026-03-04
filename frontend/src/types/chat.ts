@@ -2,10 +2,16 @@
  * Types for public chatbot API
  */
 
+export interface ToolCallInfo {
+  tool_name: string;
+  status: "calling" | "done";
+}
+
 export interface ChatMessage {
   role: "user" | "assistant" | "system";
   content: string;
   timestamp?: string;
+  toolCalls?: ToolCallInfo[];
 }
 
 export interface ChatRequest {

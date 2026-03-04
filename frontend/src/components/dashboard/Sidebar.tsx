@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { getClinicInfo } from "@/lib/api/clinic";
 import { logout } from "@/lib/api/auth";
+import { ThemeToggle } from "./ThemeToggle";
 
 interface SidebarProps {
   clinicName?: string;
@@ -134,13 +135,13 @@ export function Sidebar({
       style={{ top: `${topOffset}px`, height: `calc(100vh - ${topOffset}px)` }}
     >
       {/* Glassmorphism background with gradient */}
-      <div className="absolute inset-0 bg-gradient-to-br from-[#E8F5F4]/95 via-[#F0F9F8]/90 to-[#E3F2F1]/95 backdrop-blur-xl" />
+      <div className="absolute inset-0 bg-gradient-to-br from-[#E8F5F4]/95 via-[#F0F9F8]/90 to-[#E3F2F1]/95 dark:from-[#151D25]/95 dark:via-[#1A2330]/90 dark:to-[#141C24]/95 backdrop-blur-xl" />
 
       {/* Subtle decorative elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-20 -left-10 w-40 h-40 bg-[#A8DCD9]/20 rounded-full blur-3xl" />
-        <div className="absolute bottom-40 -right-10 w-32 h-32 bg-[#3EB5B0]/15 rounded-full blur-2xl" />
-        <div className="absolute top-1/2 left-1/2 w-24 h-24 bg-[#FF8A65]/10 rounded-full blur-2xl" />
+        <div className="absolute top-20 -left-10 w-40 h-40 bg-[#A8DCD9]/20 dark:bg-[#3EB5B0]/10 rounded-full blur-3xl" />
+        <div className="absolute bottom-40 -right-10 w-32 h-32 bg-[#3EB5B0]/15 dark:bg-[#3EB5B0]/8 rounded-full blur-2xl" />
+        <div className="absolute top-1/2 left-1/2 w-24 h-24 bg-[#FF8A65]/10 dark:bg-[#FF8A65]/5 rounded-full blur-2xl" />
       </div>
 
       {/* Content */}
@@ -148,15 +149,15 @@ export function Sidebar({
         {/* Logo header - hidden when navbar is present */}
         {!hideLogo && (
           <div className="px-6 pt-6 pb-5">
-            <div className="flex items-center gap-3 px-4 py-3 bg-white/50 backdrop-blur-md rounded-2xl border border-white/60 shadow-sm">
+            <div className="flex items-center gap-3 px-4 py-3 bg-white/50 dark:bg-white/10 backdrop-blur-md rounded-2xl border border-white/60 dark:border-white/10 shadow-sm">
               <div className="w-9 h-9 bg-gradient-to-br from-[#3EB5B0] to-[#2A8A86] rounded-xl flex items-center justify-center shadow-md">
                 <PawPrint className="w-5 h-5 text-white" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold text-[#1D3533] truncate">
+                <p className="text-sm font-bold text-[#1D3533] dark:text-white truncate">
                   {clinicName}
                 </p>
-                <p className="text-xs text-[#1D3533]/50">Veterinary Clinic</p>
+                <p className="text-xs text-[#1D3533]/50 dark:text-zinc-400">Veterinary Clinic</p>
               </div>
             </div>
           </div>
@@ -168,7 +169,7 @@ export function Sidebar({
             <div key={sectionIndex} className="mb-6">
               {section.title && (
                 <div className="px-4 mb-3">
-                  <p className="text-[10px] font-semibold text-[#1D3533]/40 tracking-wider uppercase">
+                  <p className="text-[10px] font-semibold text-[#1D3533]/40 dark:text-zinc-500 tracking-wider uppercase">
                     {section.title}
                   </p>
                 </div>
@@ -184,14 +185,14 @@ export function Sidebar({
                         className={`p-2 rounded-xl shrink-0 transition-all ${
                           isActive
                             ? "bg-gradient-to-br from-[#3EB5B0] to-[#2A8A86] text-white shadow-md shadow-[#3EB5B0]/20"
-                            : "bg-white/40 text-[#3EB5B0]"
+                            : "bg-white/40 dark:bg-white/10 text-[#3EB5B0]"
                         }`}
                       >
                         <item.icon className="w-4 h-4" strokeWidth={2.5} />
                       </div>
                       <span
                         className={`text-[13px] font-medium ${
-                          isActive ? "text-[#1D3533]" : "text-[#1D3533]/70"
+                          isActive ? "text-[#1D3533] dark:text-white" : "text-[#1D3533]/70 dark:text-zinc-400"
                         }`}
                       >
                         {item.label}
@@ -205,7 +206,7 @@ export function Sidebar({
                         key={item.href}
                         className={`flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all cursor-default ${
                           isActive
-                            ? "bg-white/70 backdrop-blur-sm shadow-sm border border-white/80"
+                            ? "bg-white/70 dark:bg-white/10 backdrop-blur-sm shadow-sm border border-white/80 dark:border-white/10"
                             : "opacity-50"
                         }`}
                       >
@@ -220,8 +221,8 @@ export function Sidebar({
                       href={item.href}
                       className={`flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all group ${
                         isActive
-                          ? "bg-white/70 backdrop-blur-sm shadow-sm border border-white/80"
-                          : "hover:bg-white/50 hover:backdrop-blur-sm"
+                          ? "bg-white/70 dark:bg-white/10 backdrop-blur-sm shadow-sm border border-white/80 dark:border-white/10"
+                          : "hover:bg-white/50 dark:hover:bg-white/5 hover:backdrop-blur-sm"
                       }`}
                     >
                       {content}
@@ -233,22 +234,23 @@ export function Sidebar({
           ))}
         </nav>
 
-        {/* Bottom section - logout */}
-        <div className="p-4 border-t border-white/30">
+        {/* Bottom section - theme toggle + logout */}
+        <div className="p-4 border-t border-white/30 dark:border-white/10 space-y-2">
+          <ThemeToggle />
           {logoutError && (
-            <div className="mb-2 px-3 py-2 bg-red-100 border border-red-200 rounded-lg">
+            <div className="px-3 py-2 bg-red-100 border border-red-200 rounded-lg">
               <p className="text-xs text-red-700">{logoutError}</p>
             </div>
           )}
           <button
             onClick={handleLogout}
             disabled={loggingOut}
-            className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all bg-white/40 hover:bg-white/60 backdrop-blur-sm border border-white/50 disabled:opacity-50 disabled:cursor-not-allowed group"
+            className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all bg-white/40 dark:bg-white/10 hover:bg-white/60 dark:hover:bg-white/15 backdrop-blur-sm border border-white/50 dark:border-white/10 disabled:opacity-50 disabled:cursor-not-allowed group"
           >
             <div className="p-2 rounded-xl shrink-0 bg-gradient-to-br from-[#FF8A65] to-[#FF6E40] text-white shadow-sm">
               <LogOut className="w-4 h-4" strokeWidth={2.5} />
             </div>
-            <span className="text-[13px] font-medium text-[#1D3533]/70 group-hover:text-[#1D3533]">
+            <span className="text-[13px] font-medium text-[#1D3533]/70 dark:text-zinc-400 group-hover:text-[#1D3533] dark:group-hover:text-zinc-200">
               {loggingOut ? "Logging out..." : "Log Out"}
             </span>
           </button>

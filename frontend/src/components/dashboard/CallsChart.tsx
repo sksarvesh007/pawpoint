@@ -109,8 +109,8 @@ export function CallsChart({
 
   if (!data || data.length === 0) {
     return (
-      <div className="bg-white rounded-xl border border-zinc-200 p-6 shadow-sm">
-        <h3 className="text-lg font-semibold text-zinc-900 mb-4">
+      <div className="bg-white dark:bg-[#1E2530] rounded-xl border border-zinc-200 dark:border-zinc-700 p-6 shadow-sm">
+        <h3 className="text-lg font-semibold text-zinc-900 dark:text-white mb-4">
           Traffic Overview (24 Hours)
         </h3>
         <div className="h-64 flex items-center justify-center text-zinc-400">
@@ -275,11 +275,11 @@ export function CallsChart({
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-zinc-200 p-6 shadow-sm">
+    <div className="bg-white dark:bg-[#1E2530] rounded-2xl border border-zinc-200 dark:border-zinc-700 p-6 shadow-sm">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-base font-bold text-[#1D3533] flex items-center gap-2">
-          <div className="p-2 bg-teal-50 rounded-lg">
-            <Activity className="w-5 h-5 text-teal-600" />
+        <h3 className="text-base font-bold text-[#1D3533] dark:text-white flex items-center gap-2">
+          <div className="p-2 bg-teal-50 dark:bg-teal-900/30 rounded-lg">
+            <Activity className="w-5 h-5 text-teal-600 dark:text-teal-400" />
           </div>
           Traffic Overview (Last 24 Hours)
         </h3>

@@ -9,3 +9,11 @@ prod.env
 **/logs
 .playwright-mcp
 .DS_Store
+
+# Celery beat schedule (SQLite artifacts)
+celerybeat-schedule
+celerybeat-schedule-shm
+celerybeat-schedule-wal
+
+# Screenshots (development artifacts)
+*.png

@@ -5,7 +5,11 @@ using the OpenAI-compatible API.
 """
 
 from enum import StrEnum
-from typing import Literal
+from typing import Any, Literal
+
+from openai import AsyncOpenAI
+from pydantic_ai.models.openai import OpenAIChatModel
+from pydantic_ai.providers.openai import OpenAIProvider
 
 from app.core.config import settings
 
@@ -30,27 +34,27 @@ class TaskType(StrEnum):
 
 
 class ModelFactory:
-    """Factory for creating model name strings for pydantic-ai.
+    """Factory for creating configured model instances for pydantic-ai.
 
     Provides:
-    - Model name string generation in pydantic-ai format
+    - Properly configured OpenAIChatModel instances with API keys and base URLs
     - Intelligent routing based on task type and channel
     - Support for DeepSeek models via OpenAI-compatible API
     """
 
     @classmethod
-    def get_deepseek_model(cls, model_name: str | None = None) -> str:
-        """Get DeepSeek model name string for pydantic-ai.
+    def get_deepseek_model(cls, model_name: str | None = None) -> OpenAIChatModel:
+        """Get a configured DeepSeek model instance.
 
-        DeepSeek uses OpenAI-compatible API, so we use the openai: prefix
-        with custom base_url configured in the agent.
+        Creates an OpenAIChatModel with the DeepSeek API key and base URL
+        properly configured, so pydantic-ai doesn't fall back to OPENAI_API_KEY.
 
         Args:
             model_name: Model name (e.g., "deepseek-v3-0324")
                        Defaults to settings.deepseek_model
 
         Returns:
-            Model name string with openai: prefix (DeepSeek uses OpenAI-compatible API)
+            Configured OpenAIChatModel instance
 
         Raises:
             ValueError: If DeepSeek API key is not configured
@@ -61,20 +65,24 @@ class ModelFactory:
             )
 
         model_name = model_name or settings.deepseek_model
-        # DeepSeek uses OpenAI-compatible API, so we use openai: prefix
-        # The base_url is configured separately when creating the agent
-        return f"openai:{model_name}"
+
+        client = AsyncOpenAI(
+            api_key=settings.deepseek_api_key.get_secret_value(),
+            base_url=settings.deepseek_base_url,
+        )
+        provider = OpenAIProvider(openai_client=client)
+        return OpenAIChatModel(model_name, provider=provider)
 
     @classmethod
-    def get_openai_model(cls, model_name: str | None = None) -> str:
-        """Get OpenAI model name string (for potential future use).
+    def get_openai_model(cls, model_name: str | None = None) -> OpenAIChatModel:
+        """Get a configured OpenAI model instance (for potential future use).
 
         Args:
             model_name: Model name (e.g., "gpt-4o", "gpt-4o-mini")
                        Defaults to settings.llm_reasoning_model
 
         Returns:
-            Model name string with openai: prefix
+            Configured OpenAIChatModel instance
 
         Raises:
             ValueError: If OpenAI API key is not configured
@@ -85,7 +93,12 @@ class ModelFactory:
             )
 
         model_name = model_name or settings.llm_reasoning_model
-        return f"openai:{model_name}"
+
+        client = AsyncOpenAI(
+            api_key=settings.openai_api_key.get_secret_value(),
+        )
+        provider = OpenAIProvider(openai_client=client)
+        return OpenAIChatModel(model_name, provider=provider)
 
     @classmethod
     def get_model_for_task(
@@ -93,7 +106,7 @@ class ModelFactory:
         task_type: TaskType | str,
         channel: Literal["voice", "chat", "email"] | None = None,
         prefer_provider: ModelProvider | None = None,
-    ) -> str:
+    ) -> Any:
         """Route request to appropriate model based on task type and channel.
 
         Currently uses DeepSeek for all tasks as the primary LLM provider.
@@ -104,7 +117,7 @@ class ModelFactory:
             prefer_provider: Override to force specific provider
 
         Returns:
-            Model name string appropriate for the task
+            Configured model instance appropriate for the task
 
         Raises:
             ValueError: If required API keys are not configured
