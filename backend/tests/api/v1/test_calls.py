@@ -116,11 +116,37 @@ async def test_get_call_by_id(client: AsyncClient, db_session: AsyncSession) -> 
     assert data["duration_seconds"] == 180
     assert data["ai_confidence_score"] == 0.92
     # CallLogDetail fields
+    assert data["ended_at"] is None  # not set in fixture
     assert data["transcript"] == "AI: Hello\nCaller: I need an appointment"
     assert data["summary"] == "Client requested appointment for dog checkup"
     assert data["recording_url"] == "https://storage.example.com/rec/abc123.wav"
     assert data["key_points"] == ["appointment requested", "dog checkup"]
     assert data["actions_taken"] == ["appointment_booked"]
+
+
+@pytest.mark.asyncio
+async def test_get_call_detail_dict_key_points(
+    client: AsyncClient, db_session: AsyncSession
+) -> None:
+    """key_points stored as dict should extract sentiment and nested points."""
+    clinic = await setup_auth(db_session, client)
+    call = await create_call_log(
+        db_session,
+        clinic.id,
+        key_points={
+            "sentiment": "positive",
+            "key_points": ["owner asked about vaccines", "follow-up scheduled"],
+        },
+    )
+
+    response = await client.get(f"/api/v1/calls/{call.id}")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["sentiment"] == "positive"
+    assert data["key_points"] == [
+        "owner asked about vaccines",
+        "follow-up scheduled",
+    ]
 
 
 @pytest.mark.asyncio

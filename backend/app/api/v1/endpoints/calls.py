@@ -2,7 +2,7 @@
 
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 from sqlalchemy import and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -126,22 +126,22 @@ async def get_call_log(
     call = result.scalar_one_or_none()
 
     if not call:
-        from fastapi import HTTPException
-
         raise HTTPException(status_code=404, detail="Call log not found")
 
     sentiment = None
-    if call.key_points and isinstance(call.key_points, dict):
-        sentiment = call.key_points.get("sentiment")
-
     caller_phone = (
         call.from_phone if call.direction.value == "inbound" else call.to_phone
     )
 
-    # Normalize key_points and actions_taken to list[str]
+    # Normalize key_points to list[str], handling both list and dict shapes
     key_points: list[str] = []
     if isinstance(call.key_points, list):
         key_points = [str(kp) for kp in call.key_points]
+    elif isinstance(call.key_points, dict):
+        sentiment = call.key_points.get("sentiment")
+        nested = call.key_points.get("key_points") or call.key_points.get("points")
+        if isinstance(nested, list):
+            key_points = [str(kp) for kp in nested]
 
     actions_taken: list[str] = []
     if isinstance(call.actions_taken, list):

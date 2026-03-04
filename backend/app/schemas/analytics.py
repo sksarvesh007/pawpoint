@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class CallAnalytics(BaseModel):
@@ -91,8 +91,8 @@ class CallLogDetail(BaseModel):
     transcript: str | None = None
     recording_url: str | None = None
     summary: str | None = None
-    key_points: list[str] = []
-    actions_taken: list[str] = []
+    key_points: list[str] = Field(default_factory=list)
+    actions_taken: list[str] = Field(default_factory=list)
 
 
 class ChatLogSummary(BaseModel):
