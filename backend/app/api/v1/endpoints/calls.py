@@ -11,7 +11,7 @@ from app.core.dependencies import get_current_clinic
 from app.db import get_db
 from app.models.call_log import CallLog
 from app.models.clinic import Clinic
-from app.schemas.analytics import CallLogSummary
+from app.schemas.analytics import CallLogDetail, CallLogSummary
 
 router = APIRouter()
 
@@ -103,16 +103,16 @@ async def list_call_logs(
     )
 
 
-@router.get("/{call_id}", response_model=CallLogSummary)
+@router.get("/{call_id}", response_model=CallLogDetail)
 async def get_call_log(
     call_id: UUID,
     current_clinic: Clinic = Depends(get_current_clinic),
     db: AsyncSession = Depends(get_db),
-) -> CallLogSummary:
+) -> CallLogDetail:
     """
     Get a single call log by ID.
 
-    Returns full call details including transcript and sentiment.
+    Returns full call details including transcript, recording, and actions.
     """
     result = await db.execute(
         select(CallLog).where(
@@ -138,13 +138,28 @@ async def get_call_log(
         call.from_phone if call.direction.value == "inbound" else call.to_phone
     )
 
-    return CallLogSummary(
+    # Normalize key_points and actions_taken to list[str]
+    key_points: list[str] = []
+    if isinstance(call.key_points, list):
+        key_points = [str(kp) for kp in call.key_points]
+
+    actions_taken: list[str] = []
+    if isinstance(call.actions_taken, list):
+        actions_taken = [str(a) for a in call.actions_taken]
+
+    return CallLogDetail(
         id=str(call.id),
         started_at=call.started_at,
+        ended_at=call.ended_at,
         caller_phone_number=caller_phone,
         duration_seconds=call.duration_seconds,
+        direction=str(call.direction.value),
         outcome=str(call.outcome.value) if call.outcome else "unknown",
         sentiment=sentiment,
         ai_confidence_score=call.ai_confidence_score,
-        direction=str(call.direction.value),
+        transcript=call.transcript,
+        recording_url=call.recording_url,
+        summary=call.summary,
+        key_points=key_points,
+        actions_taken=actions_taken,
     )

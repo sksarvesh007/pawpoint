@@ -76,6 +76,25 @@ class CallLogSummary(BaseModel):
     direction: str
 
 
+class CallLogDetail(BaseModel):
+    """Full detail of a single call log including transcript and recording."""
+
+    id: str
+    started_at: datetime
+    ended_at: datetime | None = None
+    caller_phone_number: str | None = None
+    duration_seconds: int | None = None
+    direction: str
+    outcome: str
+    sentiment: str | None = None
+    ai_confidence_score: float | None = None
+    transcript: str | None = None
+    recording_url: str | None = None
+    summary: str | None = None
+    key_points: list[str] = []
+    actions_taken: list[str] = []
+
+
 class ChatLogSummary(BaseModel):
     """Summary of a single chat conversation for recent chats table."""
 

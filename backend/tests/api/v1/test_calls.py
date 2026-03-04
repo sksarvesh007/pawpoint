@@ -100,6 +100,11 @@ async def test_get_call_by_id(client: AsyncClient, db_session: AsyncSession) -> 
         direction=CallDirection.INBOUND,
         duration_seconds=180,
         ai_confidence_score=0.92,
+        transcript="AI: Hello\nCaller: I need an appointment",
+        summary="Client requested appointment for dog checkup",
+        recording_url="https://storage.example.com/rec/abc123.wav",
+        key_points=["appointment requested", "dog checkup"],
+        actions_taken=["appointment_booked"],
     )
 
     response = await client.get(f"/api/v1/calls/{call.id}")
@@ -110,6 +115,12 @@ async def test_get_call_by_id(client: AsyncClient, db_session: AsyncSession) -> 
     assert data["direction"] == "inbound"
     assert data["duration_seconds"] == 180
     assert data["ai_confidence_score"] == 0.92
+    # CallLogDetail fields
+    assert data["transcript"] == "AI: Hello\nCaller: I need an appointment"
+    assert data["summary"] == "Client requested appointment for dog checkup"
+    assert data["recording_url"] == "https://storage.example.com/rec/abc123.wav"
+    assert data["key_points"] == ["appointment requested", "dog checkup"]
+    assert data["actions_taken"] == ["appointment_booked"]
 
 
 @pytest.mark.asyncio
