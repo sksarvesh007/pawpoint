@@ -300,11 +300,12 @@ class AppointmentService:
         if not appointment:
             return None
 
-        appointment.status = (
+        resolved_status = (
             AppointmentStatus(status) if isinstance(status, str) else status
         )
+        appointment.status = resolved_status
 
-        if status == AppointmentStatus.CANCELLED:
+        if resolved_status == AppointmentStatus.CANCELLED:
             appointment.cancelled_at = datetime.now(UTC)
             appointment.cancellation_reason = cancellation_reason
 

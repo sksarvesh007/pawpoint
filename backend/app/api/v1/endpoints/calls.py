@@ -16,6 +16,27 @@ from app.schemas.analytics import CallLogDetail, CallLogSummary
 router = APIRouter()
 
 
+def _extract_key_points(
+    raw: list | dict | None,
+) -> tuple[str | None, list[str]]:
+    """Extract sentiment and normalized key_points from JSONB data.
+
+    Returns (sentiment, key_points_list).
+    """
+    sentiment: str | None = None
+    key_points: list[str] = []
+
+    if isinstance(raw, list):
+        key_points = [str(kp) for kp in raw]
+    elif isinstance(raw, dict):
+        sentiment = raw.get("sentiment")
+        nested = raw.get("key_points") or raw.get("points")
+        if isinstance(nested, list):
+            key_points = [str(kp) for kp in nested]
+
+    return sentiment, key_points
+
+
 class CallLogsResponse(BaseModel):
     """Paginated call logs response."""
 
@@ -71,9 +92,7 @@ async def list_call_logs(
     # Convert to summaries
     items = []
     for call in calls:
-        sentiment = None
-        if call.key_points and isinstance(call.key_points, dict):
-            sentiment = call.key_points.get("sentiment")
+        sentiment, _ = _extract_key_points(call.key_points)
 
         caller_phone = (
             call.from_phone if call.direction.value == "inbound" else call.to_phone
@@ -128,20 +147,11 @@ async def get_call_log(
     if not call:
         raise HTTPException(status_code=404, detail="Call log not found")
 
-    sentiment = None
     caller_phone = (
         call.from_phone if call.direction.value == "inbound" else call.to_phone
     )
 
-    # Normalize key_points to list[str], handling both list and dict shapes
-    key_points: list[str] = []
-    if isinstance(call.key_points, list):
-        key_points = [str(kp) for kp in call.key_points]
-    elif isinstance(call.key_points, dict):
-        sentiment = call.key_points.get("sentiment")
-        nested = call.key_points.get("key_points") or call.key_points.get("points")
-        if isinstance(nested, list):
-            key_points = [str(kp) for kp in nested]
+    sentiment, key_points = _extract_key_points(call.key_points)
 
     actions_taken: list[str] = []
     if isinstance(call.actions_taken, list):
