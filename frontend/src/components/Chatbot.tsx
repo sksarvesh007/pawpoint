@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Markdown from "markdown-to-jsx";
-import type { ChatMessage } from "@/types/chat";
+import type { ChatMessage, ToolCallInfo } from "@/types/chat";
 import { env } from "@/lib/env";
 import {
   FALLBACK_CLINIC_INFO,
@@ -32,6 +32,17 @@ interface ChatbotProps {
   };
 }
 
+const TOOL_LABELS: Record<string, string> = {
+  search_patients: "Searching for patients...",
+  get_available_slots: "Checking available slots...",
+  book_appointment: "Booking appointment...",
+  get_providers_list: "Looking up providers...",
+  request_medication_refill: "Recording medication request...",
+  request_callback: "Recording callback request...",
+  get_clinic_info: "Looking up clinic info...",
+  check_appointment_status: "Checking appointment status...",
+};
+
 export default function Chatbot({
   clinicSlug,
   clinicName,
@@ -44,6 +55,7 @@ export default function Chatbot({
   const [conversationId, setConversationId] = useState<string | undefined>();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [activeToolCalls, setActiveToolCalls] = useState<ToolCallInfo[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const assistantMessageIndexRef = useRef<number>(-1);
 
@@ -62,6 +74,36 @@ export default function Chatbot({
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  // End chat session when user leaves the page
+  useEffect(() => {
+    const endSession = () => {
+      if (conversationId) {
+        const blob = new Blob(
+          [JSON.stringify({ conversation_id: conversationId })],
+          { type: "application/json" }
+        );
+        navigator.sendBeacon(
+          `${env.apiUrl}/api/v1/${clinicSlug}/chat/end`,
+          blob
+        );
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "hidden") {
+        endSession();
+      }
+    };
+
+    window.addEventListener("beforeunload", endSession);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener("beforeunload", endSession);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [conversationId, clinicSlug]);
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -124,6 +166,19 @@ export default function Chatbot({
 
                 if (data.type === "conversation_id") {
                   setConversationId(data.conversation_id);
+                } else if (data.type === "tool_call") {
+                  setActiveToolCalls((prev) => [
+                    ...prev,
+                    { tool_name: data.tool_name, status: "calling" },
+                  ]);
+                } else if (data.type === "tool_result") {
+                  setActiveToolCalls((prev) =>
+                    prev.map((tc) =>
+                      tc.tool_name === data.tool_name
+                        ? { ...tc, status: "done" as const }
+                        : tc
+                    )
+                  );
                 } else if (data.type === "token") {
                   assistantMessage += data.content;
 
@@ -182,6 +237,7 @@ export default function Chatbot({
       setInputValue(userMessage);
     } finally {
       setLoading(false);
+      setActiveToolCalls([]);
     }
   };
 
@@ -506,7 +562,32 @@ export default function Chatbot({
                 </div>
               </div>
             ))}
-            {loading && (
+            {loading && activeToolCalls.length > 0 && (
+              <div className="flex justify-start">
+                <div className="max-w-[75%] rounded-xl bg-[#3DA99F]/5 backdrop-blur-sm px-4 py-2.5 border border-[#3DA99F]/20">
+                  <div className="space-y-1.5">
+                    {activeToolCalls.map((tc, i) => (
+                      <div key={i} className="flex items-center gap-2 text-xs text-[#2A9D8F]">
+                        {tc.status === "calling" ? (
+                          <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                          </svg>
+                        ) : (
+                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        )}
+                        <span className={tc.status === "done" ? "line-through opacity-60" : "font-medium"}>
+                          {TOOL_LABELS[tc.tool_name] || `Running ${tc.tool_name}...`}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+            {loading && assistantMessageIndexRef.current === -1 && activeToolCalls.length === 0 && (
               <div className="flex justify-start">
                 <div className="max-w-[75%] rounded-2xl bg-white/80 backdrop-blur-sm px-4 py-3 border border-zinc-200/60 shadow-sm">
                   <div className="flex items-center gap-2">

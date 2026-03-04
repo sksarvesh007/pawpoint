@@ -7,6 +7,7 @@ Syncs with PIMS for availability and appointment scheduling.
 
 from enum import StrEnum
 from typing import TYPE_CHECKING
+from uuid import UUID as PyUUID
 
 from sqlalchemy import Boolean, Enum, ForeignKey, Integer, String, Text
 from sqlalchemy.dialects.postgresql import JSONB
@@ -41,7 +42,7 @@ class Provider(Base, TimestampMixin, SoftDeleteMixin, PIMSSyncMixin):
     __tablename__ = "providers"
 
     # Foreign keys
-    clinic_id: Mapped[str] = mapped_column(
+    clinic_id: Mapped[PyUUID] = mapped_column(
         ForeignKey("clinics.id", ondelete="CASCADE"),
         nullable=False,
         index=True,

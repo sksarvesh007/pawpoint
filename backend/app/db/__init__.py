@@ -28,6 +28,7 @@ engine = create_async_engine(
     max_overflow=20,
     pool_pre_ping=True,
     pool_recycle=3600,
+    pool_timeout=5,  # Fail fast (5s) if no connection available instead of blocking forever
 )
 
 
@@ -133,11 +134,26 @@ async def get_db_session() -> AsyncGenerator[AsyncSession]:
     """
     Context manager for database sessions (use in non-FastAPI contexts).
 
+    Creates a fresh engine to avoid event loop conflicts when called from
+    Celery tasks via asyncio.run(). The engine is disposed after use.
+
     Usage:
         async with get_db_session() as session:
             result = await session.execute(...)
     """
-    async with async_session_factory() as session:
+    task_engine = create_async_engine(
+        settings.database_url,
+        echo=False,
+        pool_size=2,
+        max_overflow=3,
+        pool_pre_ping=True,
+    )
+    task_session_factory = async_sessionmaker(
+        task_engine,
+        class_=AsyncSession,
+        expire_on_commit=False,
+    )
+    async with task_session_factory() as session:
         try:
             yield session
             await session.commit()
@@ -146,6 +162,7 @@ async def get_db_session() -> AsyncGenerator[AsyncSession]:
             raise
         finally:
             await session.close()
+            await task_engine.dispose()
 
 
 async def init_db() -> None:
@@ -161,6 +178,7 @@ async def init_db() -> None:
     from app.models import (
         Appointment,
         CallLog,
+        ChatAnalysis,
         Clinic,
         Patient,
         PIMSSyncLog,

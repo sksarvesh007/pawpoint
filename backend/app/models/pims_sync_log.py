@@ -8,6 +8,7 @@ Tracks sync jobs, success/failure, errors, and statistics.
 from datetime import UTC, datetime
 from enum import StrEnum
 from typing import TYPE_CHECKING
+from uuid import UUID as PyUUID
 
 from sqlalchemy import Enum, Float, ForeignKey, Index, Integer, String, Text
 from sqlalchemy.dialects.postgresql import JSONB
@@ -60,7 +61,7 @@ class PIMSSyncLog(Base, TimestampMixin):
     __tablename__ = "pims_sync_logs"
 
     # Foreign keys
-    clinic_id: Mapped[str] = mapped_column(
+    clinic_id: Mapped[PyUUID] = mapped_column(
         ForeignKey("clinics.id", ondelete="CASCADE"),
         nullable=False,
         index=True,

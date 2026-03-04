@@ -3,7 +3,7 @@
  */
 
 import { env } from "@/lib/env";
-import type { ChatLogsResponse, ChatLogDetail } from "@/types/analytics";
+import type { ChatLogsResponse, ChatLogDetail, EnhancedChatAnalytics } from "@/types/analytics";
 
 const API_BASE_URL = env.apiUrl;
 
@@ -44,6 +44,29 @@ export async function getChatLogDetail(chatId: string): Promise<ChatLogDetail> {
 
   if (!response.ok) {
     throw new Error(`Failed to fetch chat detail: ${response.statusText}`);
+  }
+
+  return response.json();
+}
+
+/**
+ * Fetch enhanced chat analytics with sentiment, resolution, and topic data.
+ */
+export async function getChatAnalytics(
+  days: number = 30,
+): Promise<EnhancedChatAnalytics> {
+  const response = await fetch(
+    `${API_BASE_URL}/api/v1/analytics/chats?days=${days}`,
+    {
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    },
+  );
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch chat analytics: ${response.statusText}`);
   }
 
   return response.json();

@@ -8,6 +8,7 @@ Syncs with PIMS and includes owner contact information.
 from datetime import date
 from enum import StrEnum
 from typing import TYPE_CHECKING
+from uuid import UUID as PyUUID
 
 from sqlalchemy import Boolean, Date, Enum, Float, ForeignKey, Index, String, Text
 from sqlalchemy.dialects.postgresql import JSONB
@@ -56,7 +57,7 @@ class Patient(Base, TimestampMixin, SoftDeleteMixin, PIMSSyncMixin):
     __tablename__ = "patients"
 
     # Foreign keys
-    clinic_id: Mapped[str] = mapped_column(
+    clinic_id: Mapped[PyUUID] = mapped_column(
         ForeignKey("clinics.id", ondelete="CASCADE"),
         nullable=False,
         index=True,

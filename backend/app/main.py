@@ -13,10 +13,10 @@ from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from loguru import logger
 from opentelemetry import metrics, trace
 from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
-from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
-from slowapi.util import get_remote_address
 from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.middleware.gzip import GZipMiddleware
 from starlette.responses import Response
 
 from app.api.v1 import api_router
@@ -27,9 +27,12 @@ from app.core.instrumentation import (
     normalize_path,
 )
 from app.core.logging import configure_logging
+from app.core.rate_limit import limiter
 from app.core.redis import close_redis, init_redis
 from app.core.telemetry import init_telemetry, shutdown_telemetry
 from app.db import close_db, init_db
+from app.middleware.logging import RequestLoggingMiddleware
+from app.middleware.security import SecurityHeadersMiddleware
 
 # Security for metrics endpoint (auto_error=False allows optional auth in dev)
 security = HTTPBasic(auto_error=False)
@@ -41,9 +44,12 @@ if settings.google_api_key:
     os.environ["GOOGLE_API_KEY"] = settings.google_api_key.get_secret_value()
 if settings.openai_api_key:
     os.environ["OPENAI_API_KEY"] = settings.openai_api_key.get_secret_value()
+elif settings.deepseek_api_key:
+    # DeepSeek uses OpenAI-compatible API via pydantic-ai's openai: prefix,
+    # which reads OPENAI_API_KEY from the environment
+    os.environ["OPENAI_API_KEY"] = settings.deepseek_api_key.get_secret_value()
 
-# Initialize rate limiter
-limiter = Limiter(key_func=get_remote_address)
+# Rate limiter is imported from app.core.rate_limit
 
 
 @asynccontextmanager
@@ -165,6 +171,15 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)  # ty
 # Add metrics middleware
 app.add_middleware(MetricsMiddleware)  # type: ignore[arg-type]
 
+# Request logging middleware
+app.add_middleware(RequestLoggingMiddleware)  # type: ignore[arg-type]
+
+# Security headers middleware
+app.add_middleware(SecurityHeadersMiddleware, is_production=settings.is_production)  # type: ignore[arg-type]
+
+# GZip compression for responses >= 1KB
+app.add_middleware(GZipMiddleware, minimum_size=1000)
+
 # CORS configuration from settings
 app.add_middleware(
     CORSMiddleware,  # type: ignore[arg-type]
@@ -187,11 +202,47 @@ async def root() -> dict[str, str]:
 
 @app.get("/health")
 async def health_check() -> dict[str, str]:
-    """Health check endpoint for deployment platforms."""
+    """Health check endpoint for deployment platforms (liveness probe)."""
     return {
         "status": "ok",
         "environment": settings.app_env.value,
     }
+
+
+@app.get("/health/ready")
+async def health_ready() -> dict[str, str | bool]:
+    """Readiness probe that checks DB and Redis connectivity."""
+    checks: dict[str, str | bool] = {"status": "ok"}
+
+    # Check database
+    try:
+        from app.db import async_session_factory
+
+        async with async_session_factory() as session:
+            from sqlalchemy import text
+
+            await session.execute(text("SELECT 1"))
+        checks["database"] = True
+    except Exception:
+        checks["database"] = False
+        checks["status"] = "degraded"
+
+    # Check Redis
+    try:
+        from app.core.redis import get_redis_client
+
+        redis = get_redis_client()
+        if redis:
+            await redis.ping()
+            checks["redis"] = True
+        else:
+            checks["redis"] = False
+            checks["status"] = "degraded"
+    except Exception:
+        checks["redis"] = False
+        checks["status"] = "degraded"
+
+    return checks
 
 
 def verify_metrics_auth(

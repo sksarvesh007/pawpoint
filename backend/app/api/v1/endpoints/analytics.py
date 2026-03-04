@@ -8,16 +8,23 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sse_starlette.sse import EventSourceResponse
 
 from app.core.dependencies import get_current_clinic
+from app.core.rate_limit import limiter
 from app.db import get_db
 from app.models.clinic import Clinic
-from app.schemas.analytics import CallAnalytics, DashboardAnalytics
+from app.schemas.analytics import (
+    CallAnalytics,
+    DashboardAnalytics,
+    EnhancedChatAnalytics,
+)
 from app.services.analytics import AnalyticsService
 
 router = APIRouter()
 
 
 @router.get("/dashboard", response_model=DashboardAnalytics)
+@limiter.limit("60/minute")
 async def get_dashboard_analytics(
+    request: Request,
     current_clinic: Clinic = Depends(get_current_clinic),
     db: AsyncSession = Depends(get_db),
 ) -> DashboardAnalytics:
@@ -35,7 +42,9 @@ async def get_dashboard_analytics(
 
 
 @router.get("/calls", response_model=CallAnalytics)
+@limiter.limit("60/minute")
 async def get_call_analytics(
+    request: Request,
     days: int = Query(30, ge=1, le=365, description="Number of days to analyze"),
     current_clinic: Clinic = Depends(get_current_clinic),
     db: AsyncSession = Depends(get_db),
@@ -50,7 +59,23 @@ async def get_call_analytics(
     return analytics
 
 
+@router.get("/chats", response_model=EnhancedChatAnalytics)
+@limiter.limit("60/minute")
+async def get_chat_analytics(
+    request: Request,
+    days: int = Query(30, ge=1, le=365, description="Number of days to analyze"),
+    current_clinic: Clinic = Depends(get_current_clinic),
+    db: AsyncSession = Depends(get_db),
+) -> EnhancedChatAnalytics:
+    """
+    Get enhanced chat analytics with sentiment, resolution, and topic insights.
+    """
+    service = AnalyticsService(db)
+    return await service.get_chat_analytics(current_clinic.id, days=days)
+
+
 @router.get("/stream")
+@limiter.limit("10/minute")
 async def stream_dashboard_analytics(
     request: Request,
     current_clinic: Clinic = Depends(get_current_clinic),

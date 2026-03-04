@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.instrumentation import traced
 from app.models.appointment import Appointment, AppointmentSource, AppointmentStatus
 from app.models.call_log import CallLog, CallOutcome
+from app.models.chat_analysis import ChatAnalysis
 from app.models.conversation import Conversation
 from app.models.patient import Patient
 from app.models.pims_sync_log import PIMSSyncLog, SyncJobStatus
@@ -16,9 +17,10 @@ from app.schemas.analytics import (
     AppointmentAnalytics,
     CallAnalytics,
     CallLogSummary,
-    ChatAnalytics,
     ChatLogSummary,
+    ChatSentimentData,
     DashboardAnalytics,
+    EnhancedChatAnalytics,
     PatientAnalytics,
     PIMSSyncAnalytics,
     SentimentData,
@@ -628,8 +630,8 @@ class AnalyticsService:
     @traced(span_name="analytics.get_chat_analytics")
     async def get_chat_analytics(
         self, clinic_id: UUID, days: int = 30
-    ) -> ChatAnalytics:
-        """Aggregate chat metrics for the past N days."""
+    ) -> EnhancedChatAnalytics:
+        """Aggregate chat metrics with AI analysis insights."""
         cutoff_date = datetime.now(UTC) - timedelta(days=days)
         today_start = datetime.now(UTC).replace(
             hour=0, minute=0, second=0, microsecond=0
@@ -733,22 +735,133 @@ class AnalyticsService:
             {"hour": h, "count": chats_by_hour_dict.get(h, 0)} for h in range(24)
         ]
 
-        return ChatAnalytics(
+        # --- AI Analysis Metrics ---
+        # Sentiment distribution from completed analyses
+        sentiment_result = await self.db.execute(
+            select(ChatAnalysis.sentiment, func.count())
+            .join(Conversation, ChatAnalysis.conversation_id == Conversation.id)
+            .where(
+                and_(
+                    Conversation.clinic_id == clinic_id,
+                    Conversation.channel == "chat",
+                    Conversation.created_at >= cutoff_date,
+                    ChatAnalysis.status == "completed",
+                    ChatAnalysis.sentiment.is_not(None),
+                )
+            )
+            .group_by(ChatAnalysis.sentiment)
+        )
+        sentiment_counts = {str(s): c for s, c in sentiment_result.all()}
+
+        # Average sentiment score
+        avg_score_result = await self.db.execute(
+            select(func.avg(ChatAnalysis.sentiment_score))
+            .join(Conversation, ChatAnalysis.conversation_id == Conversation.id)
+            .where(
+                and_(
+                    Conversation.clinic_id == clinic_id,
+                    Conversation.channel == "chat",
+                    Conversation.created_at >= cutoff_date,
+                    ChatAnalysis.status == "completed",
+                    ChatAnalysis.sentiment_score.is_not(None),
+                )
+            )
+        )
+        avg_sentiment_score = avg_score_result.scalar_one() or 0.0
+
+        chat_sentiment = ChatSentimentData(
+            positive_chats=sentiment_counts.get("positive", 0),
+            neutral_chats=sentiment_counts.get("neutral", 0),
+            negative_chats=sentiment_counts.get("negative", 0),
+            average_sentiment_score=round(avg_sentiment_score, 2),
+        )
+
+        # Resolution rate
+        resolved_result = await self.db.execute(
+            select(ChatAnalysis.resolution_status, func.count())
+            .join(Conversation, ChatAnalysis.conversation_id == Conversation.id)
+            .where(
+                and_(
+                    Conversation.clinic_id == clinic_id,
+                    Conversation.channel == "chat",
+                    Conversation.created_at >= cutoff_date,
+                    ChatAnalysis.status == "completed",
+                    ChatAnalysis.resolution_status.is_not(None),
+                )
+            )
+            .group_by(ChatAnalysis.resolution_status)
+        )
+        resolution_counts = {str(r): c for r, c in resolved_result.all()}
+        total_analyzed = sum(resolution_counts.values())
+        resolved_count = resolution_counts.get("resolved", 0)
+        resolution_rate = (
+            round(resolved_count / total_analyzed * 100, 2)
+            if total_analyzed > 0
+            else None
+        )
+
+        # Top topics
+        topic_result = await self.db.execute(
+            select(ChatAnalysis.primary_topic, func.count().label("count"))
+            .join(Conversation, ChatAnalysis.conversation_id == Conversation.id)
+            .where(
+                and_(
+                    Conversation.clinic_id == clinic_id,
+                    Conversation.channel == "chat",
+                    Conversation.created_at >= cutoff_date,
+                    ChatAnalysis.status == "completed",
+                    ChatAnalysis.primary_topic.is_not(None),
+                )
+            )
+            .group_by(ChatAnalysis.primary_topic)
+            .order_by(func.count().desc())
+            .limit(10)
+        )
+        top_topics = [
+            {"topic": str(topic), "count": count} for topic, count in topic_result.all()
+        ]
+
+        # Satisfaction distribution
+        satisfaction_result = await self.db.execute(
+            select(ChatAnalysis.user_satisfaction, func.count())
+            .join(Conversation, ChatAnalysis.conversation_id == Conversation.id)
+            .where(
+                and_(
+                    Conversation.clinic_id == clinic_id,
+                    Conversation.channel == "chat",
+                    Conversation.created_at >= cutoff_date,
+                    ChatAnalysis.status == "completed",
+                    ChatAnalysis.user_satisfaction.is_not(None),
+                )
+            )
+            .group_by(ChatAnalysis.user_satisfaction)
+        )
+        satisfaction_dist = {str(s): c for s, c in satisfaction_result.all()}
+
+        return EnhancedChatAnalytics(
             total_chats=total_chats,
             chats_today=chats_today,
             average_messages_per_chat=round(avg_messages, 2),
             active_sessions=active_sessions,
             chats_by_intent=chats_by_intent,
             chats_by_hour=chats_by_hour,
+            sentiment=chat_sentiment,
+            resolution_rate=resolution_rate,
+            top_topics=top_topics if top_topics else None,
+            satisfaction_distribution=satisfaction_dist if satisfaction_dist else None,
+            analyzed_count=total_analyzed,
         )
 
     @traced(span_name="analytics.get_recent_chats")
     async def get_recent_chats(
         self, clinic_id: UUID, limit: int = 10
     ) -> list[ChatLogSummary]:
-        """Get recent chat conversations for the dashboard table."""
+        """Get recent chat conversations with analysis data."""
+        from sqlalchemy.orm import joinedload
+
         result = await self.db.execute(
             select(Conversation)
+            .options(joinedload(Conversation.analysis))
             .where(
                 and_(
                     Conversation.clinic_id == clinic_id,
@@ -758,10 +871,11 @@ class AnalyticsService:
             .order_by(Conversation.created_at.desc())
             .limit(limit)
         )
-        conversations = result.scalars().all()
+        conversations = result.unique().scalars().all()
 
         summaries = []
         for conv in conversations:
+            analysis = conv.analysis
             summaries.append(
                 ChatLogSummary(
                     id=str(conv.id),
@@ -771,6 +885,9 @@ class AnalyticsService:
                     intent=conv.intent,
                     session_active=conv.session_active,
                     summary=conv.summary,
+                    sentiment=analysis.sentiment if analysis else None,
+                    resolution_status=analysis.resolution_status if analysis else None,
+                    primary_topic=analysis.primary_topic if analysis else None,
                 )
             )
 
@@ -789,7 +906,7 @@ class AnalyticsService:
             PIMSSyncAnalytics,
             SentimentData,
             list[CallLogSummary],
-            ChatAnalytics,
+            EnhancedChatAnalytics,
             list[ChatLogSummary],
         ] = await asyncio.gather(  # type: ignore[assignment]
             self.get_call_analytics(clinic_id),

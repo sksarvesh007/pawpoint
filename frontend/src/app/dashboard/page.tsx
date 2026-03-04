@@ -47,7 +47,11 @@ export default function DashboardPage() {
           setConnectionStatus("connected");
           setError(null);
         } catch (err) {
-          console.error("Failed to parse analytics data:", err);
+          if (process.env.NODE_ENV === "development") {
+            console.error("Failed to parse analytics data:", err);
+          } else {
+            console.error("Failed to load analytics");
+          }
           setError("Failed to parse dashboard data");
         }
       });

@@ -8,6 +8,7 @@ The core entity for PIMS synchronization with bidirectional sync support.
 from datetime import UTC, datetime
 from enum import StrEnum
 from typing import TYPE_CHECKING
+from uuid import UUID as PyUUID
 
 from sqlalchemy import Enum, ForeignKey, Index, Integer, String, Text
 from sqlalchemy.dialects.postgresql import JSONB
@@ -74,22 +75,22 @@ class Appointment(Base, TimestampMixin, SoftDeleteMixin, PIMSSyncMixin):
     __tablename__ = "appointments"
 
     # Foreign keys
-    clinic_id: Mapped[str] = mapped_column(
+    clinic_id: Mapped[PyUUID] = mapped_column(
         ForeignKey("clinics.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
     )
-    patient_id: Mapped[str] = mapped_column(
+    patient_id: Mapped[PyUUID | None] = mapped_column(
         ForeignKey("patients.id", ondelete="SET NULL"),
         nullable=True,  # Nullable to handle patient deletion
         index=True,
     )
-    provider_id: Mapped[str | None] = mapped_column(
+    provider_id: Mapped[PyUUID | None] = mapped_column(
         ForeignKey("providers.id", ondelete="SET NULL"),
         nullable=True,  # Some appointments may not have assigned provider
         index=True,
     )
-    call_log_id: Mapped[str | None] = mapped_column(
+    call_log_id: Mapped[PyUUID | None] = mapped_column(
         ForeignKey("call_logs.id", ondelete="SET NULL"),
         nullable=True,
         comment="Call that created this appointment (if via voice AI)",
@@ -183,15 +184,19 @@ class Appointment(Base, TimestampMixin, SoftDeleteMixin, PIMSSyncMixin):
     @property
     def is_past(self) -> bool:
         """Check if appointment is in the past."""
-
-        return self.end_time < datetime.now(UTC)
+        end = self.end_time
+        if end.tzinfo is None:
+            end = end.replace(tzinfo=UTC)
+        return end < datetime.now(UTC)
 
     @property
     def is_today(self) -> bool:
         """Check if appointment is today."""
-
+        start = self.start_time
+        if start.tzinfo is None:
+            start = start.replace(tzinfo=UTC)
         now = datetime.now(UTC)
-        return self.start_time.date() == now.date()
+        return start.date() == now.date()
 
     @property
     def can_cancel(self) -> bool:

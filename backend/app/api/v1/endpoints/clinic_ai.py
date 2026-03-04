@@ -18,7 +18,7 @@ from pydantic import BaseModel, Field
 from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.ai.agents import AgentDependencies, create_faq_agent
+from app.ai.agents import AgentDependencies, create_clinic_agent
 from app.ai.state import (
     ConversationContext,
     ConversationSession,
@@ -186,7 +186,7 @@ async def clinic_chat(
                     clinic_id=conversation.clinic_id,
                     channel="chat",
                     user_identifier=conversation.user_identifier,
-                    current_agent="faq",
+                    current_agent="clinic_assistant",
                     intent=conversation.intent,
                     metadata=conversation.context,
                 ),
@@ -208,7 +208,7 @@ async def clinic_chat(
             clinic_id=clinic.id,
             channel="chat",
             user_identifier=request.user_identifier,
-            context={"agent": "faq"},
+            context={"agent": "clinic_assistant"},
             extra_data={"source": "clinic_chat_endpoint", "clinic_slug": clinic.slug},
         )
         conversation_id = conversation.id
@@ -221,7 +221,7 @@ async def clinic_chat(
                 clinic_id=clinic.id,
                 channel="chat",
                 user_identifier=request.user_identifier,
-                current_agent="faq",
+                current_agent="clinic_assistant",
                 metadata={},
             ),
             message_history=[],
@@ -265,18 +265,18 @@ async def clinic_chat(
         pims_adapter=None,  # Will be added in Phase 2
     )
 
-    # Create FAQ agent with clinic-specific prompt
-    faq_agent = create_faq_agent(clinic_data=clinic_data)
+    # Create clinic assistant agent with all tools
+    clinic_agent = create_clinic_agent(clinic_data=clinic_data)
 
     try:
         # Run agent with full session history (up to conversation_max_history messages)
         logger.info(
-            f"[POST /api/v1/{clinic.slug}/chat] Running FAQ agent - History: {len(session.message_history)} messages, Conversation: {conversation_id}"
+            f"[POST /api/v1/{clinic.slug}/chat] Running clinic assistant - History: {len(session.message_history)} messages, Conversation: {conversation_id}"
         )
 
         # Time the LLM response
         start_time = time.perf_counter()
-        result = await faq_agent.run(
+        result = await clinic_agent.run(
             user_input=request.message,
             deps=deps,
             message_history=[
@@ -289,7 +289,7 @@ async def clinic_chat(
         # Record chat response duration
         chat_response_duration_seconds.record(
             response_duration,
-            {"clinic_id": str(clinic.id), "agent": "faq_agent"},
+            {"clinic_id": str(clinic.id), "agent": "clinic_assistant"},
         )
 
         # Extract response
@@ -311,7 +311,7 @@ async def clinic_chat(
         assistant_message = MessageData(
             role="assistant",
             content=assistant_response,
-            agent_name="faq_agent",
+            agent_name="clinic_assistant",
             model_name=result.model if hasattr(result, "model") else None,
             timestamp=datetime.now(UTC),
         )
@@ -340,7 +340,7 @@ async def clinic_chat(
         return ChatResponse(
             conversation_id=conversation_id,
             message=assistant_response,
-            agent_name="faq_agent",
+            agent_name="clinic_assistant",
             clinic_name=clinic.name,
             model_used=result.model if hasattr(result, "model") else None,
             tokens_used=tokens_used,
@@ -474,6 +474,12 @@ async def get_clinic_ai_info(
             "Business hours",
             "Services information",
             "Pet care advice",
+            "Appointment booking",
+            "Provider lookup",
+            "Medication refill requests",
+            "Callback requests",
+            "Appointment status check",
+            "Emergency detection",
         ],
         "personality": voice_settings.get(
             "chatbot_persona",

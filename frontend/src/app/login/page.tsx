@@ -52,8 +52,11 @@ export default function LoginPage() {
         } else if (response.status >= 500) {
           errorMessage =
             "We're experiencing technical difficulties. Please try again in a few minutes.";
-        } else if ((data as ErrorResponse).detail) {
-          errorMessage = (data as ErrorResponse).detail;
+        } else if (data?.detail) {
+          // FastAPI validation errors return detail as an array of objects
+          errorMessage = typeof data.detail === "string"
+            ? data.detail
+            : "Invalid email or password. Please check your input.";
         }
 
         throw new Error(errorMessage);

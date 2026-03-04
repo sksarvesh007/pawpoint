@@ -83,9 +83,7 @@ async def start_embedded_agent() -> asyncio.Task[Any] | None:
 
     # Check required configuration
     if not settings.livekit_api_key or not settings.livekit_api_secret:
-        logger.warning(
-            "LiveKit API credentials not configured - agent will not start"
-        )
+        logger.warning("LiveKit API credentials not configured - agent will not start")
         return None
 
     if not settings.livekit_url:
@@ -156,7 +154,7 @@ async def stop_embedded_agent(task: asyncio.Task[Any] | None = None) -> None:
                 _worker.aclose(),
                 timeout=settings.livekit_agent_shutdown_timeout,
             )
-        except asyncio.TimeoutError:
+        except TimeoutError:
             logger.warning("Agent shutdown timed out, forcing cancellation")
         except Exception as e:
             logger.error(f"Error during agent shutdown: {e}")
@@ -166,7 +164,7 @@ async def stop_embedded_agent(task: asyncio.Task[Any] | None = None) -> None:
         task_to_stop.cancel()
         try:
             await asyncio.wait_for(task_to_stop, timeout=5.0)
-        except (asyncio.CancelledError, asyncio.TimeoutError):
+        except (TimeoutError, asyncio.CancelledError):
             pass
 
     _worker = None

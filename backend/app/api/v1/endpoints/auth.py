@@ -19,6 +19,24 @@ from app.services.auth import AuthService
 
 router = APIRouter()
 
+
+def _set_auth_cookie(response: Response, access_token: str) -> None:
+    """Set the access token cookie with environment-appropriate settings.
+
+    In production (HTTPS): secure=True, samesite="none" for cross-site cookies.
+    In development (HTTP): secure=False, samesite="lax" so the browser accepts the cookie.
+    """
+    is_prod = settings.is_production
+    response.set_cookie(
+        key="access_token",
+        value=access_token,
+        httponly=True,
+        secure=is_prod,
+        samesite="none" if is_prod else "lax",
+        max_age=settings.jwt_access_token_expire_minutes * 60,
+        path="/",
+    )
+
 # Rate limiter instance - uses the app's limiter state
 limiter = Limiter(key_func=get_remote_address)
 
@@ -93,19 +111,7 @@ async def register(
             detail=str(e),
         ) from None
 
-    # Set access token as httpOnly cookie for XSS protection
-    # Cross-site cookies (Vercel frontend → Render backend) require:
-    # - secure=True (HTTPS only)
-    # - samesite="none" (allows cross-site requests)
-    response.set_cookie(
-        key="access_token",
-        value=access_token,
-        httponly=True,
-        secure=True,  # Required for SameSite=None
-        samesite="none",  # Required for cross-site cookies
-        max_age=settings.jwt_access_token_expire_minutes * 60,
-        path="/",
-    )
+    _set_auth_cookie(response, access_token)
 
     return TokenResponse(
         access_token=access_token,
@@ -194,19 +200,7 @@ async def login(
             headers={"WWW-Authenticate": "Bearer"},
         ) from None
 
-    # Set access token as httpOnly cookie for XSS protection
-    # Cross-site cookies (Vercel frontend → Render backend) require:
-    # - secure=True (HTTPS only)
-    # - samesite="none" (allows cross-site requests)
-    response.set_cookie(
-        key="access_token",
-        value=access_token,
-        httponly=True,
-        secure=True,  # Required for SameSite=None
-        samesite="none",  # Required for cross-site cookies
-        max_age=settings.jwt_access_token_expire_minutes * 60,
-        path="/",
-    )
+    _set_auth_cookie(response, access_token)
 
     return TokenResponse(
         access_token=access_token,
@@ -242,10 +236,11 @@ async def logout(response: Response) -> None:
     logger.info(
         "[POST /api/v1/auth/logout] User logout - clearing authentication cookie"
     )
+    is_prod = settings.is_production
     response.delete_cookie(
         key="access_token",
         httponly=True,
-        secure=True,
-        samesite="none",  # Must match the cookie setting used in login
+        secure=is_prod,
+        samesite="none" if is_prod else "lax",
         path="/",
     )

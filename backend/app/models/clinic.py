@@ -150,7 +150,7 @@ class Clinic(Base, TimestampMixin, SoftDeleteMixin):
     emergency_keywords: Mapped[list | None] = mapped_column(
         JSONB,
         nullable=True,
-        default=["emergency", "dying", "bleeding", "poison", "hit by car"],
+        default=lambda: ["emergency", "dying", "bleeding", "poison", "hit by car"],
         comment="Keywords that trigger emergency transfer",
     )
 

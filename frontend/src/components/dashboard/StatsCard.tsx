@@ -50,12 +50,12 @@ export function StatsCard({
   const colors = colorClasses[color];
 
   return (
-    <div className="bg-[#FFF9F0] rounded-2xl border border-orange-100/50 p-6 shadow-sm hover:shadow-md transition-all hover:-translate-y-1">
+    <div className="bg-[#FFF9F0] dark:bg-[#2A2015] rounded-2xl border border-orange-100/50 dark:border-orange-900/30 p-6 shadow-sm hover:shadow-md transition-all hover:-translate-y-1">
       <div className="flex items-start justify-between">
         <div className="flex-1">
-          <p className="text-sm text-[#5C6F6C] font-semibold">{title}</p>
-          <p className="text-4xl font-black text-[#1D3533] mt-3 font-nunito">
-            {value !== undefined && value !== null ? value : "—"}
+          <p className="text-sm text-[#5C6F6C] dark:text-zinc-400 font-semibold">{title}</p>
+          <p className="text-4xl font-black text-[#1D3533] dark:text-white mt-3 font-nunito">
+            {value !== undefined && value !== null ? value : "\u2014"}
           </p>
           {subtitle && (
             <p className="text-sm text-[#F4A261] mt-2 font-bold">{subtitle}</p>
@@ -71,7 +71,7 @@ export function StatsCard({
             trendUp ? "text-green-600" : "text-red-600"
           }`}
         >
-          <span className="mr-1">{trendUp ? "↑" : "↓"}</span>
+          <span className="mr-1">{trendUp ? "\u2191" : "\u2193"}</span>
           <span>{trend} last 7 days</span>
         </div>
       )}
