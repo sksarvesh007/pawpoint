@@ -51,6 +51,15 @@ const PIMS_TYPES = [
     ],
   },
   {
+    value: "avimark",
+    label: "Avimark",
+    description: "On-premise PIMS via IDEXX DataPoint",
+    fields: [
+      { key: "username", label: "DataPoint Username", type: "text" },
+      { key: "password", label: "DataPoint Password", type: "password" },
+    ],
+  },
+  {
     value: "covetrus",
     label: "Covetrus Pulse",
     description: "Comprehensive practice management (coming soon)",

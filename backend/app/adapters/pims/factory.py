@@ -50,8 +50,16 @@ def get_pims_adapter(clinic: Clinic) -> IPIMSAdapter:
             settings=clinic.pims_settings,
         )
 
+    if clinic.pims_type == PIMSType.AVIMARK:
+        from app.adapters.pims.avimark import AvimarkAdapter
+
+        return AvimarkAdapter(
+            clinic_id=clinic.id,
+            credentials=credentials,
+            settings=clinic.pims_settings,
+        )
+
     if clinic.pims_type in (
-        PIMSType.AVIMARK,
         PIMSType.CORNERSTONE,
         PIMSType.PULSE,
         PIMSType.IMPROMED,

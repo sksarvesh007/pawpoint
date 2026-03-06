@@ -21,6 +21,7 @@ import {
   HelpCircle,
   Shield,
   Mic,
+  Database,
 } from "lucide-react";
 import { getClinicInfo } from "@/lib/api/clinic";
 import { logout } from "@/lib/api/auth";
@@ -110,6 +111,7 @@ export function Sidebar({
           icon: MessageCircle,
           external: true,
         },
+        { href: "/dashboard/settings/pims", label: "PIMS", icon: Database },
       ],
     },
     {
