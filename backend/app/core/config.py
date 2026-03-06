@@ -186,6 +186,8 @@ class Settings(BaseSettings):
     google_vertex_region: str = "us-central1"  # Vertex AI region
     twilio_account_sid: str | None = None
     twilio_auth_token: SecretStr | None = None
+    twilio_twiml_app_sid: str | None = None
+    base_url: str = "http://localhost:8000"
 
     # -------------------------------------------------------------------------
     # AI / LLM Configuration (DeepSeek via OpenAI-compatible API)
@@ -222,6 +224,16 @@ class Settings(BaseSettings):
     message_history_max_limit: int = 200  # Max messages in history API
     message_history_min_limit: int = 1  # Min messages in history API
     message_history_default_limit: int = 50  # Default messages in history API
+
+    # -------------------------------------------------------------------------
+    # S3-Compatible Object Storage (MinIO / AWS S3)
+    # -------------------------------------------------------------------------
+    s3_endpoint_url: str | None = None  # e.g., http://localhost:9000 for MinIO
+    s3_access_key_id: str | None = None
+    s3_secret_access_key: SecretStr | None = None
+    s3_bucket_name: str = "pawpoint-recordings"
+    s3_region: str = "us-east-1"
+    s3_public_url: str | None = None  # Optional public URL override for presigned URLs
 
     # -------------------------------------------------------------------------
     # PIMS Integration (Optional)

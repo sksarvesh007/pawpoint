@@ -102,6 +102,28 @@ services:
     restart: unless-stopped
 
   # ---------------------------------------------------------------------------
+  # MinIO - S3-Compatible Object Storage (for call recordings)
+  # Console: http://localhost:9001 (minioadmin/minioadmin)
+  # ---------------------------------------------------------------------------
+  minio:
+    image: minio/minio:latest
+    ports:
+      - "9000:9000"   # S3 API
+      - "9001:9001"   # Console UI
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    volumes:
+      - minio_data:/data
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
   # Celery Worker (background tasks: chat analysis, session cleanup)
   # ---------------------------------------------------------------------------
   celery-worker:
@@ -291,5 +313,6 @@ volumes:
   redis_data:
   tempo_data:
   loki_data:
+  minio_data:
   livekit_data:
 

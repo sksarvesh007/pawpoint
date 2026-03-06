@@ -10,7 +10,7 @@ from app.models.appointment import Appointment
 from app.models.clinic import Clinic
 from app.models.patient import Patient
 from app.models.provider import Provider
-from app.schemas.appointment import AppointmentCreate, AppointmentStatusUpdate
+from app.schemas.appointment import AppointmentCreate
 from app.services.appointment import AppointmentService
 
 
@@ -128,7 +128,7 @@ async def test_get_appointment(db_session: AsyncSession) -> None:
     result = await service.get_appointment(clinic.id, appt.id)
 
     assert result is not None
-    assert result.appointment_type.value == "vaccination"
+    assert result["appointment_type"] == "vaccination"
 
 
 @pytest.mark.asyncio
@@ -160,8 +160,7 @@ async def test_update_appointment_status(db_session: AsyncSession) -> None:
     await db_session.flush()
 
     service = AppointmentService(db_session)
-    data = AppointmentStatusUpdate(status="confirmed")
-    updated = await service.update_status(clinic.id, appt.id, data)
+    updated = await service.update_status(clinic.id, appt.id, "confirmed")
 
     assert updated is not None
     assert updated.status.value == "confirmed"

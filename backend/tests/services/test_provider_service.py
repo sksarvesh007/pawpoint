@@ -117,12 +117,12 @@ async def test_update_provider(db_session: AsyncSession) -> None:
     db_session.add(provider)
     await db_session.flush()
 
-    data = ProviderUpdate(first_name="New", specialty="Dentistry")
+    data = ProviderUpdate(first_name="New", specialties=["Dentistry"])
     updated = await service.update_provider(clinic.id, provider.id, data)
 
     assert updated is not None
     assert updated.first_name == "New"
-    assert updated.specialty == "Dentistry"
+    assert updated.specialties == ["Dentistry"]
 
 
 @pytest.mark.asyncio

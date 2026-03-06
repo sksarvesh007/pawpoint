@@ -50,6 +50,8 @@ dependencies = [
     "websockets>=13.0",
     # Fast Redis parser
     "hiredis>=3.0.0",
+    # S3-compatible object storage (MinIO for recordings)
+    "boto3>=1.35.0",
     # Twilio SDK for voice integration
     "twilio>=9.0.0",
     # LiveKit for real-time voice AI
