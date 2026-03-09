@@ -27,7 +27,7 @@ CAPABILITIES:
 1. Book, reschedule, or cancel appointments
 2. Provide clinic information (hours, location, services)
 3. Take messages for the staff
-4. Transfer to staff for emergencies or complex requests
+4. Transfer to staff for emergencies or complex requests{pims_capabilities}
 
 EMERGENCY PROTOCOL:
 If the caller mentions any of these keywords, IMMEDIATELY use the transfer_call tool:
@@ -44,6 +44,22 @@ BOOKING GUIDELINES:
 Remember: You're on a PHONE call. Be natural, helpful, and efficient."""
 
 
+PIMS_CAPABILITIES = """
+5. Search for patient records by pet name, owner name, or phone number
+6. List available veterinarians"""
+
+PIMS_PROMPT_SECTION = """
+
+PATIENT RECORDS INTEGRATION:
+This clinic has a connected practice management system. You have real-time access to patient records.
+- You can search for patients by pet name, owner name, or phone number
+- Appointment availability reflects the real clinic schedule
+- When you book, cancel, or reschedule, changes happen directly in the clinic's system
+- You can list available veterinarians
+
+When a caller asks about their pet or appointment, proactively offer to look up their records."""
+
+
 def get_system_prompt(
     clinic_name: str,
     business_hours: str,
@@ -51,6 +67,7 @@ def get_system_prompt(
     emergency_phone: str | None = None,
     emergency_keywords: list[str] | None = None,
     custom_instructions: str | None = None,
+    pims_enabled: bool = False,
 ) -> str:
     """
     Generate a voice-optimized system prompt for the agent.
@@ -62,6 +79,7 @@ def get_system_prompt(
         emergency_phone: Emergency contact number (optional)
         emergency_keywords: Words that trigger emergency transfer
         custom_instructions: Additional clinic-specific instructions
+        pims_enabled: Whether PIMS integration is active
 
     Returns:
         Formatted system prompt string
@@ -74,7 +92,11 @@ def get_system_prompt(
         emergency_keywords=", ".join(emergency_keywords)
         if emergency_keywords
         else "emergency, dying, bleeding, not breathing, seizure, poisoned",
+        pims_capabilities=PIMS_CAPABILITIES if pims_enabled else "",
     )
+
+    if pims_enabled:
+        prompt += PIMS_PROMPT_SECTION
 
     if custom_instructions:
         prompt += f"\n\nADDITIONAL CLINIC INSTRUCTIONS:\n{custom_instructions}"

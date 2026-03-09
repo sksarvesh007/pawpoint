@@ -10,21 +10,29 @@ from datetime import UTC, datetime
 from livekit.agents import Agent, RunContext, function_tool
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.adapters.pims.base import IPIMSAdapter
+from app.adapters.pims.errors import PIMSError
+from app.adapters.pims.types import PIMSProvider
 from livekit_agent.cache import get_redis, save_call_state
 from livekit_agent.db import SessionLocal
 from livekit_agent.prompts import FALLBACK_RESPONSES, get_system_prompt
 from livekit_agent.telemetry import LatencyTimer, record_error, record_tool_execution_ms
 from livekit_agent.tools.appointment_tools import (
     book_appointment,
+    book_appointment_pims,
     cancel_appointment,
+    cancel_appointment_pims,
     check_available_appointments,
+    check_available_appointments_pims,
     reschedule_appointment,
+    reschedule_appointment_pims,
 )
 from livekit_agent.tools.clinic_tools import (
     get_clinic_hours,
     get_clinic_location,
     get_clinic_services,
 )
+from livekit_agent.tools.patient_tools import search_patient_local, search_patient_pims
 from livekit_agent.tools.transfer_tools import (
     check_emergency_keywords,
     take_message,
@@ -43,6 +51,7 @@ class VetClinicAgent(Agent):
     - Providing clinic information
     - Taking messages for staff
     - Emergency transfers
+    - Patient record lookups (when PIMS is connected)
     """
 
     def __init__(
@@ -50,6 +59,7 @@ class VetClinicAgent(Agent):
         clinic: dict,
         channel: str = "phone",
         room_name: str | None = None,
+        pims_adapter: IPIMSAdapter | None = None,
     ) -> None:
         """
         Initialize the agent with clinic context.
@@ -58,15 +68,18 @@ class VetClinicAgent(Agent):
             clinic: Clinic data dictionary
             channel: Call channel ("phone" or "web_voice")
             room_name: LiveKit room name
+            pims_adapter: Optional PIMS adapter for external system integration
         """
         self.clinic = clinic
         self.clinic_id = clinic["id"]
         self.channel = channel
         self.room_name = room_name
+        self.pims_adapter = pims_adapter
 
         # Cached data (populated in warm_cache)
         self.cached_hours: dict | None = None
         self.cached_providers: list | None = None
+        self.cached_pims_providers: list[PIMSProvider] | None = None
         self.cached_appointment_types: list | None = None
 
         # Emergency keywords
@@ -98,6 +111,7 @@ class VetClinicAgent(Agent):
             custom_instructions=clinic.get("voice_settings", {}).get(
                 "custom_instructions"
             ),
+            pims_enabled=bool(self.pims_adapter),
         )
 
         super().__init__(
@@ -136,7 +150,7 @@ class VetClinicAgent(Agent):
             # Cache business hours
             self.cached_hours = self.clinic.get("business_hours", {})
 
-            # Cache providers
+            # Cache providers from local DB
             from sqlalchemy import select
 
             result = await db.execute(
@@ -150,6 +164,17 @@ class VetClinicAgent(Agent):
                 {"id": str(p.id), "name": p.full_name, "specialties": p.specialties}
                 for p in result.scalars().all()
             ]
+
+            # Also fetch PIMS providers if adapter available
+            if self.pims_adapter:
+                try:
+                    self.cached_pims_providers = await self.pims_adapter.get_providers()
+                    logger.info(
+                        f"Cached {len(self.cached_pims_providers)} PIMS providers"
+                    )
+                except PIMSError as e:
+                    logger.warning(f"Failed to fetch PIMS providers: {e}")
+                    self.cached_pims_providers = None
 
             logger.info(f"Warmed cache for clinic {self.clinic_id}")
         except Exception as e:
@@ -260,13 +285,30 @@ class VetClinicAgent(Agent):
         timer = LatencyTimer()
         timer.start()
         try:
+            if self.pims_adapter:
+                try:
+                    result = await check_available_appointments_pims(
+                        adapter=self.pims_adapter,
+                        date_str=date,
+                        cached_providers=self.cached_pims_providers,
+                    )
+                    self._record_action(
+                        "check_appointments", {"date": date, "source": "pims"}
+                    )
+                    return result
+                except PIMSError as e:
+                    logger.warning(
+                        f"PIMS check_appointments failed, falling back to local DB: {e}"
+                    )
+
+            # Fallback to local DB
             async with SessionLocal() as db:
                 result = await check_available_appointments(
                     db=db,
                     clinic_id=self.clinic_id,
                     date=date,
                 )
-            self._record_action("check_appointments", {"date": date})
+            self._record_action("check_appointments", {"date": date, "source": "local"})
             return result
         except Exception as e:
             logger.error(f"Check appointments error: {e}")
@@ -301,6 +343,38 @@ class VetClinicAgent(Agent):
         timer.start()
         try:
             redis_client = await get_redis()
+
+            if self.pims_adapter:
+                try:
+                    result = await book_appointment_pims(
+                        adapter=self.pims_adapter,
+                        redis_client=redis_client,
+                        clinic_id=self.clinic_id,
+                        pet_name=pet_name,
+                        owner_name=owner_name,
+                        date_str=date,
+                        time_str=time,
+                        reason=reason,
+                        phone=phone,
+                    )
+                    self._record_action(
+                        "book_appointment",
+                        {
+                            "pet_name": pet_name,
+                            "owner_name": owner_name,
+                            "date": date,
+                            "time": time,
+                            "reason": reason,
+                            "source": "pims",
+                        },
+                    )
+                    return result
+                except PIMSError as e:
+                    logger.warning(
+                        f"PIMS book_appointment failed, falling back to local: {e}"
+                    )
+
+            # Fallback to local Redis queue
             result = await book_appointment(
                 redis_client=redis_client,
                 clinic_id=self.clinic_id,
@@ -319,6 +393,7 @@ class VetClinicAgent(Agent):
                     "date": date,
                     "time": time,
                     "reason": reason,
+                    "source": "local",
                 },
             )
             return result
@@ -344,6 +419,27 @@ class VetClinicAgent(Agent):
         timer = LatencyTimer()
         timer.start()
         try:
+            if self.pims_adapter:
+                try:
+                    async with SessionLocal() as db:
+                        result = await cancel_appointment_pims(
+                            adapter=self.pims_adapter,
+                            db=db,
+                            clinic_id=self.clinic_id,
+                            confirmation_code=confirmation_code,
+                        )
+                    self._record_action(
+                        "cancel_appointment",
+                        {
+                            "confirmation_code": confirmation_code,
+                            "source": "pims",
+                        },
+                    )
+                    return result
+                except PIMSError as e:
+                    logger.warning(f"PIMS cancel failed, falling back to local DB: {e}")
+
+            # Fallback to local DB
             async with SessionLocal() as db:
                 result = await cancel_appointment(
                     db=db,
@@ -354,6 +450,7 @@ class VetClinicAgent(Agent):
                 "cancel_appointment",
                 {
                     "confirmation_code": confirmation_code,
+                    "source": "local",
                 },
             )
             return result
@@ -384,6 +481,35 @@ class VetClinicAgent(Agent):
         timer.start()
         try:
             redis_client = await get_redis()
+
+            if self.pims_adapter:
+                try:
+                    async with SessionLocal() as db:
+                        result = await reschedule_appointment_pims(
+                            adapter=self.pims_adapter,
+                            db=db,
+                            redis_client=redis_client,
+                            clinic_id=self.clinic_id,
+                            confirmation_code=confirmation_code,
+                            new_date=new_date,
+                            new_time=new_time,
+                        )
+                    self._record_action(
+                        "reschedule_appointment",
+                        {
+                            "confirmation_code": confirmation_code,
+                            "new_date": new_date,
+                            "new_time": new_time,
+                            "source": "pims",
+                        },
+                    )
+                    return result
+                except PIMSError as e:
+                    logger.warning(
+                        f"PIMS reschedule failed, falling back to local DB: {e}"
+                    )
+
+            # Fallback to local DB
             async with SessionLocal() as db:
                 result = await reschedule_appointment(
                     db=db,
@@ -399,6 +525,7 @@ class VetClinicAgent(Agent):
                     "confirmation_code": confirmation_code,
                     "new_date": new_date,
                     "new_time": new_time,
+                    "source": "local",
                 },
             )
             return result
@@ -408,6 +535,88 @@ class VetClinicAgent(Agent):
             return "I'm having trouble rescheduling. Would you like me to transfer you?"
         finally:
             record_tool_execution_ms("reschedule_appointment", timer.stop(), True)
+
+    @function_tool()
+    async def search_patient_tool(
+        self,
+        ctx: RunContext,
+        query: str,
+    ) -> str:
+        """
+        Search for a patient by pet name, owner name, or phone number.
+
+        Args:
+            query: Search term - pet name, owner name, or phone number
+        """
+        timer = LatencyTimer()
+        timer.start()
+        try:
+            if self.pims_adapter:
+                try:
+                    result = await search_patient_pims(
+                        adapter=self.pims_adapter,
+                        query=query,
+                    )
+                    self._record_action(
+                        "search_patient", {"query": query, "source": "pims"}
+                    )
+                    return result
+                except PIMSError as e:
+                    logger.warning(
+                        f"PIMS patient search failed, falling back to local DB: {e}"
+                    )
+
+            # Fallback to local DB
+            async with SessionLocal() as db:
+                result = await search_patient_local(
+                    db=db,
+                    clinic_id=self.clinic_id,
+                    query=query,
+                )
+            self._record_action("search_patient", {"query": query, "source": "local"})
+            return result
+        except Exception as e:
+            logger.error(f"Patient search error: {e}")
+            record_tool_execution_ms("search_patient", timer.stop(), False)
+            return "I'm having trouble looking up patient records. Would you like me to transfer you?"
+        finally:
+            record_tool_execution_ms("search_patient", timer.stop(), True)
+
+    @function_tool()
+    async def get_providers_tool(self, ctx: RunContext) -> str:
+        """Get the list of available veterinarians at the clinic."""
+        timer = LatencyTimer()
+        timer.start()
+        try:
+            # Prefer PIMS providers if available
+            if self.cached_pims_providers:
+                names = [
+                    f"Dr. {p.first_name} {p.last_name}"
+                    + (f" ({', '.join(p.specialties)})" if p.specialties else "")
+                    for p in self.cached_pims_providers
+                    if p.is_active
+                ]
+            elif self.cached_providers:
+                names = [
+                    p["name"]
+                    + (
+                        f" ({', '.join(p['specialties'])})"
+                        if p.get("specialties")
+                        else ""
+                    )
+                    for p in self.cached_providers
+                ]
+            else:
+                self._record_action("get_providers", {})
+                return "I don't have the provider list available right now. Would you like me to transfer you to find out?"
+
+            self._record_action("get_providers", {"count": len(names)})
+            if len(names) == 1:
+                return f"We have {names[0]} available."
+            listing = ", ".join(names[:-1]) + f", and {names[-1]}"
+            return f"Our veterinarians include {listing}."
+        finally:
+            record_tool_execution_ms("get_providers", timer.stop(), True)
 
     @function_tool()
     async def transfer_to_staff_tool(

@@ -62,12 +62,12 @@ const PIMS_TYPES = [
   {
     value: "covetrus",
     label: "Covetrus Pulse",
-    description: "Comprehensive practice management (coming soon)",
+    description: "Covetrus Connect integration for Pulse, Cornerstone, and ImproMed",
     fields: [
-      { key: "api_key", label: "API Key", type: "password" },
-      { key: "practice_id", label: "Practice ID", type: "text" },
+      { key: "client_id", label: "Client ID", type: "text" },
+      { key: "client_secret", label: "Client Secret", type: "password" },
+      { key: "partner_id", label: "Partner ID", type: "text" },
     ],
-    disabled: true,
   },
 ];
 

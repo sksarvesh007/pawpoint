@@ -8,12 +8,18 @@ Usage:
     python -m livekit_agent.main start   # Production mode
 """
 
+from __future__ import annotations
+
 import json
 import logging
 import os
 from datetime import UTC, datetime
+from typing import TYPE_CHECKING
 
-from livekit.agents import Agent, AgentSession, JobContext, WorkerOptions, cli
+if TYPE_CHECKING:
+    from app.models.clinic import Clinic
+
+from livekit.agents import AgentSession, JobContext, WorkerOptions, cli
 from livekit.plugins import assemblyai, cartesia, openai, silero
 from sqlalchemy import select
 
@@ -24,8 +30,9 @@ from livekit_agent.cache import (
 )
 from livekit_agent.config import agent_settings
 from livekit_agent.db import SessionLocal, warm_connection_pool
-from livekit_agent.prompts import get_greeting, get_system_prompt
+from livekit_agent.prompts import get_greeting
 from livekit_agent.telemetry import record_call_end, record_call_start
+from livekit_agent.vet_clinic_agent import VetClinicAgent
 
 # Configure logging
 logging.basicConfig(
@@ -63,8 +70,15 @@ async def ensure_startup():
         raise
 
 
-async def get_clinic_by_id(clinic_id: str) -> dict | None:
-    """Load clinic data from database."""
+async def get_clinic_by_id(
+    clinic_id: str,
+) -> tuple[dict, Clinic] | tuple[None, None]:
+    """Load clinic data from database.
+
+    Returns:
+        Tuple of (clinic_dict, clinic_model) or (None, None) if not found.
+        The model is expunged from the session so it survives after close.
+    """
     from app.models.clinic import Clinic
 
     async with SessionLocal() as db:
@@ -77,7 +91,13 @@ async def get_clinic_by_id(clinic_id: str) -> dict | None:
         clinic = result.scalar_one_or_none()
 
         if not clinic:
-            return None
+            return None, None
+
+        # Eager-load PIMS attributes before expunge
+        _ = clinic.pims_type
+        _ = clinic.pims_credentials_encrypted
+        _ = clinic.pims_settings
+        _ = clinic.pims_connection_status
 
         # Build full address from components
         address_parts = [clinic.address_line1]
@@ -85,7 +105,7 @@ async def get_clinic_by_id(clinic_id: str) -> dict | None:
             address_parts.append(clinic.address_line2)
         address = ", ".join(filter(None, address_parts)) or None
 
-        return {
+        clinic_dict = {
             "id": str(clinic.id),
             "name": clinic.name,
             "slug": clinic.slug,
@@ -101,7 +121,14 @@ async def get_clinic_by_id(clinic_id: str) -> dict | None:
             "twilio_phone_number": clinic.twilio_phone_number,
             "emergency_phone": clinic.emergency_phone,
             "emergency_keywords": clinic.emergency_keywords,
+            "pims_type": str(clinic.pims_type),
+            "pims_connection_status": str(clinic.pims_connection_status),
         }
+
+        # Expunge so model survives after session closes
+        db.expunge(clinic)
+
+        return clinic_dict, clinic
 
 
 async def entrypoint(ctx: JobContext):
@@ -157,8 +184,8 @@ async def entrypoint(ctx: JobContext):
             return
 
     # Load clinic data
-    clinic = await get_clinic_by_id(clinic_id)
-    if not clinic:
+    clinic, clinic_model = await get_clinic_by_id(clinic_id)
+    if not clinic or not clinic_model:
         logger.error(f"Clinic not found: {clinic_id}")
         return
 
@@ -174,22 +201,38 @@ async def entrypoint(ctx: JobContext):
     record_call_start(clinic_id, channel)
     call_start_time = datetime.now(UTC)
 
-    # Format business hours for prompt
-    hours = clinic.get("business_hours", {})
-    hours_str = (
-        ", ".join(f"{day.capitalize()}: {h}" for day, h in hours.items() if h)
-        if hours
-        else "Please ask staff for hours"
+    # Initialize PIMS adapter if configured
+    pims_adapter = None
+    from app.models.clinic import PIMSType
+
+    if (
+        clinic_model.pims_type != PIMSType.NONE
+        and clinic_model.pims_credentials_encrypted
+    ):
+        try:
+            from app.adapters.pims import get_pims_adapter
+
+            pims_adapter = get_pims_adapter(clinic_model)
+            await pims_adapter.authenticate()
+            logger.info(
+                f"PIMS adapter initialized: {clinic_model.pims_type} "
+                f"for clinic {clinic['name']}"
+            )
+        except Exception as e:
+            logger.warning(f"PIMS init failed, using local DB: {e}")
+            pims_adapter = None
+
+    # Create agent with clinic context and PIMS adapter
+    agent = VetClinicAgent(
+        clinic=clinic,
+        channel=channel,
+        room_name=ctx.room.name,
+        pims_adapter=pims_adapter,
     )
 
-    # Generate system prompt
-    system_prompt = get_system_prompt(
-        clinic_name=clinic["name"],
-        business_hours=hours_str,
-        address=clinic.get("address"),
-        emergency_phone=clinic.get("emergency_phone"),
-        emergency_keywords=clinic.get("emergency_keywords"),
-    )
+    # Pre-cache providers and clinic data
+    async with SessionLocal() as db:
+        await agent.warm_cache(db)
 
     # Get greeting
     greeting = get_greeting(
@@ -200,7 +243,6 @@ async def entrypoint(ctx: JobContext):
     logger.info("Initializing AI providers with explicit API keys...")
 
     # Initialize providers with explicit API keys
-    # Using plugin classes directly for better control
     stt = assemblyai.STT(
         api_key=agent_settings.assemblyai_api_key.get_secret_value(),
     )
@@ -229,9 +271,6 @@ async def entrypoint(ctx: JobContext):
     vad = silero.VAD.load()
     logger.info("  - VAD: Silero initialized")
 
-    # Create agent with instructions
-    agent = Agent(instructions=system_prompt)
-
     # Create session with AI providers
     session = AgentSession(
         stt=stt,
@@ -247,6 +286,12 @@ async def entrypoint(ctx: JobContext):
         duration = (datetime.now(UTC) - call_start_time).total_seconds()
         record_call_end(clinic_id, channel, duration)
         await clear_call_state(ctx.room.name)
+        if pims_adapter:
+            try:
+                await pims_adapter.close()
+                logger.info("PIMS adapter closed")
+            except Exception as e:
+                logger.warning(f"Error closing PIMS adapter: {e}")
         logger.info(
             f"Voice session ended: clinic={clinic['name']}, duration={duration:.1f}s"
         )
