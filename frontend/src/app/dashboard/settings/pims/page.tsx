@@ -342,18 +342,13 @@ export default function PIMSSettingsPage() {
                   key={pims.value}
                   type="button"
                   onClick={() => {
-                    if (!pims.disabled) {
-                      setSelectedType(pims.value);
-                      setCredentials({});
-                    }
+                    setSelectedType(pims.value);
+                    setCredentials({});
                   }}
-                  disabled={pims.disabled}
                   className={`p-4 rounded-lg border-2 text-left transition-all ${
-                    pims.disabled
-                      ? "border-zinc-100 bg-zinc-50 opacity-60 cursor-not-allowed"
-                      : selectedType === pims.value
-                        ? "border-teal-500 bg-teal-50"
-                        : "border-zinc-200 hover:border-zinc-300 cursor-pointer"
+                    selectedType === pims.value
+                      ? "border-teal-500 bg-teal-50"
+                      : "border-zinc-200 hover:border-zinc-300 cursor-pointer"
                   }`}
                 >
                   <p className="font-semibold text-zinc-900">{pims.label}</p>
@@ -364,7 +359,7 @@ export default function PIMSSettingsPage() {
           </div>
 
           {/* Credential Fields */}
-          {selectedPIMS && !selectedPIMS.disabled && (
+          {selectedPIMS && (
             <div className="space-y-4">
               <h3 className="text-sm font-medium text-zinc-700">
                 Enter your {selectedPIMS.label} credentials

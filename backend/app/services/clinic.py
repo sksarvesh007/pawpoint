@@ -1,5 +1,6 @@
 """Clinic service for business logic."""
 
+from typing import Any
 from uuid import UUID
 
 from sqlalchemy import select
@@ -10,7 +11,7 @@ from app.models.clinic import Clinic
 from app.schemas.clinic import UpdateChatbotSettingsRequest
 
 # Default chatbot settings initialized on clinic registration
-DEFAULT_VOICE_SETTINGS = {
+DEFAULT_VOICE_SETTINGS: dict[str, Any] = {
     "chatbot_name": None,  # Will use clinic name by default if not set
     "chatbot_persona": "professional",
     "greeting_message": "Thank you for calling {clinic_name}. How can I help you today?",
@@ -64,7 +65,7 @@ class ClinicService:
         settings = clinic.voice_settings if clinic.voice_settings else {}
 
         # Merge with defaults to ensure all keys exist
-        merged_settings = DEFAULT_VOICE_SETTINGS.copy()
+        merged_settings: dict[str, Any] = DEFAULT_VOICE_SETTINGS.copy()
         merged_settings.update(settings)
 
         # Add clinic name for response
