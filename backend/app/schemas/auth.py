@@ -91,6 +91,36 @@ class RegisterRequest(BaseModel):
         return v
 
 
+class ChangePasswordRequest(BaseModel):
+    """Request schema for changing password."""
+
+    current_password: str = Field(..., min_length=1)
+    new_password: str = Field(..., min_length=8, max_length=128)
+
+    @field_validator("new_password")
+    @classmethod
+    def validate_new_password(cls, v: str) -> str:
+        """Validate new password strength (same rules as registration)."""
+        errors = []
+        if len(v) < 8:
+            errors.append("at least 8 characters")
+        if not re.search(r"[A-Z]", v):
+            errors.append("one uppercase letter")
+        if not re.search(r"[a-z]", v):
+            errors.append("one lowercase letter")
+        if not re.search(r"\d", v):
+            errors.append("one digit")
+        if not re.search(r'[!@#$%^&*(),.?":{}|<>\-_=+\[\]\\;\'`~]', v):
+            errors.append("one special character")
+        if errors:
+            raise ValueError(f"Password must contain {', '.join(errors)}")
+        if v.lower() in COMMON_PASSWORDS:
+            raise ValueError(
+                "Password is too common. Please choose a stronger password"
+            )
+        return v
+
+
 class LoginRequest(BaseModel):
     """Request schema for user login."""
 

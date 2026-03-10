@@ -44,6 +44,14 @@ class PatientAnalytics(BaseModel):
     total_owners: int  # distinct owners
 
 
+class PIMSSyncDayTrend(BaseModel):
+    """Single day of PIMS sync trend data."""
+
+    date: str
+    successful: int
+    failed: int
+
+
 class PIMSSyncAnalytics(BaseModel):
     """PIMS integration health."""
 
@@ -52,6 +60,7 @@ class PIMSSyncAnalytics(BaseModel):
     sync_success_rate: float
     total_syncs_today: int
     failed_syncs_today: int
+    sync_trend: list[PIMSSyncDayTrend] = Field(default_factory=list)
 
 
 class SentimentData(BaseModel):

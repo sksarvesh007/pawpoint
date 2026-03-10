@@ -7,11 +7,11 @@ Users can belong to multiple clinics through the UserClinic association.
 
 from datetime import datetime
 from enum import StrEnum
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 from uuid import UUID as PyUUID
 
 from sqlalchemy import Boolean, Column, Enum, ForeignKey, String, Table, Text
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, SoftDeleteMixin, TimestampMixin
@@ -110,6 +110,14 @@ class User(Base, TimestampMixin, SoftDeleteMixin):
 
     # Login tracking
     last_login_at: Mapped[datetime | None] = mapped_column(nullable=True)
+
+    # Dashboard widget layout preferences (JSON)
+    dashboard_layout: Mapped[dict[str, Any] | None] = mapped_column(
+        JSONB,
+        nullable=True,
+        default=None,
+        comment="User's dashboard widget visibility and order preferences",
+    )
 
     # Relationships
     clinics: Mapped[list["Clinic"]] = relationship(

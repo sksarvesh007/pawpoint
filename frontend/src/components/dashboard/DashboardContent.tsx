@@ -16,13 +16,27 @@ import {
 } from "lucide-react";
 import { StatsCard } from "./StatsCard";
 import { CallsChart } from "./CallsChart";
+import { AppointmentStatusChart } from "./AppointmentStatusChart";
+import { PIMSSyncTrendChart } from "./PIMSSyncTrendChart";
 import { CallLogTable } from "./CallLogTable";
 import type { DashboardAnalytics } from "@/types/analytics";
+
+export interface WidgetVisibility {
+  stats_cards: boolean;
+  calls_chart: boolean;
+  quick_stats: boolean;
+  call_sentiment: boolean;
+  chat_sentiment: boolean;
+  pims_status: boolean;
+  recent_calls: boolean;
+  [key: string]: boolean;
+}
 
 interface DashboardContentProps {
   analytics: DashboardAnalytics | null;
   loading?: boolean;
   error?: string | null;
+  widgetVisibility?: WidgetVisibility;
 }
 
 function LoadingSkeleton() {
@@ -273,7 +287,9 @@ export function DashboardContent({
   analytics,
   loading = false,
   error = null,
+  widgetVisibility,
 }: DashboardContentProps) {
+  const isVisible = (id: string) => !widgetVisibility || widgetVisibility[id] !== false;
   if (loading) {
     return <LoadingSkeleton />;
   }
@@ -318,116 +334,139 @@ export function DashboardContent({
       </div>
 
       {/* Stats Grid - 4 columns */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatsCard
-          title="Calls Answered"
-          value={`${analytics.calls.total_calls}`}
-          subtitle={`+${analytics.calls.calls_today} today`}
-          icon={Phone}
-          color="orange"
-        />
-        <StatsCard
-          title="Appointments"
-          value={analytics.appointments.total_appointments}
-          subtitle={`+${analytics.appointments.appointments_this_week} this week`}
-          icon={Calendar}
-          color="blue"
-        />
-        <StatsCard
-          title="Call Coverage"
-          value={`${analytics.calls.ai_handled_percentage}%`}
-          subtitle={`${analytics.calls.total_calls - analytics.calls.emergency_transfers} answered / ${analytics.calls.total_calls} total`}
-          icon={CheckCircle}
-          color="teal"
-        />
-        <StatsCard
-          title="Chat Sessions"
-          value={analytics.chats?.total_chats ?? 0}
-          subtitle={`+${analytics.chats?.chats_today ?? 0} today`}
-          icon={MessageCircle}
-          color="purple"
-        />
-      </div>
+      {isVisible("stats_cards") && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <StatsCard
+            title="Calls Answered"
+            value={`${analytics.calls.total_calls}`}
+            subtitle={`+${analytics.calls.calls_today} today`}
+            icon={Phone}
+            color="orange"
+          />
+          <StatsCard
+            title="Appointments"
+            value={analytics.appointments.total_appointments}
+            subtitle={`+${analytics.appointments.appointments_this_week} this week`}
+            icon={Calendar}
+            color="blue"
+          />
+          <StatsCard
+            title="Call Coverage"
+            value={`${analytics.calls.ai_handled_percentage}%`}
+            subtitle={`${analytics.calls.total_calls - analytics.calls.emergency_transfers} answered / ${analytics.calls.total_calls} total`}
+            icon={CheckCircle}
+            color="teal"
+          />
+          <StatsCard
+            title="Chat Sessions"
+            value={analytics.chats?.total_chats ?? 0}
+            subtitle={`+${analytics.chats?.chats_today ?? 0} today`}
+            icon={MessageCircle}
+            color="purple"
+          />
+        </div>
+      )}
 
       {/* Two Column Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Left Column */}
         <div className="space-y-6">
-          <CallsChart
-            data={analytics.calls.calls_by_hour}
-            chatData={analytics.chats?.chats_by_hour}
-            emergencyTransfers={analytics.calls.emergency_transfers}
-            transferHours={analytics.calls.transfer_hours}
-          />
-          <div className="grid grid-cols-2 gap-4">
-            <div className="bg-white dark:bg-[#1E2530] rounded-xl border border-zinc-200 dark:border-zinc-700 p-5 shadow-sm">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="p-2 bg-orange-50 dark:bg-orange-900/30 rounded-lg">
-                  <Clock className="w-5 h-5 text-orange-600 dark:text-orange-400" />
+          {isVisible("calls_chart") && (
+            <CallsChart
+              data={analytics.calls.calls_by_hour}
+              chatData={analytics.chats?.chats_by_hour}
+              emergencyTransfers={analytics.calls.emergency_transfers}
+              transferHours={analytics.calls.transfer_hours}
+            />
+          )}
+          {isVisible("quick_stats") && (
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-white dark:bg-[#1E2530] rounded-xl border border-zinc-200 dark:border-zinc-700 p-5 shadow-sm">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="p-2 bg-orange-50 dark:bg-orange-900/30 rounded-lg">
+                    <Clock className="w-5 h-5 text-orange-600 dark:text-orange-400" />
+                  </div>
+                  <p className="text-xs text-zinc-600 dark:text-zinc-400 font-semibold uppercase tracking-wide">
+                    Avg Duration
+                  </p>
                 </div>
-                <p className="text-xs text-zinc-600 dark:text-zinc-400 font-semibold uppercase tracking-wide">
-                  Avg Duration
+                <p className="text-2xl font-black text-zinc-900 dark:text-white font-nunito">
+                  {Math.floor(analytics.calls.average_duration_seconds / 60)}:
+                  {(analytics.calls.average_duration_seconds % 60)
+                    .toFixed(0)
+                    .padStart(2, "0")}
                 </p>
               </div>
-              <p className="text-2xl font-black text-zinc-900 dark:text-white font-nunito">
-                {Math.floor(analytics.calls.average_duration_seconds / 60)}:
-                {(analytics.calls.average_duration_seconds % 60)
-                  .toFixed(0)
-                  .padStart(2, "0")}
-              </p>
-            </div>
-            <div className="bg-white dark:bg-[#1E2530] rounded-xl border border-zinc-200 dark:border-zinc-700 p-5 shadow-sm">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="p-2 bg-red-50 dark:bg-red-900/30 rounded-lg">
-                  <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400" />
+              <div className="bg-white dark:bg-[#1E2530] rounded-xl border border-zinc-200 dark:border-zinc-700 p-5 shadow-sm">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="p-2 bg-red-50 dark:bg-red-900/30 rounded-lg">
+                    <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400" />
+                  </div>
+                  <p className="text-xs text-zinc-600 dark:text-zinc-400 font-semibold uppercase tracking-wide">
+                    Emergencies
+                  </p>
                 </div>
-                <p className="text-xs text-zinc-600 dark:text-zinc-400 font-semibold uppercase tracking-wide">
-                  Emergencies
+                <p className="text-2xl font-black text-zinc-900 dark:text-white font-nunito">
+                  {analytics.calls.emergency_transfers}
                 </p>
               </div>
-              <p className="text-2xl font-black text-zinc-900 dark:text-white font-nunito">
-                {analytics.calls.emergency_transfers}
-              </p>
-            </div>
-            <div className="bg-white dark:bg-[#1E2530] rounded-xl border border-zinc-200 dark:border-zinc-700 p-5 shadow-sm">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="p-2 bg-teal-50 dark:bg-teal-900/30 rounded-lg">
-                  <Calendar className="w-5 h-5 text-teal-600 dark:text-teal-400" />
+              <div className="bg-white dark:bg-[#1E2530] rounded-xl border border-zinc-200 dark:border-zinc-700 p-5 shadow-sm">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="p-2 bg-teal-50 dark:bg-teal-900/30 rounded-lg">
+                    <Calendar className="w-5 h-5 text-teal-600 dark:text-teal-400" />
+                  </div>
+                  <p className="text-xs text-zinc-600 dark:text-zinc-400 font-semibold uppercase tracking-wide">
+                    Appointments Booked
+                  </p>
                 </div>
-                <p className="text-xs text-zinc-600 dark:text-zinc-400 font-semibold uppercase tracking-wide">
-                  Appointments Booked
+                <p className="text-2xl font-black text-zinc-900 dark:text-white font-nunito">
+                  {analytics.appointments.bookings_via_ai}
                 </p>
               </div>
-              <p className="text-2xl font-black text-zinc-900 dark:text-white font-nunito">
-                {analytics.appointments.bookings_via_ai}
-              </p>
-            </div>
-            <div className="bg-white dark:bg-[#1E2530] rounded-xl border border-zinc-200 dark:border-zinc-700 p-5 shadow-sm">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="p-2 bg-purple-50 dark:bg-purple-900/30 rounded-lg">
-                  <PawPrint className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+              <div className="bg-white dark:bg-[#1E2530] rounded-xl border border-zinc-200 dark:border-zinc-700 p-5 shadow-sm">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="p-2 bg-purple-50 dark:bg-purple-900/30 rounded-lg">
+                    <PawPrint className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                  </div>
+                  <p className="text-xs text-zinc-600 dark:text-zinc-400 font-semibold uppercase tracking-wide">
+                    New Patients
+                  </p>
                 </div>
-                <p className="text-xs text-zinc-600 dark:text-zinc-400 font-semibold uppercase tracking-wide">
-                  New Patients
+                <p className="text-2xl font-black text-zinc-900 dark:text-white font-nunito">
+                  {analytics.patients.new_patients_this_month}
                 </p>
               </div>
-              <p className="text-2xl font-black text-zinc-900 dark:text-white font-nunito">
-                {analytics.patients.new_patients_this_month}
-              </p>
             </div>
-          </div>
+          )}
+          {isVisible("appointment_status") && (
+            <AppointmentStatusChart
+              data={analytics.appointments.appointments_by_status}
+            />
+          )}
         </div>
 
         {/* Right Column */}
         <div className="space-y-6">
-          <SentimentCard sentiment={analytics.sentiment} />
-          <ChatSentimentMiniCard chats={analytics.chats} />
-          <PIMSStatusCard pims={analytics.pims} />
+          {isVisible("call_sentiment") && (
+            <SentimentCard sentiment={analytics.sentiment} />
+          )}
+          {isVisible("chat_sentiment") && (
+            <ChatSentimentMiniCard chats={analytics.chats} />
+          )}
+          {isVisible("pims_status") && (
+            <PIMSStatusCard pims={analytics.pims} />
+          )}
+          {isVisible("pims_sync_trend") &&
+            analytics.pims.sync_trend.length > 0 && (
+              <PIMSSyncTrendChart data={analytics.pims.sync_trend} />
+            )}
         </div>
       </div>
 
       {/* Recent Call Logs Table */}
-      <CallLogTable calls={analytics.recent_calls} />
+      {isVisible("recent_calls") && (
+        <CallLogTable calls={analytics.recent_calls} />
+      )}
     </div>
   );
 }

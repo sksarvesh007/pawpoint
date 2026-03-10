@@ -1,5 +1,6 @@
 "use client";
 
+import * as Sentry from "@sentry/nextjs";
 import { Component, ReactNode } from "react";
 
 interface Props {
@@ -23,23 +24,11 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    // Log to error tracking service in production
-    if (process.env.NODE_ENV === "production") {
-      // Don't log sensitive error details in production
-      console.error("Dashboard error occurred");
+    Sentry.captureException(error, {
+      contexts: { react: { componentStack: errorInfo.componentStack } },
+    });
 
-      // Send to error tracking service (Sentry, etc.)
-      if (
-        typeof window !== "undefined" &&
-        "Sentry" in window &&
-        typeof (window as { Sentry?: { captureException: (error: Error, options?: Record<string, unknown>) => void } }).Sentry?.captureException === "function"
-      ) {
-        (window as { Sentry: { captureException: (error: Error, options?: Record<string, unknown>) => void } }).Sentry.captureException(error, {
-          contexts: { react: errorInfo },
-        });
-      }
-    } else {
-      // In development, log full details
+    if (process.env.NODE_ENV === "development") {
       console.error("Error boundary caught:", error, errorInfo);
     }
   }

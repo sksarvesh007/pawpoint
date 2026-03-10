@@ -36,12 +36,19 @@ export interface PatientAnalytics {
   total_owners: number;
 }
 
+export interface PIMSSyncDayTrend {
+  date: string;
+  successful: number;
+  failed: number;
+}
+
 export interface PIMSSyncAnalytics {
   connection_status: string;
   last_sync_at: string | null;
   sync_success_rate: number;
   total_syncs_today: number;
   failed_syncs_today: number;
+  sync_trend: PIMSSyncDayTrend[];
 }
 
 export interface SentimentData {

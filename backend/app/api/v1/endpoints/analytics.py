@@ -25,6 +25,7 @@ router = APIRouter()
 @limiter.limit("60/minute")
 async def get_dashboard_analytics(
     request: Request,
+    days: int = Query(30, ge=1, le=365, description="Number of days to analyze"),
     current_clinic: Clinic = Depends(get_current_clinic),
     db: AsyncSession = Depends(get_db),
 ) -> DashboardAnalytics:
@@ -36,7 +37,7 @@ async def get_dashboard_analytics(
     """
     service = AnalyticsService(db)
     analytics: DashboardAnalytics = await service.get_dashboard_analytics(
-        current_clinic.id
+        current_clinic.id, days=days
     )
     return analytics
 
@@ -78,6 +79,7 @@ async def get_chat_analytics(
 @limiter.limit("10/minute")
 async def stream_dashboard_analytics(
     request: Request,
+    days: int = Query(30, ge=1, le=365, description="Number of days to analyze"),
     current_clinic: Clinic = Depends(get_current_clinic),
     db: AsyncSession = Depends(get_db),
 ):
@@ -98,7 +100,9 @@ async def stream_dashboard_analytics(
 
                 # Get fresh analytics (uses parallel queries for speed)
                 service = AnalyticsService(db)
-                analytics = await service.get_dashboard_analytics(current_clinic.id)
+                analytics = await service.get_dashboard_analytics(
+                    current_clinic.id, days=days
+                )
 
                 # Send analytics update event
                 yield {

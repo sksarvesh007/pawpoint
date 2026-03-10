@@ -8,7 +8,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.db import get_db
+from app.core.dependencies import get_current_user
+from app.core.security import hash_password, verify_password
+from app.models.user import User
 from app.schemas.auth import (
+    ChangePasswordRequest,
     ClinicResponse,
     LoginRequest,
     RegisterRequest,
@@ -245,3 +249,36 @@ async def logout(response: Response) -> None:
         samesite="none" if is_prod else "lax",
         path="/",
     )
+
+
+@router.put(
+    "/change-password",
+    status_code=status.HTTP_200_OK,
+    summary="Change password",
+    description="Change the current user's password.",
+)
+@limiter.limit("5/minute")
+async def change_password(
+    request: Request,
+    body: ChangePasswordRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Change the authenticated user's password."""
+    if not current_user.password_hash:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Password change not available for external auth users",
+        )
+
+    if not verify_password(body.current_password, current_user.password_hash):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Current password is incorrect",
+        )
+
+    current_user.password_hash = hash_password(body.new_password)
+    await db.commit()
+
+    logger.info(f"[PUT /api/v1/auth/change-password] Password changed for user {current_user.email}")
+    return {"message": "Password changed successfully"}

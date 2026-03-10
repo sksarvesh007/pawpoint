@@ -16,8 +16,10 @@ from app.api.v1.endpoints import (
     outbound_calls,
     patients,
     pims,
+    preferences,
     providers,
     recordings,
+    reports,
     voice,
 )
 
@@ -33,6 +35,10 @@ api_router.include_router(
 )
 api_router.include_router(providers.router, prefix="/providers", tags=["providers"])
 api_router.include_router(pims.router, prefix="/pims", tags=["pims"])
+api_router.include_router(reports.router, prefix="/reports", tags=["reports"])
+api_router.include_router(
+    preferences.router, prefix="/preferences", tags=["preferences"]
+)
 
 # Legacy endpoint (for backward compatibility)
 api_router.include_router(ai_chat.router)  # /ai/chat/message

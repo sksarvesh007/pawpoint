@@ -23,6 +23,7 @@ from app.schemas.analytics import (
     EnhancedChatAnalytics,
     PatientAnalytics,
     PIMSSyncAnalytics,
+    PIMSSyncDayTrend,
     SentimentData,
 )
 
@@ -517,12 +518,49 @@ class AnalyticsService:
         total = success_row[1] or 0
         sync_success_rate = (successful / total * 100) if total > 0 else 100.0
 
+        # Daily sync trend (last 14 days)
+        trend_cutoff = datetime.now(UTC) - timedelta(days=14)
+        trend_result = await self.db.execute(
+            select(
+                func.date(PIMSSyncLog.started_at).label("day"),
+                func.count()
+                .filter(PIMSSyncLog.status == SyncJobStatus.COMPLETED)
+                .label("successful"),
+                func.count()
+                .filter(PIMSSyncLog.status == SyncJobStatus.FAILED)
+                .label("failed"),
+            )
+            .select_from(PIMSSyncLog)
+            .where(
+                and_(
+                    PIMSSyncLog.clinic_id == str(clinic_id),
+                    PIMSSyncLog.started_at >= trend_cutoff,
+                    PIMSSyncLog.status.in_(
+                        [
+                            SyncJobStatus.COMPLETED,
+                            SyncJobStatus.PARTIAL,
+                            SyncJobStatus.FAILED,
+                        ]
+                    ),
+                )
+            )
+            .group_by(func.date(PIMSSyncLog.started_at))
+            .order_by(func.date(PIMSSyncLog.started_at))
+        )
+        sync_trend = [
+            PIMSSyncDayTrend(
+                date=str(row.day), successful=row.successful, failed=row.failed
+            )
+            for row in trend_result.all()
+        ]
+
         return PIMSSyncAnalytics(
             connection_status=connection_status,
             last_sync_at=last_sync_at,
             sync_success_rate=round(sync_success_rate, 2),
             total_syncs_today=total_syncs_today,
             failed_syncs_today=failed_syncs_today,
+            sync_trend=sync_trend,
         )
 
     @traced(span_name="analytics.get_sentiment_analytics")
@@ -894,7 +932,9 @@ class AnalyticsService:
         return summaries
 
     @traced(span_name="analytics.get_dashboard_analytics")
-    async def get_dashboard_analytics(self, clinic_id: UUID) -> DashboardAnalytics:
+    async def get_dashboard_analytics(
+        self, clinic_id: UUID, days: int = 30
+    ) -> DashboardAnalytics:
         """Get all dashboard analytics in parallel for better performance."""
         import asyncio
 
@@ -909,13 +949,13 @@ class AnalyticsService:
             EnhancedChatAnalytics,
             list[ChatLogSummary],
         ] = await asyncio.gather(  # type: ignore[assignment]
-            self.get_call_analytics(clinic_id),
-            self.get_appointment_analytics(clinic_id),
+            self.get_call_analytics(clinic_id, days=days),
+            self.get_appointment_analytics(clinic_id, days=days),
             self.get_patient_analytics(clinic_id),
             self.get_pims_analytics(clinic_id),
-            self.get_sentiment_analytics(clinic_id),
+            self.get_sentiment_analytics(clinic_id, days=days),
             self.get_recent_calls(clinic_id),
-            self.get_chat_analytics(clinic_id),
+            self.get_chat_analytics(clinic_id, days=days),
             self.get_recent_chats(clinic_id),
         )
 
