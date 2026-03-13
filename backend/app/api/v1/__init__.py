@@ -12,7 +12,9 @@ from app.api.v1.endpoints import (
     clinic_ai,
     clinic_ai_streaming,
     clinics,
+    communications,
     demo_chat,
+    notifications,
     outbound_calls,
     patients,
     pims,
@@ -56,6 +58,12 @@ api_router.include_router(
     outbound_calls.router, prefix="/outbound-calls", tags=["outbound-calls"]
 )
 api_router.include_router(recordings.router, prefix="/recordings", tags=["recordings"])
+api_router.include_router(
+    communications.router, prefix="/communications", tags=["communications"]
+)
+api_router.include_router(
+    notifications.router, prefix="/notifications", tags=["notifications"]
+)
 
 # Voice endpoints (LiveKit integration)
 api_router.include_router(voice.router, tags=["Voice"])  # /{clinic-slug}/voice/*

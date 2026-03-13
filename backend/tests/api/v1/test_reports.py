@@ -135,9 +135,7 @@ async def test_generate_report_invalid_type(
 
 
 @pytest.mark.asyncio
-async def test_export_csv(
-    client: AsyncClient, db_session: AsyncSession
-) -> None:
+async def test_export_csv(client: AsyncClient, db_session: AsyncSession) -> None:
     """Test exporting a report as CSV returns text/csv content type."""
     await setup_auth(db_session, client)
 

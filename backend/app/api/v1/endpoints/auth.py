@@ -7,9 +7,9 @@ from slowapi.util import get_remote_address
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
-from app.db import get_db
 from app.core.dependencies import get_current_user
 from app.core.security import hash_password, verify_password
+from app.db import get_db
 from app.models.user import User
 from app.schemas.auth import (
     ChangePasswordRequest,
@@ -280,5 +280,7 @@ async def change_password(
     current_user.password_hash = hash_password(body.new_password)
     await db.commit()
 
-    logger.info(f"[PUT /api/v1/auth/change-password] Password changed for user {current_user.email}")
+    logger.info(
+        f"[PUT /api/v1/auth/change-password] Password changed for user {current_user.email}"
+    )
     return {"message": "Password changed successfully"}

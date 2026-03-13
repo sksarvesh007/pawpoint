@@ -16,6 +16,8 @@ from app.models.chat_analysis import ChatAnalysis
 from app.models.clinic import Clinic
 from app.models.conversation import Conversation
 from app.models.message import Message
+from app.models.message_log import MessageLog
+from app.models.notification import Notification, NotificationPriority, NotificationType
 
 
 async def setup_auth(db: AsyncSession, client: AsyncClient) -> Clinic:
@@ -123,6 +125,46 @@ async def create_message(
     db.add(msg)
     await db.flush()
     return msg
+
+
+async def create_message_log(
+    db: AsyncSession,
+    clinic_id: uuid.UUID,
+    **kwargs: object,
+) -> MessageLog:
+    """Create a MessageLog with sensible defaults."""
+    defaults: dict[str, object] = {
+        "clinic_id": clinic_id,
+        "channel": "sms",
+        "recipient": "+15551234567",
+        "body": "Test message body",
+        "status": "delivered",
+    }
+    defaults.update(kwargs)
+    log = MessageLog(**defaults)
+    db.add(log)
+    await db.flush()
+    return log
+
+
+async def create_notification(
+    db: AsyncSession,
+    clinic_id: uuid.UUID,
+    **kwargs: object,
+) -> Notification:
+    """Create a Notification with sensible defaults."""
+    defaults: dict[str, object] = {
+        "clinic_id": clinic_id,
+        "type": NotificationType.APPOINTMENT_REQUEST,
+        "priority": NotificationPriority.NORMAL,
+        "title": "New appointment request",
+        "message": "A new appointment was booked via voice AI.",
+    }
+    defaults.update(kwargs)
+    notif = Notification(**defaults)
+    db.add(notif)
+    await db.flush()
+    return notif
 
 
 async def create_chat_analysis(

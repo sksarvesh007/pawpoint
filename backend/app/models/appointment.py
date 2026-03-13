@@ -144,7 +144,11 @@ class Appointment(Base, TimestampMixin, SoftDeleteMixin, PIMSSyncMixin):
     # Reminder tracking
     reminder_sent_at: Mapped[datetime | None] = mapped_column(
         nullable=True,
-        comment="When reminder was sent",
+        comment="When 24h reminder was sent",
+    )
+    reminder_2h_sent_at: Mapped[datetime | None] = mapped_column(
+        nullable=True,
+        comment="When 2h reminder was sent",
     )
     confirmation_received_at: Mapped[datetime | None] = mapped_column(
         nullable=True,

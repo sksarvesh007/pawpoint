@@ -11,6 +11,8 @@ from app.models.chat_analysis import ChatAnalysis
 from app.models.clinic import Clinic
 from app.models.conversation import Conversation
 from app.models.message import Message
+from app.models.message_log import MessageLog
+from app.models.notification import Notification
 from app.models.patient import Patient
 from app.models.pims_sync_log import PIMSSyncLog
 from app.models.provider import Provider
@@ -24,6 +26,8 @@ __all__ = [
     "Clinic",
     "Conversation",
     "Message",
+    "MessageLog",
+    "Notification",
     "PIMSSyncLog",
     "PIMSSyncMixin",
     "Patient",

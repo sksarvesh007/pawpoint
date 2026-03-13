@@ -65,9 +65,7 @@ async def test_get_layout_returns_defaults(
 
 
 @pytest.mark.asyncio
-async def test_save_layout(
-    client: AsyncClient, db_session: AsyncSession
-) -> None:
+async def test_save_layout(client: AsyncClient, db_session: AsyncSession) -> None:
     """PUT a custom layout, then GET it back and verify it persists."""
     await setup_auth(db_session, client)
 

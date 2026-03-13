@@ -106,6 +106,13 @@ class Patient(Base, TimestampMixin, SoftDeleteMixin, PIMSSyncMixin):
     )
     owner_address: Mapped[str | None] = mapped_column(Text, nullable=True)
 
+    # Communication preferences
+    communication_opt_out: Mapped[dict | None] = mapped_column(
+        JSONB,
+        nullable=True,
+        comment='Opt-out flags per channel, e.g. {"sms": true, "email": true}',
+    )
+
     # PIMS-specific data (stored as JSON for flexibility)
     pims_metadata: Mapped[dict | None] = mapped_column(
         JSONB,

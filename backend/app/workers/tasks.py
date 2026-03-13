@@ -751,6 +751,422 @@ def sync_all_clinics_appointments() -> dict:
     return asyncio.run(_sync_all_clinics("appointments"))
 
 
+@app.task(bind=True, max_retries=3, default_retry_delay=60, acks_late=True)
+def send_appointment_reminders(self) -> dict:
+    """Send 24h and 2h appointment reminders via SMS and email."""
+    return asyncio.run(_send_appointment_reminders(self))
+
+
+async def _send_appointment_reminders(task) -> dict:
+    """Async implementation of appointment reminder delivery.
+
+    Query sequence per get_db_session call:
+      1. SELECT appointments in 24h window (reminder_sent_at IS NULL)
+      2. SELECT clinic for each appointment
+      3. SELECT patient (if patient_id set)
+      4. SELECT appointments in 2h window (reminder_2h_sent_at IS NULL)
+    """
+    from sqlalchemy import and_, select
+
+    from app.db import get_db_session
+    from app.models.appointment import Appointment
+    from app.models.clinic import Clinic
+    from app.models.patient import Patient
+    from app.services.email import EmailService
+    from app.services.sms import SMSService
+
+    sms_svc = SMSService()
+    email_svc = EmailService()
+    sent_count = 0
+    now = datetime.now(UTC)
+    window_24h_start = now + timedelta(hours=23)
+    window_24h_end = now + timedelta(hours=25)
+    window_2h_start = now + timedelta(hours=1, minutes=30)
+    window_2h_end = now + timedelta(hours=2, minutes=30)
+
+    async with get_db_session() as db:
+        # --- 24h reminders ---
+        result_24h = await db.execute(
+            select(Appointment).where(
+                and_(
+                    Appointment.start_time >= window_24h_start,
+                    Appointment.start_time <= window_24h_end,
+                    Appointment.reminder_sent_at.is_(None),
+                    Appointment.deleted_at.is_(None),
+                )
+            )
+        )
+        appts_24h = result_24h.scalars().all()
+
+        for appt in appts_24h:
+            clinic_result = await db.execute(
+                select(Clinic).where(Clinic.id == appt.clinic_id)
+            )
+            clinic = clinic_result.scalar_one_or_none()
+            if not clinic:
+                continue
+
+            voice_settings = clinic.voice_settings or {}
+            if not voice_settings.get("reminder_24h_enabled", True):
+                continue
+
+            patient = None
+            if appt.patient_id:
+                patient_result = await db.execute(
+                    select(Patient).where(Patient.id == appt.patient_id)
+                )
+                patient = patient_result.scalar_one_or_none()
+
+            opt_out = (patient.communication_opt_out or {}) if patient else {}
+            date_str = appt.start_time.strftime("%B %d, %Y")
+            time_str = appt.start_time.strftime("%I:%M %p")
+
+            if patient and patient.owner_phone and not opt_out.get("sms"):
+                await sms_svc.send_appointment_reminder(
+                    phone=patient.owner_phone,
+                    clinic_name=clinic.name,
+                    pet_name=patient.name,
+                    date=date_str,
+                    time=time_str,
+                    hours_until=24,
+                )
+                sent_count += 1
+
+            if patient and patient.owner_email and not opt_out.get("email"):
+                await email_svc.send_appointment_reminder(
+                    email=patient.owner_email,
+                    clinic_name=clinic.name,
+                    clinic_phone=clinic.phone,
+                    pet_name=patient.name,
+                    owner_name=f"{patient.owner_first_name} {patient.owner_last_name}",
+                    date=date_str,
+                    time=time_str,
+                    hours_until=24,
+                )
+                sent_count += 1
+
+            appt.reminder_sent_at = now
+            await db.commit()
+
+        # --- 2h reminders ---
+        result_2h = await db.execute(
+            select(Appointment).where(
+                and_(
+                    Appointment.start_time >= window_2h_start,
+                    Appointment.start_time <= window_2h_end,
+                    Appointment.reminder_2h_sent_at.is_(None),
+                    Appointment.deleted_at.is_(None),
+                )
+            )
+        )
+        appts_2h = result_2h.scalars().all()
+
+        for appt in appts_2h:
+            clinic_result = await db.execute(
+                select(Clinic).where(Clinic.id == appt.clinic_id)
+            )
+            clinic = clinic_result.scalar_one_or_none()
+            if not clinic:
+                continue
+
+            voice_settings = clinic.voice_settings or {}
+            if not voice_settings.get("reminder_2h_enabled", True):
+                continue
+
+            patient = None
+            if appt.patient_id:
+                patient_result = await db.execute(
+                    select(Patient).where(Patient.id == appt.patient_id)
+                )
+                patient = patient_result.scalar_one_or_none()
+
+            opt_out = (patient.communication_opt_out or {}) if patient else {}
+            date_str = appt.start_time.strftime("%B %d, %Y")
+            time_str = appt.start_time.strftime("%I:%M %p")
+
+            if patient and patient.owner_phone and not opt_out.get("sms"):
+                await sms_svc.send_appointment_reminder(
+                    phone=patient.owner_phone,
+                    clinic_name=clinic.name,
+                    pet_name=patient.name,
+                    date=date_str,
+                    time=time_str,
+                    hours_until=2,
+                )
+                sent_count += 1
+
+            if patient and patient.owner_email and not opt_out.get("email"):
+                await email_svc.send_appointment_reminder(
+                    email=patient.owner_email,
+                    clinic_name=clinic.name,
+                    clinic_phone=clinic.phone,
+                    pet_name=patient.name,
+                    owner_name=f"{patient.owner_first_name} {patient.owner_last_name}",
+                    date=date_str,
+                    time=time_str,
+                    hours_until=2,
+                )
+                sent_count += 1
+
+            appt.reminder_2h_sent_at = now
+            await db.commit()
+
+    logger.info(f"Appointment reminders sent: {sent_count}")
+    return {"sent": sent_count}
+
+
+@app.task(acks_late=True)
+def process_voice_queues() -> dict:
+    """Drain Redis voice queues (booking, medication, message, emergency, missed_transfer)."""
+    return asyncio.run(_process_voice_queues())
+
+
+async def _process_voice_queues() -> dict:
+    """Async implementation of voice queue processing.
+
+    Drains the booking_queue and other voice agent queues from Redis.
+    Items that fail processing are re-queued to the tail to prevent data loss.
+
+    Queue processing order:
+      1. booking_queue  → creates Appointment, sends SMS/email confirmation
+      2. medication_queue, message_queue, emergency_queue, missed_transfer_queue
+         → creates Notification for staff review
+    """
+    import json
+    from uuid import UUID
+
+    import redis.asyncio as aioredis
+    from sqlalchemy import select
+
+    from app.core.config import settings
+    from app.db import get_db_session
+    from app.models.appointment import Appointment, AppointmentSource
+    from app.models.message_log import MessageLog
+    from app.models.notification import (
+        Notification,
+        NotificationPriority,
+        NotificationType,
+    )
+    from app.services.email import EmailService
+    from app.services.sms import SMSService
+
+    redis = aioredis.Redis.from_url(settings.redis_url)
+    booking_count = 0
+    sms_svc = SMSService()
+    email_svc = EmailService()
+
+    try:
+        # --- booking_queue ---
+        booking_items: list[str] = []
+        while True:
+            raw = await redis.lpop("booking_queue")
+            if not raw:
+                break
+            booking_items.append(raw if isinstance(raw, str) else raw.decode())
+
+        for raw in booking_items:
+            try:
+                item = json.loads(raw)
+                clinic_id_str = item.get("clinic_id")
+                if not clinic_id_str:
+                    logger.warning("booking_queue item missing clinic_id, skipping")
+                    continue
+
+                clinic_uuid = UUID(clinic_id_str)
+                date_str = item.get("date", "")
+                time_str = item.get("time", "00:00")
+                try:
+                    from datetime import datetime as dt
+
+                    start_dt = dt.strptime(
+                        f"{date_str} {time_str}", "%Y-%m-%d %H:%M"
+                    ).replace(tzinfo=UTC)
+                except ValueError:
+                    start_dt = datetime.now(UTC) + timedelta(days=1)
+
+                end_dt = start_dt + timedelta(minutes=30)
+                pet_name = item.get("pet_name", "")
+                owner_name = item.get("owner_name", "")
+                reason = item.get("reason")
+                phone = item.get("phone", "")
+                owner_email = item.get("owner_email")
+                confirmation_code = item.get("id", "VOICE")[:8].upper()
+
+                async with get_db_session() as db:
+                    from app.models.clinic import Clinic
+
+                    # Fetch clinic for branding
+                    clinic_result = await db.execute(
+                        select(Clinic).where(Clinic.id == clinic_uuid)
+                    )
+                    clinic = clinic_result.scalar_one_or_none()
+                    clinic_name = clinic.name if clinic else "Your Clinic"
+                    clinic_phone = clinic.phone if clinic else None
+
+                    appt = Appointment(
+                        clinic_id=clinic_uuid,
+                        start_time=start_dt,
+                        end_time=end_dt,
+                        reason=reason,
+                        source=AppointmentSource.VOICE_AI,
+                    )
+                    db.add(appt)
+                    await db.flush()
+
+                    # SMS confirmation
+                    if phone:
+                        sms_result = await sms_svc.send_appointment_confirmation(
+                            phone=phone,
+                            clinic_name=clinic_name,
+                            pet_name=pet_name,
+                            date=date_str,
+                            time=time_str,
+                            confirmation_code=confirmation_code,
+                        )
+                        if (
+                            sms_result.get("status") == "failed"
+                            or sms_result.get("sid") is None
+                        ):
+                            db.add(
+                                MessageLog(
+                                    clinic_id=clinic_uuid,
+                                    channel="sms",
+                                    recipient=phone,
+                                    body=f"Appointment confirmation for {pet_name}",
+                                    status="failed",
+                                    error_message=sms_result.get("error"),
+                                    related_type="appointment_confirmation",
+                                    related_id=appt.id,
+                                )
+                            )
+                        else:
+                            db.add(
+                                MessageLog(
+                                    clinic_id=clinic_uuid,
+                                    channel="sms",
+                                    recipient=phone,
+                                    body=f"Appointment confirmation for {pet_name}",
+                                    status="sent",
+                                    external_id=sms_result.get("sid"),
+                                    related_type="appointment_confirmation",
+                                    related_id=appt.id,
+                                )
+                            )
+
+                    # Email confirmation
+                    if owner_email:
+                        email_result = await email_svc.send_appointment_confirmation(
+                            email=owner_email,
+                            clinic_name=clinic_name,
+                            clinic_phone=clinic_phone,
+                            pet_name=pet_name,
+                            owner_name=owner_name,
+                            date=date_str,
+                            time=time_str,
+                            confirmation_code=confirmation_code,
+                            reason=reason,
+                        )
+                        db.add(
+                            MessageLog(
+                                clinic_id=clinic_uuid,
+                                channel="email",
+                                recipient=owner_email,
+                                body=f"Appointment confirmation for {pet_name}",
+                                status=email_result.get("status", "sent"),
+                                external_id=email_result.get("message_id"),
+                                related_type="appointment_confirmation",
+                                related_id=appt.id,
+                            )
+                        )
+
+                    # Staff notification
+                    db.add(
+                        Notification(
+                            clinic_id=clinic_uuid,
+                            type=NotificationType.APPOINTMENT_REQUEST,
+                            priority=NotificationPriority.NORMAL,
+                            title=f"New appointment: {pet_name}",
+                            message=f"{owner_name} booked {pet_name} on {date_str} at {time_str} via voice AI.",
+                        )
+                    )
+
+                    await db.commit()
+
+                booking_count += 1
+                logger.info(f"Processed booking: {pet_name} on {date_str}")
+
+            except Exception as e:
+                logger.error(f"Failed to process booking_queue item, re-queuing: {e}")
+                await redis.rpush("booking_queue", raw)
+
+        # --- other queues (create staff notifications) ---
+        other_queues = [
+            (
+                "medication_queue",
+                NotificationType.MEDICATION_REQUEST,
+                NotificationPriority.HIGH,
+            ),
+            (
+                "message_queue",
+                NotificationType.CALLBACK_NEEDED,
+                NotificationPriority.NORMAL,
+            ),
+            (
+                "emergency_queue",
+                NotificationType.EMERGENCY_CALL,
+                NotificationPriority.URGENT,
+            ),
+            (
+                "missed_transfer_queue",
+                NotificationType.MISSED_TRANSFER,
+                NotificationPriority.HIGH,
+            ),
+        ]
+
+        for queue_name, notif_type, priority in other_queues:
+            items: list[str] = []
+            while True:
+                raw = await redis.lpop(queue_name)
+                if not raw:
+                    break
+                items.append(raw if isinstance(raw, str) else raw.decode())
+
+            for raw in items:
+                try:
+                    item = json.loads(raw)
+                    clinic_id_str = item.get("clinic_id")
+                    if not clinic_id_str:
+                        continue
+                    clinic_uuid = UUID(clinic_id_str)
+                    async with get_db_session() as db:
+                        db.add(
+                            Notification(
+                                clinic_id=clinic_uuid,
+                                type=notif_type,
+                                priority=priority,
+                                title=item.get(
+                                    "title", queue_name.replace("_", " ").title()
+                                ),
+                                message=item.get(
+                                    "message", f"New item from {queue_name}"
+                                ),
+                                metadata_json=item,
+                            )
+                        )
+                        await db.commit()
+                except Exception as e:
+                    logger.error(
+                        f"Failed to process {queue_name} item, re-queuing: {e}"
+                    )
+                    await redis.rpush(queue_name, raw)
+
+    finally:
+        await redis.aclose()
+
+    logger.info(f"Voice queues processed: {booking_count} bookings")
+    return {"bookings": booking_count}
+
+
 async def _sync_all_clinics(entity: str) -> dict:
     """Enqueue sync tasks for all PIMS-connected clinics."""
     from sqlalchemy import select

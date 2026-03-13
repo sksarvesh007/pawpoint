@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import (
     async_sessionmaker,
     create_async_engine,
 )
+from sqlalchemy.pool import NullPool
 
 from app.api.v1.endpoints import auth as auth_module
 from app.core.config import get_settings
@@ -62,28 +63,27 @@ async def disable_rate_limiting() -> AsyncGenerator[None]:
 # =============================================================================
 
 
-@pytest_asyncio.fixture(scope="function")
+@pytest_asyncio.fixture(scope="session", loop_scope="session")
 async def test_engine() -> AsyncGenerator[AsyncEngine]:
     """
-    Create a test-specific async engine for each test function.
+    Session-scoped engine: create all tables once, drop at session end.
 
-    This avoids event loop issues caused by reusing the app's singleton engine,
-    which gets bound to a different event loop at import time.
+    Uses NullPool to avoid connection pool interference between tests.
+    Each connection is created fresh and truly closed when returned,
+    eliminating deadlocks from lingering pool connections during drop_all.
     """
     assert settings.database_url is not None, "DATABASE_URL must be set for tests"
     engine = create_async_engine(
         settings.database_url,
         echo=False,
-        pool_pre_ping=True,
+        poolclass=NullPool,
     )
 
-    # Create tables once at the start
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
     yield engine
 
-    # Cleanup: drop tables and dispose engine
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
     await engine.dispose()

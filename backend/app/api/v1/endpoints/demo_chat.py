@@ -178,6 +178,39 @@ async def stream_demo_response(
             yield f"data: {json.dumps({'type': 'error', 'message': 'Something went wrong. Please try again later.'})}\n\n"
 
 
+DEMO_SCENARIOS = [
+    {
+        "id": "routine_scheduling",
+        "label": "Routine Scheduling",
+        "description": "Book a wellness exam for a healthy pet",
+    },
+    {
+        "id": "emergency",
+        "label": "Emergency Situation",
+        "description": "A pet is experiencing an urgent medical issue",
+    },
+    {
+        "id": "medication_refill",
+        "label": "Medication Refill",
+        "description": "Request a prescription refill for a chronic condition",
+    },
+    {
+        "id": "after_hours",
+        "label": "After-Hours Inquiry",
+        "description": "Calling outside of normal business hours",
+    },
+]
+
+
+@router.get(
+    "/demo-clinic/scenarios",
+    summary="List available demo scenarios",
+)
+async def list_demo_scenarios() -> list[dict]:
+    """Return the list of available demo chat scenarios."""
+    return DEMO_SCENARIOS
+
+
 @router.post(
     "/demo-clinic/chat/stream",
     status_code=status.HTTP_200_OK,
