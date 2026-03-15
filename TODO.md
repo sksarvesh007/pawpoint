@@ -84,7 +84,7 @@ Remaining work mapped to the [PawPoint Checklist](PawPoint%20Checklist.md). Item
 - [x] Create `MessageLog` model for tracking all sent messages
 - [x] Log SMS delivery status (success/failure)
 - [x] Add opt-out handling / consent tracking (`communication_opt_out` JSONB on Patient model, checked in reminder task)
-- [ ] Add SMS sending after voice agent booking (real-time integration)
+- [x] Add SMS sending after voice agent booking (booking_queue consumer in process_voice_queues sends SMS/email confirmation immediately after booking)
 
 ---
 
@@ -137,8 +137,8 @@ Remaining work mapped to the [PawPoint Checklist](PawPoint%20Checklist.md). Item
 - [x] Add `PUT /api/v1/notifications/{id}/resolve` endpoint
 - [x] Build Inbox page with priority color coding, type labels, time-ago display, filters
 - [x] Create frontend API client (`notifications.ts`)
-- [ ] Add real-time notification delivery (WebSocket or SSE)
-- [x] Add notification badge/count to dashboard sidebar (polls every 30s)
+- [x] Add real-time notification delivery (`GET /api/v1/notifications/stream` SSE endpoint; frontend Sidebar uses EventSource with 30s polling fallback)
+- [x] Add notification badge/count to dashboard sidebar (EventSource primary, 30s polling fallback)
 
 ---
 
@@ -162,7 +162,7 @@ Remaining work mapped to the [PawPoint Checklist](PawPoint%20Checklist.md). Item
 - [x] Add `preferred_provider` / `provider_name` parameter to `book_appointment()` and `book_appointment_pims()`
 - [x] Add `preferred_provider` parameter to `book_appointment_tool()` in voice agent
 - [x] Pass provider to PIMS adapter `create_appointment()`
-- [ ] If preferred doctor is unavailable for requested slot, offer alternatives
+- [x] If preferred doctor is unavailable for requested slot, offer alternatives (next 2 business days same doctor + same-day other doctors)
 
 ---
 
@@ -377,9 +377,9 @@ Agent code is complete. Deployment config exists but is untested.
 
 ### Backend — Missing test files
 
-- [ ] `tests/api/v1/test_ai_chat.py`
-- [ ] `tests/api/v1/test_clinic_ai.py`
-- [ ] `tests/api/v1/test_clinic_ai_streaming.py`
+- [x] `tests/api/v1/test_ai_chat.py` (4 tests)
+- [x] `tests/api/v1/test_clinic_ai.py` (5 tests)
+- [x] `tests/api/v1/test_clinic_ai_streaming.py` (4 tests)
 - [x] `tests/api/v1/test_demo_chat.py` (5 tests)
 - [x] `tests/api/v1/test_notifications.py` (8 tests)
 - [x] `tests/api/v1/test_communications.py` (5 tests)
@@ -404,7 +404,7 @@ Database migrations for new models created during Phases 2-3:
 - [x] `message_logs` table (MessageLog model)
 - [x] `notifications` table (Notification model)
 - [x] `reminder_2h_sent_at` column on `appointments` table
-- [ ] `communication_opt_out` column on `patients` table
+- [x] `communication_opt_out` column on `patients` table (migration: 20260312_add_communication_opt_out_to_patients.py)
 
 ---
 

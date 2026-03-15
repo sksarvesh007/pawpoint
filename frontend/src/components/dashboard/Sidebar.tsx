@@ -46,6 +46,7 @@ export function Sidebar({
   const [clinicSlug, setClinicSlug] = useState<string>("");
   const [loggingOut, setLoggingOut] = useState(false);
   const [logoutError, setLogoutError] = useState<string | null>(null);
+  const [unreadCount, setUnreadCount] = useState<number>(0);
 
   useEffect(() => {
     if (propClinicName) {
@@ -71,6 +72,51 @@ export function Sidebar({
     };
   }, [propClinicName]);
 
+  useEffect(() => {
+    let es: EventSource | null = null;
+    let pollInterval: ReturnType<typeof setInterval> | null = null;
+
+    const startPolling = () => {
+      if (pollInterval) return;
+      pollInterval = setInterval(async () => {
+        try {
+          const res = await fetch("/api/v1/notifications/unread-count");
+          if (res.ok) {
+            const data = (await res.json()) as { unread_count: number };
+            setUnreadCount(data.unread_count);
+          }
+        } catch {
+          // ignore
+        }
+      }, 30_000);
+    };
+
+    const startSSE = () => {
+      es = new EventSource("/api/v1/notifications/stream");
+      es.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data) as { unread_count: number };
+          setUnreadCount(data.unread_count);
+        } catch {
+          // ignore malformed events
+        }
+      };
+      es.onerror = () => {
+        es?.close();
+        es = null;
+        // Fall back to 30s polling on SSE error
+        startPolling();
+      };
+    };
+
+    startSSE();
+
+    return () => {
+      es?.close();
+      if (pollInterval) clearInterval(pollInterval);
+    };
+  }, []);
+
   const handleLogout = async () => {
     setLoggingOut(true);
     setLogoutError(null);
@@ -89,8 +135,8 @@ export function Sidebar({
     {
       title: null, // No title for main items
       items: [
-        { href: "/dashboard", label: "Home", icon: LayoutDashboard },
-        { href: "/dashboard/inbox", label: "Inbox", icon: Inbox },
+        { href: "/dashboard", label: "Home", icon: LayoutDashboard, badge: null as number | null },
+        { href: "/dashboard/inbox", label: "Inbox", icon: Inbox, badge: unreadCount > 0 ? unreadCount : null },
       ],
     },
     {
@@ -181,6 +227,7 @@ export function Sidebar({
                   const isActive = disableLinks
                     ? sectionIndex === 0 && itemIndex === 0
                     : pathname === item.href;
+                  const badge = "badge" in item ? item.badge : null;
                   const content = (
                     <>
                       <div
@@ -193,12 +240,17 @@ export function Sidebar({
                         <item.icon className="w-4 h-4" strokeWidth={2.5} />
                       </div>
                       <span
-                        className={`text-[13px] font-medium ${
+                        className={`flex-1 text-[13px] font-medium ${
                           isActive ? "text-[#1D3533] dark:text-white" : "text-[#1D3533]/70 dark:text-zinc-400"
                         }`}
                       >
                         {item.label}
                       </span>
+                      {badge !== null && badge > 0 && (
+                        <span className="ml-auto min-w-[20px] h-5 px-1.5 flex items-center justify-center rounded-full bg-[#3EB5B0] text-white text-[10px] font-bold leading-none">
+                          {badge > 99 ? "99+" : badge}
+                        </span>
+                      )}
                     </>
                   );
 

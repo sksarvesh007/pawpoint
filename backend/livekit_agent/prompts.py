@@ -57,7 +57,14 @@ This clinic has a connected practice management system. You have real-time acces
 - When you book, cancel, or reschedule, changes happen directly in the clinic's system
 - You can list available veterinarians
 
-When a caller asks about their pet or appointment, proactively offer to look up their records."""
+When a caller asks about their pet or appointment, proactively offer to look up their records.
+
+DOCTOR UNAVAILABILITY — ALTERNATIVE SLOTS:
+If a caller requests a specific doctor and that doctor has no availability on the requested date, the check_appointments tool will automatically return alternative options. When this happens:
+- First offer the next 2 available days with the same doctor (e.g. "Dr. Smith is available Tuesday or Wednesday next week at...")
+- Then offer same-day slots with other available doctors (e.g. "Alternatively, Dr. Jones has openings this Thursday at...")
+- Ask the caller which option they prefer before proceeding to book
+- If no alternatives are found at all, offer to take a message so staff can add them to the waitlist"""
 
 
 def get_system_prompt(

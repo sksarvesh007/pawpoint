@@ -354,17 +354,70 @@ def _compute_slots_from_appointments(
     return available
 
 
+def _next_business_days(start: date, count: int) -> list[date]:
+    """Return the next `count` business days (Mon-Fri) after `start` (exclusive)."""
+    results: list[date] = []
+    current = start
+    while len(results) < count:
+        current = current + timedelta(days=1)
+        if current.weekday() < 5:  # 0=Mon … 4=Fri
+            results.append(current)
+    return results
+
+
+def _format_slots_for_voice(slots_by_date: dict[date, list[str]]) -> str:
+    """Format a mapping of date → time-strings into a voice-readable sentence."""
+    parts: list[str] = []
+    for d, times in slots_by_date.items():
+        display = times[:3]
+        time_str = ", ".join(display[:-1]) + (
+            f", or {display[-1]}" if len(display) > 1 else display[0]
+        )
+        parts.append(f"{d.strftime('%A, %B %d')} at {time_str}")
+    return "; or ".join(parts)
+
+
+async def _get_formatted_slots(
+    adapter: IPIMSAdapter,
+    provider_pims_id: str,
+    target_date: date,
+) -> list[str]:
+    """Fetch slots for a single provider+date and return voice-formatted times."""
+    slots = await adapter.get_available_slots(provider_pims_id, target_date)
+    formatted: list[str] = []
+    seen: set[str] = set()
+    for slot in slots:
+        time_key = slot.start_time.strftime("%H:%M")
+        if time_key not in seen:
+            seen.add(time_key)
+            minute = slot.start_time.minute
+            formatted.append(
+                slot.start_time.strftime("%-I:%M %p" if minute else "%-I %p")
+            )
+    return formatted
+
+
 async def check_available_appointments_pims(
     adapter: IPIMSAdapter,
     date_str: str,
     cached_providers: list[PIMSProvider] | None = None,
+    preferred_provider: PIMSProvider | None = None,
 ) -> str:
     """Check available appointment slots using PIMS adapter.
+
+    When ``preferred_provider`` is given and has no slots on ``date_str``, the
+    function automatically fetches alternatives:
+
+    1. The same provider on each of the next 2 business days.
+    2. Same-day slots with any other active provider.
+
+    If nothing at all is available, returns a helpful hold/waitlist message.
 
     Args:
         adapter: PIMS adapter instance
         date_str: Date to check (YYYY-MM-DD format)
         cached_providers: Pre-cached provider list for slot lookup
+        preferred_provider: Optional specific provider the caller wants
 
     Returns:
         Voice-friendly string with available slots
@@ -386,7 +439,90 @@ async def check_available_appointments_pims(
     if target_date < datetime.now().date():
         return "That date is in the past. Would you like to book for a future date instead?"
 
-    # If we have cached providers, use get_available_slots per provider
+    # ---------------------------------------------------------------------------
+    # Provider-specific request
+    # ---------------------------------------------------------------------------
+    if preferred_provider is not None:
+        provider_name = (
+            f"Dr. {preferred_provider.first_name} {preferred_provider.last_name}"
+        )
+        slots_today = await _get_formatted_slots(
+            adapter, preferred_provider.pims_id, target_date
+        )
+
+        if slots_today:
+            display = slots_today[:5]
+            slots_text = ", ".join(display[:-1]) + f", or {display[-1]}"
+            suffix = ", and more" if len(slots_today) > 5 else ""
+            return (
+                f"{provider_name} has openings on {target_date.strftime('%B %d')} "
+                f"at {slots_text}{suffix}. What time works best for you?"
+            )
+
+        # No slots for the preferred provider on the requested day — find alternatives
+        alt_parts: list[str] = []
+
+        # 1) Same provider, next 2 business days
+        same_provider_slots: dict[date, list[str]] = {}
+        for next_day in _next_business_days(target_date, 2):
+            next_slots = await _get_formatted_slots(
+                adapter, preferred_provider.pims_id, next_day
+            )
+            if next_slots:
+                same_provider_slots[next_day] = next_slots
+
+        if same_provider_slots:
+            alt_parts.append(
+                f"{provider_name} is available on {_format_slots_for_voice(same_provider_slots)}"
+            )
+
+        # 2) Same day, other active providers
+        other_providers = [
+            p
+            for p in (cached_providers or [])
+            if p.pims_id != preferred_provider.pims_id and p.is_active
+        ]
+        other_provider_slots: dict[str, list[str]] = {}  # provider_name → times
+        for other in other_providers[:3]:  # cap at 3 to limit latency
+            other_slots = await _get_formatted_slots(
+                adapter, other.pims_id, target_date
+            )
+            if other_slots:
+                other_name = f"Dr. {other.first_name} {other.last_name}"
+                other_provider_slots[other_name] = other_slots
+
+        if other_provider_slots:
+            same_day_parts: list[str] = []
+            for pname, times in other_provider_slots.items():
+                display = times[:3]
+                time_str = ", ".join(display[:-1]) + (
+                    f", or {display[-1]}" if len(display) > 1 else display[0]
+                )
+                same_day_parts.append(
+                    f"{pname} on {target_date.strftime('%B %d')} at {time_str}"
+                )
+            alt_parts.append(
+                "As an alternative on the same day: " + "; or ".join(same_day_parts)
+            )
+
+        if not alt_parts:
+            return (
+                f"I'm sorry, {provider_name} doesn't have any availability in the "
+                f"next few days. You're welcome to call back closer to your preferred "
+                f"date, or I can take a message so our staff can add you to the waitlist. "
+                f"Would either of those work for you?"
+            )
+
+        return (
+            f"I'm sorry, {provider_name} isn't available on "
+            f"{target_date.strftime('%B %d')}. "
+            + " ".join(alt_parts)
+            + " Would any of these work for you?"
+        )
+
+    # ---------------------------------------------------------------------------
+    # No preferred provider — return general availability
+    # ---------------------------------------------------------------------------
     if cached_providers:
         all_slots: list[str] = []
         seen_times: set[str] = set()

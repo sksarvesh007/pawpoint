@@ -1,8 +1,11 @@
 """Notification API endpoints for staff inbox."""
 
+import asyncio
+import json
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.dependencies import get_current_clinic, get_current_user
@@ -17,6 +20,47 @@ from app.schemas.notification import (
 from app.services.notification import NotificationService
 
 router = APIRouter()
+
+
+@router.get(
+    "/stream",
+    summary="Stream unread notification count via SSE",
+    response_class=StreamingResponse,
+)
+async def stream_notifications(
+    db: AsyncSession = Depends(get_db),
+    current_clinic: Clinic = Depends(get_current_clinic),
+) -> StreamingResponse:
+    """Stream real-time unread notification count via Server-Sent Events."""
+    clinic_id = current_clinic.id
+
+    async def event_generator():
+        service = NotificationService(db)
+        heartbeat_counter = 0
+        try:
+            while True:
+                # Emit unread count every 3 seconds
+                count = await service.unread_count(clinic_id)
+                yield f"data: {json.dumps({'unread_count': count})}\n\n"
+
+                heartbeat_counter += 1
+                # Every 5 iterations (15s) send a heartbeat comment
+                if heartbeat_counter >= 5:
+                    yield ": heartbeat\n\n"
+                    heartbeat_counter = 0
+
+                await asyncio.sleep(3)
+        except asyncio.CancelledError:
+            pass
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+        },
+    )
 
 
 @router.get(
