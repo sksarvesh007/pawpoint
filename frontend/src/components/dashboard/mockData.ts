@@ -91,6 +91,7 @@ export const MOCK_ANALYTICS: DashboardAnalytics = {
     sync_success_rate: 98.5,
     total_syncs_today: 234,
     failed_syncs_today: 3,
+    sync_trend: [],
   },
   sentiment: {
     positive_calls: 98,
