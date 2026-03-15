@@ -144,6 +144,24 @@ class EnhancedChatAnalytics(BaseModel):
     analyzed_count: int = 0
 
 
+class MissedCallDayTrend(BaseModel):
+    """Single day of missed call trend data."""
+
+    date: str
+    count: int
+
+
+class MissedCallMetrics(BaseModel):
+    """Missed call baseline tracking metrics."""
+
+    total_missed: int
+    missed_by_day: list[MissedCallDayTrend]
+    missed_rate: float  # percentage of total calls that were missed
+    vs_previous_period: (
+        float | None
+    )  # % change vs same-length prior period (positive = worse)
+
+
 class DashboardAnalytics(BaseModel):
     """Complete dashboard analytics."""
 

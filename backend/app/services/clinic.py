@@ -26,6 +26,12 @@ DEFAULT_VOICE_SETTINGS: dict[str, Any] = {
         "allow_rescheduling": True,
         "booking_buffer_hours": 2,
     },
+    "call_flow_rules": {
+        "transfer_failure_action": "take_message",
+        "max_hold_seconds": 60,
+        "voicemail_enabled": True,
+        "callback_requests_enabled": True,
+    },
     "version": "1.0",
 }
 
@@ -156,6 +162,15 @@ class ClinicService:
                 "allow_cancellation": settings.appointment_preferences.allow_cancellation,
                 "allow_rescheduling": settings.appointment_preferences.allow_rescheduling,
                 "booking_buffer_hours": settings.appointment_preferences.booking_buffer_hours,
+            }
+
+        # Update call flow rules if provided
+        if settings.call_flow_rules:
+            updated_settings["call_flow_rules"] = {
+                "transfer_failure_action": settings.call_flow_rules.transfer_failure_action,
+                "max_hold_seconds": settings.call_flow_rules.max_hold_seconds,
+                "voicemail_enabled": settings.call_flow_rules.voicemail_enabled,
+                "callback_requests_enabled": settings.call_flow_rules.callback_requests_enabled,
             }
 
         # Preserve version field

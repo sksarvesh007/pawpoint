@@ -145,6 +145,18 @@ export interface CallLogDetail {
   actions_taken: string[];
 }
 
+export interface MissedCallDayTrend {
+  date: string;
+  count: number;
+}
+
+export interface MissedCallMetrics {
+  total_missed: number;
+  missed_by_day: MissedCallDayTrend[];
+  missed_rate: number;
+  vs_previous_period: number | null;
+}
+
 export interface CallLogsResponse {
   items: CallLogSummary[];
   total: number;

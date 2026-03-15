@@ -63,7 +63,13 @@ async def upload_recording(
 
     # Validate content type
     content_type = file.content_type or ""
-    allowed_types = {"audio/wav", "audio/x-wav", "audio/wave", "audio/mpeg", "audio/mp3"}
+    allowed_types = {
+        "audio/wav",
+        "audio/x-wav",
+        "audio/wave",
+        "audio/mpeg",
+        "audio/mp3",
+    }
     if content_type not in allowed_types:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

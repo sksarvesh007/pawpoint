@@ -119,7 +119,7 @@ async def test_save_pims_credentials_invalid_type(
             )
             # If we get a response, it must not be 200
             assert response.status_code != 200
-        except Exception:
+        except Exception:  # noqa: S110
             # An unhandled ValueError propagating through ASGI middleware is
             # also an acceptable signal that the input was rejected.
             pass
@@ -141,9 +141,7 @@ async def test_test_connection_no_pims(
 
 
 @pytest.mark.asyncio
-async def test_disconnect_pims(
-    client: AsyncClient, db_session: AsyncSession
-) -> None:
+async def test_disconnect_pims(client: AsyncClient, db_session: AsyncSession) -> None:
     """DELETE /api/v1/pims/disconnect clears PIMS config and returns 200."""
     await setup_auth(db_session, client)
 
@@ -198,7 +196,10 @@ async def test_trigger_sync_invalid_entity(
     assert response.status_code == 400
     data = response.json()
     assert "detail" in data
-    assert "invalid_entity" in data["detail"].lower() or "invalid" in data["detail"].lower()
+    assert (
+        "invalid_entity" in data["detail"].lower()
+        or "invalid" in data["detail"].lower()
+    )
 
 
 @pytest.mark.asyncio

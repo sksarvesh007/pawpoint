@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { updateChatbotSettings, getChatbotSettings } from "@/lib/api/clinic";
-import type { UpdateChatbotSettingsRequest } from "@/types/clinic";
+import type { CallFlowRules, UpdateChatbotSettingsRequest } from "@/types/clinic";
 
 type ChatbotPersona = "professional" | "friendly" | "empathetic" | "warm";
 
@@ -72,6 +72,14 @@ export default function SettingsPage() {
   const [allowCancellation, setAllowCancellation] = useState(false);
   const [allowRescheduling, setAllowRescheduling] = useState(true);
   const [bookingBufferHours, setBookingBufferHours] = useState(2);
+
+  // Call Flow Rules
+  const [transferFailureAction, setTransferFailureAction] =
+    useState<CallFlowRules["transfer_failure_action"]>("take_message");
+  const [maxHoldSeconds, setMaxHoldSeconds] =
+    useState<CallFlowRules["max_hold_seconds"]>(60);
+  const [voicemailEnabled, setVoicemailEnabled] = useState(true);
+  const [callbackRequestsEnabled, setCallbackRequestsEnabled] = useState(true);
 
   // UI state
   const [error, setError] = useState("");
@@ -156,6 +164,18 @@ export default function SettingsPage() {
           );
           setBookingBufferHours(
             settings.appointment_preferences.booking_buffer_hours
+          );
+        }
+
+        // Load call flow rules
+        if (settings.call_flow_rules) {
+          setTransferFailureAction(
+            settings.call_flow_rules.transfer_failure_action
+          );
+          setMaxHoldSeconds(settings.call_flow_rules.max_hold_seconds);
+          setVoicemailEnabled(settings.call_flow_rules.voicemail_enabled);
+          setCallbackRequestsEnabled(
+            settings.call_flow_rules.callback_requests_enabled
           );
         }
       } catch (err) {
@@ -290,6 +310,12 @@ export default function SettingsPage() {
           allow_cancellation: allowCancellation,
           allow_rescheduling: allowRescheduling,
           booking_buffer_hours: bookingBufferHours,
+        },
+        call_flow_rules: {
+          transfer_failure_action: transferFailureAction,
+          max_hold_seconds: maxHoldSeconds,
+          voicemail_enabled: voicemailEnabled,
+          callback_requests_enabled: callbackRequestsEnabled,
         },
       };
 
@@ -884,6 +910,129 @@ export default function SettingsPage() {
                     Between 0 and 72 hours
                   </p>
                 </div>
+              </div>
+            </div>
+
+            {/* Call Flow Rules */}
+            <div>
+              <h2 className="text-xl font-semibold text-[#1D3533] mb-4 flex items-center gap-2">
+                <svg
+                  className="w-6 h-6 text-[#3DA99F]"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
+                  />
+                </svg>
+                Call Flow Rules
+              </h2>
+              <p className="text-sm text-zinc-600 mb-4">
+                Configure how the AI handles call escalations and fallback
+                scenarios
+              </p>
+
+              <div className="space-y-4">
+                {/* Transfer failure action */}
+                <div>
+                  <label
+                    htmlFor="transferFailureAction"
+                    className="block text-sm font-medium text-zinc-700 mb-2"
+                  >
+                    When staff transfer fails
+                  </label>
+                  <select
+                    id="transferFailureAction"
+                    value={transferFailureAction}
+                    onChange={(e) =>
+                      setTransferFailureAction(
+                        e.target.value as CallFlowRules["transfer_failure_action"]
+                      )
+                    }
+                    className="block w-full rounded-lg border border-zinc-300 px-4 py-3 text-zinc-900 focus:border-[#3DA99F] focus:outline-none focus:ring-1 focus:ring-[#3DA99F]"
+                  >
+                    <option value="retry">Retry transfer once</option>
+                    <option value="voicemail">Offer voicemail</option>
+                    <option value="take_message">
+                      Take a message (name, number, reason)
+                    </option>
+                    <option value="callback_request">
+                      Request callback (number only)
+                    </option>
+                  </select>
+                  <p className="mt-1 text-xs text-zinc-500">
+                    What the AI does if transferring to staff is unsuccessful
+                  </p>
+                </div>
+
+                {/* Max hold time */}
+                <div>
+                  <label
+                    htmlFor="maxHoldSeconds"
+                    className="block text-sm font-medium text-zinc-700 mb-2"
+                  >
+                    Max hold time before fallback
+                  </label>
+                  <select
+                    id="maxHoldSeconds"
+                    value={maxHoldSeconds}
+                    onChange={(e) =>
+                      setMaxHoldSeconds(
+                        parseInt(e.target.value) as CallFlowRules["max_hold_seconds"]
+                      )
+                    }
+                    className="block w-full rounded-lg border border-zinc-300 px-4 py-3 text-zinc-900 focus:border-[#3DA99F] focus:outline-none focus:ring-1 focus:ring-[#3DA99F]"
+                  >
+                    <option value={30}>30 seconds</option>
+                    <option value={60}>60 seconds</option>
+                    <option value={120}>120 seconds</option>
+                  </select>
+                  <p className="mt-1 text-xs text-zinc-500">
+                    How long to hold before switching to fallback action
+                  </p>
+                </div>
+
+                {/* Voicemail enabled */}
+                <label className="flex items-center justify-between p-3 rounded-lg border border-zinc-200">
+                  <div>
+                    <span className="text-sm text-zinc-700">
+                      Voicemail enabled
+                    </span>
+                    <p className="text-xs text-zinc-500 mt-0.5">
+                      Allow callers to leave a voicemail when staff are unavailable
+                    </p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={voicemailEnabled}
+                    onChange={(e) => setVoicemailEnabled(e.target.checked)}
+                    className="h-4 w-4 rounded text-[#3DA99F] focus:ring-[#3DA99F]"
+                  />
+                </label>
+
+                {/* Callback requests enabled */}
+                <label className="flex items-center justify-between p-3 rounded-lg border border-zinc-200">
+                  <div>
+                    <span className="text-sm text-zinc-700">
+                      Accept callback requests
+                    </span>
+                    <p className="text-xs text-zinc-500 mt-0.5">
+                      Allow callers to request a callback within business hours
+                    </p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={callbackRequestsEnabled}
+                    onChange={(e) =>
+                      setCallbackRequestsEnabled(e.target.checked)
+                    }
+                    className="h-4 w-4 rounded text-[#3DA99F] focus:ring-[#3DA99F]"
+                  />
+                </label>
               </div>
             </div>
           </div>

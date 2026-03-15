@@ -112,6 +112,7 @@ class VetClinicAgent(Agent):
                 "custom_instructions"
             ),
             pims_enabled=bool(self.pims_adapter),
+            call_flow_rules=clinic.get("voice_settings", {}).get("call_flow_rules"),
         )
 
         super().__init__(

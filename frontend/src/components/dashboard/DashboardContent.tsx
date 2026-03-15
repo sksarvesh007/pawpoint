@@ -13,6 +13,7 @@ import {
   Activity,
   Database,
   MessageCircle,
+  PhoneMissed,
 } from "lucide-react";
 import { StatsCard } from "./StatsCard";
 import { CallsChart } from "./CallsChart";
@@ -364,6 +365,24 @@ export function DashboardContent({
             icon={MessageCircle}
             color="purple"
           />
+          {(() => {
+            const missedCount =
+              (analytics.calls.calls_by_outcome["call_dropped"] ?? 0) +
+              (analytics.calls.calls_by_outcome["voicemail_left"] ?? 0);
+            const missedRate =
+              analytics.calls.total_calls > 0
+                ? ((missedCount / analytics.calls.total_calls) * 100).toFixed(1)
+                : "0.0";
+            return (
+              <StatsCard
+                title="Missed Calls"
+                value={missedCount}
+                subtitle={`${missedRate}% miss rate`}
+                icon={PhoneMissed}
+                color="orange"
+              />
+            );
+          })()}
         </div>
       )}
 

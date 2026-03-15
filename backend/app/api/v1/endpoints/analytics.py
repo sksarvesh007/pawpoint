@@ -1,6 +1,7 @@
 """Analytics API endpoints."""
 
 import asyncio
+from datetime import UTC, date, datetime
 
 from fastapi import APIRouter, Depends, Query, Request
 from loguru import logger
@@ -15,6 +16,7 @@ from app.schemas.analytics import (
     CallAnalytics,
     DashboardAnalytics,
     EnhancedChatAnalytics,
+    MissedCallMetrics,
 )
 from app.services.analytics import AnalyticsService
 
@@ -73,6 +75,27 @@ async def get_chat_analytics(
     """
     service = AnalyticsService(db)
     return await service.get_chat_analytics(current_clinic.id, days=days)
+
+
+@router.get("/missed-calls", response_model=MissedCallMetrics)
+@limiter.limit("60/minute")
+async def get_missed_call_metrics(
+    request: Request,
+    start_date: date = Query(..., description="Start date (inclusive)"),
+    end_date: date = Query(..., description="End date (inclusive)"),
+    current_clinic: Clinic = Depends(get_current_clinic),
+    db: AsyncSession = Depends(get_db),
+) -> MissedCallMetrics:
+    """
+    Get missed call baseline metrics for a date range.
+
+    Returns total missed calls, daily trend, missed rate, and comparison
+    vs the previous period of the same length.
+    """
+    start_dt = datetime.combine(start_date, datetime.min.time()).replace(tzinfo=UTC)
+    end_dt = datetime.combine(end_date, datetime.max.time()).replace(tzinfo=UTC)
+    service = AnalyticsService(db)
+    return await service.get_missed_call_metrics(current_clinic.id, start_dt, end_dt)
 
 
 @router.get("/stream")

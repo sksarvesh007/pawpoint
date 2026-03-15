@@ -67,6 +67,19 @@ If a caller requests a specific doctor and that doctor has no availability on th
 - If no alternatives are found at all, offer to take a message so staff can add them to the waitlist"""
 
 
+CALL_FLOW_RULES_TEMPLATE = """
+
+CALL FLOW RULES:
+- If staff transfer fails: {transfer_failure_action}
+  - "retry": Try transferring once more before taking a message
+  - "voicemail": Offer the caller the option to leave a voicemail
+  - "take_message": Take caller's name, number, and reason, promise callback
+  - "callback_request": Take number only, promise a callback within business hours
+- Max hold time before fallback: {max_hold_seconds} seconds
+- Voicemail available: {voicemail_enabled}
+- Callback requests accepted: {callback_requests_enabled}"""
+
+
 def get_system_prompt(
     clinic_name: str,
     business_hours: str,
@@ -75,6 +88,7 @@ def get_system_prompt(
     emergency_keywords: list[str] | None = None,
     custom_instructions: str | None = None,
     pims_enabled: bool = False,
+    call_flow_rules: dict | None = None,
 ) -> str:
     """
     Generate a voice-optimized system prompt for the agent.
@@ -87,6 +101,7 @@ def get_system_prompt(
         emergency_keywords: Words that trigger emergency transfer
         custom_instructions: Additional clinic-specific instructions
         pims_enabled: Whether PIMS integration is active
+        call_flow_rules: Call flow and escalation rule settings (optional)
 
     Returns:
         Formatted system prompt string
@@ -104,6 +119,15 @@ def get_system_prompt(
 
     if pims_enabled:
         prompt += PIMS_PROMPT_SECTION
+
+    # Inject call flow rules if provided
+    rules = call_flow_rules or {}
+    prompt += CALL_FLOW_RULES_TEMPLATE.format(
+        transfer_failure_action=rules.get("transfer_failure_action", "take_message"),
+        max_hold_seconds=rules.get("max_hold_seconds", 60),
+        voicemail_enabled=rules.get("voicemail_enabled", True),
+        callback_requests_enabled=rules.get("callback_requests_enabled", True),
+    )
 
     if custom_instructions:
         prompt += f"\n\nADDITIONAL CLINIC INSTRUCTIONS:\n{custom_instructions}"

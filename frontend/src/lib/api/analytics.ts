@@ -8,6 +8,7 @@ import type {
   CallLogDetail,
   DashboardAnalytics,
   CallAnalytics,
+  MissedCallMetrics,
 } from "@/types/analytics";
 
 const API_BASE_URL = env.apiUrl;
@@ -61,6 +62,28 @@ export async function getRecentCalls(
 
   if (!response.ok) {
     throw new Error(`Failed to fetch call logs: ${response.statusText}`);
+  }
+
+  return response.json();
+}
+
+export async function getMissedCallMetrics(params: {
+  start_date: string;
+  end_date: string;
+}): Promise<MissedCallMetrics> {
+  const query = new URLSearchParams(params).toString();
+  const response = await fetch(
+    `${API_BASE_URL}/api/v1/analytics/missed-calls?${query}`,
+    {
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch missed call metrics: ${response.statusText}`);
   }
 
   return response.json();

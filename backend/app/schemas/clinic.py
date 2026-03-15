@@ -72,6 +72,29 @@ class EmergencyHandlingSettings(BaseModel):
         return v
 
 
+class CallFlowRules(BaseModel):
+    """Call flow and escalation rules for voice agent."""
+
+    transfer_failure_action: Literal[
+        "retry", "voicemail", "take_message", "callback_request"
+    ] = Field(
+        default="take_message",
+        description="What to do when staff transfer fails",
+    )
+    max_hold_seconds: Literal[30, 60, 120] = Field(
+        default=60,
+        description="Max seconds to hold before falling back",
+    )
+    voicemail_enabled: bool = Field(
+        default=True,
+        description="Whether to offer voicemail option",
+    )
+    callback_requests_enabled: bool = Field(
+        default=True,
+        description="Whether to accept callback requests",
+    )
+
+
 class AppointmentPreferences(BaseModel):
     """Appointment handling preferences for chatbot."""
 
@@ -164,6 +187,10 @@ class UpdateChatbotSettingsRequest(BaseModel):
         None,
         description="Appointment booking preferences",
     )
+    call_flow_rules: CallFlowRules | None = Field(
+        None,
+        description="Call flow and escalation rules",
+    )
 
     @field_validator("chatbot_name")
     @classmethod
@@ -227,6 +254,7 @@ class ChatbotSettingsResponse(BaseModel):
     voice_enabled: bool
     emergency_handling: EmergencyHandlingSettings
     appointment_preferences: AppointmentPreferences
+    call_flow_rules: CallFlowRules
     clinic_name: str
     # Contact information
     phone: str | None = None

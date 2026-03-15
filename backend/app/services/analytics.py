@@ -21,6 +21,8 @@ from app.schemas.analytics import (
     ChatSentimentData,
     DashboardAnalytics,
     EnhancedChatAnalytics,
+    MissedCallDayTrend,
+    MissedCallMetrics,
     PatientAnalytics,
     PIMSSyncAnalytics,
     PIMSSyncDayTrend,
@@ -930,6 +932,140 @@ class AnalyticsService:
             )
 
         return summaries
+
+    @traced(span_name="analytics.get_missed_call_metrics")
+    async def get_missed_call_metrics(
+        self,
+        clinic_id: UUID,
+        start_date: datetime,
+        end_date: datetime,
+    ) -> MissedCallMetrics:
+        """Get missed call baseline metrics for a given date range.
+
+        A missed call is one where outcome is call_dropped or voicemail_left,
+        or where status is no_answer, busy, or voicemail.
+        """
+        from app.models.call_log import CallStatus
+
+        missed_outcomes = [CallOutcome.CALL_DROPPED, CallOutcome.VOICEMAIL_LEFT]
+        missed_statuses = [CallStatus.NO_ANSWER, CallStatus.BUSY, CallStatus.VOICEMAIL]
+
+        # Total calls in period
+        total_result = await self.db.execute(
+            select(func.count())
+            .select_from(CallLog)
+            .where(
+                and_(
+                    CallLog.clinic_id == str(clinic_id),
+                    CallLog.started_at >= start_date,
+                    CallLog.started_at <= end_date,
+                    CallLog.deleted_at.is_(None),
+                )
+            )
+        )
+        total_calls = total_result.scalar_one()
+
+        # Total missed in period
+        missed_result = await self.db.execute(
+            select(func.count())
+            .select_from(CallLog)
+            .where(
+                and_(
+                    CallLog.clinic_id == str(clinic_id),
+                    CallLog.started_at >= start_date,
+                    CallLog.started_at <= end_date,
+                    CallLog.deleted_at.is_(None),
+                    (
+                        CallLog.outcome.in_(missed_outcomes)
+                        | CallLog.status.in_(missed_statuses)
+                    ),
+                )
+            )
+        )
+        total_missed = missed_result.scalar_one()
+
+        # Missed rate
+        missed_rate = (total_missed / total_calls * 100) if total_calls > 0 else 0.0
+
+        # Missed by day trend
+        day_result = await self.db.execute(
+            select(
+                func.date(CallLog.started_at).label("day"),
+                func.count().label("count"),
+            )
+            .where(
+                and_(
+                    CallLog.clinic_id == str(clinic_id),
+                    CallLog.started_at >= start_date,
+                    CallLog.started_at <= end_date,
+                    CallLog.deleted_at.is_(None),
+                    (
+                        CallLog.outcome.in_(missed_outcomes)
+                        | CallLog.status.in_(missed_statuses)
+                    ),
+                )
+            )
+            .group_by(func.date(CallLog.started_at))
+            .order_by(func.date(CallLog.started_at))
+        )
+        missed_by_day = [
+            MissedCallDayTrend(date=str(row.day), count=row.count)
+            for row in day_result.all()
+        ]
+
+        # Previous period comparison (same length, immediately before start_date)
+        period_length = end_date - start_date
+        prev_end = start_date
+        prev_start = start_date - period_length
+
+        prev_total_result = await self.db.execute(
+            select(func.count())
+            .select_from(CallLog)
+            .where(
+                and_(
+                    CallLog.clinic_id == str(clinic_id),
+                    CallLog.started_at >= prev_start,
+                    CallLog.started_at < prev_end,
+                    CallLog.deleted_at.is_(None),
+                )
+            )
+        )
+        prev_total = prev_total_result.scalar_one()
+
+        prev_missed_result = await self.db.execute(
+            select(func.count())
+            .select_from(CallLog)
+            .where(
+                and_(
+                    CallLog.clinic_id == str(clinic_id),
+                    CallLog.started_at >= prev_start,
+                    CallLog.started_at < prev_end,
+                    CallLog.deleted_at.is_(None),
+                    (
+                        CallLog.outcome.in_(missed_outcomes)
+                        | CallLog.status.in_(missed_statuses)
+                    ),
+                )
+            )
+        )
+        prev_missed = prev_missed_result.scalar_one()
+
+        prev_rate = (prev_missed / prev_total * 100) if prev_total > 0 else 0.0
+
+        # vs_previous_period: positive means rate went up (worse), negative means better
+        if prev_rate == 0.0 and missed_rate == 0.0:
+            vs_previous_period: float | None = None
+        elif prev_rate == 0.0:
+            vs_previous_period = None  # Can't compute % change from zero baseline
+        else:
+            vs_previous_period = round(missed_rate - prev_rate, 2)
+
+        return MissedCallMetrics(
+            total_missed=total_missed,
+            missed_by_day=missed_by_day,
+            missed_rate=round(missed_rate, 2),
+            vs_previous_period=vs_previous_period,
+        )
 
     @traced(span_name="analytics.get_dashboard_analytics")
     async def get_dashboard_analytics(

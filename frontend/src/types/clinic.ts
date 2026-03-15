@@ -22,6 +22,13 @@ export interface AppointmentPreferences {
   booking_buffer_hours: number;
 }
 
+export interface CallFlowRules {
+  transfer_failure_action: "retry" | "voicemail" | "take_message" | "callback_request";
+  max_hold_seconds: 30 | 60 | 120;
+  voicemail_enabled: boolean;
+  callback_requests_enabled: boolean;
+}
+
 export interface ChatbotSettings {
   chatbot_persona: "professional" | "friendly" | "empathetic" | "warm";
   greeting_message: string;
@@ -38,6 +45,7 @@ export interface ChatbotSettingsResponse {
   voice_enabled: boolean;
   emergency_handling: EmergencyHandlingSettings;
   appointment_preferences: AppointmentPreferences;
+  call_flow_rules: CallFlowRules;
   clinic_name: string;
   // Contact information
   phone?: string;
@@ -65,4 +73,5 @@ export interface UpdateChatbotSettingsRequest {
   additional_context?: string;
   emergency_handling?: EmergencyHandlingSettings;
   appointment_preferences?: AppointmentPreferences;
+  call_flow_rules?: CallFlowRules;
 }

@@ -11,6 +11,7 @@ from app.models.clinic import Clinic
 from app.models.user import User
 from app.schemas.clinic import (
     AppointmentPreferences,
+    CallFlowRules,
     ChatbotSettingsResponse,
     ClinicInfoResponse,
     EmergencyHandlingSettings,
@@ -104,6 +105,7 @@ async def get_chatbot_settings(
         appointment_preferences=AppointmentPreferences(
             **settings.get("appointment_preferences", {})
         ),
+        call_flow_rules=CallFlowRules(**settings.get("call_flow_rules", {})),
         clinic_name=settings.get("clinic_name", current_clinic.name),
         # Contact information
         phone=settings.get("phone"),
@@ -217,6 +219,7 @@ async def update_chatbot_settings(
         appointment_preferences=AppointmentPreferences(
             **settings.get("appointment_preferences", {})
         ),
+        call_flow_rules=CallFlowRules(**settings.get("call_flow_rules", {})),
         clinic_name=settings.get("clinic_name", updated_clinic.name),
         # Contact information
         phone=settings.get("phone"),
