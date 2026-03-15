@@ -176,3 +176,33 @@ async def test_twilio_recording_callback(
     await db_session.refresh(call)
     assert call.recording_url is not None
     assert call.recording_duration_seconds == 45
+
+
+@pytest.mark.asyncio
+async def test_upload_recording_unsupported_format(
+    client: AsyncClient, db_session: AsyncSession
+) -> None:
+    """Upload endpoint rejects non-audio file formats with 400."""
+    clinic = await setup_auth(db_session, client)
+    call = await create_call_log(db_session, clinic.id)
+
+    mock = _mock_storage()
+    app.dependency_overrides[_get_storage] = lambda: mock
+    try:
+        response = await client.post(
+            f"/api/v1/recordings/upload/{call.id}",
+            files={"file": ("notes.txt", b"some text content", "text/plain")},
+        )
+    finally:
+        app.dependency_overrides.pop(_get_storage, None)
+
+    assert response.status_code == 400
+    assert "Unsupported file format" in response.json()["detail"]
+    mock.upload_recording.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_get_recording_requires_auth(client: AsyncClient) -> None:
+    """GET recording URL endpoint requires authentication."""
+    response = await client.get(f"/api/v1/recordings/{uuid.uuid4()}")
+    assert response.status_code == 401

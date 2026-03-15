@@ -61,9 +61,17 @@ async def upload_recording(
             detail="Call log not found",
         )
 
+    # Validate content type
+    content_type = file.content_type or ""
+    allowed_types = {"audio/wav", "audio/x-wav", "audio/wave", "audio/mpeg", "audio/mp3"}
+    if content_type not in allowed_types:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Unsupported file format '{content_type}'. Allowed: wav, mp3",
+        )
+
     # Read file data
     data = await file.read()
-    content_type = file.content_type or "audio/wav"
     ext = "wav"
     if content_type == "audio/mpeg":
         ext = "mp3"

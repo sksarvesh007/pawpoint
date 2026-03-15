@@ -253,9 +253,9 @@ Most success metrics are tracked via existing analytics. Some require new featur
 
 **Depends on**: Nothing blocking. Can be done standalone.
 
-- [ ] Add `GET /api/v1/notifications/stream` SSE endpoint — emits `unread_count` events on Notification insert via PostgreSQL LISTEN/NOTIFY or Redis pub/sub
-- [ ] Update frontend sidebar badge to use `EventSource` instead of 30s polling
-- [ ] Keep polling as fallback if SSE connection drops
+- [x] Add `GET /api/v1/notifications/stream` SSE endpoint — emits `unread_count` events every 3s with heartbeat every 15s
+- [x] Update frontend sidebar badge to use `EventSource` instead of 30s polling
+- [x] Keep polling as fallback if SSE connection drops
 
 ---
 
@@ -269,11 +269,11 @@ Most success metrics are tracked via existing analytics. Some require new featur
 
 **Depends on**: `get_available_slots()` already implemented on PIMS adapters.
 
-- [ ] Detect provider-specific "no slots" case in `check_available_appointments_pims()`
-- [ ] Offer next 2 available days with same provider
-- [ ] Offer same-day slots with different provider as secondary option
-- [ ] Update prompt to instruct agent to use these alternatives naturally
-- [ ] Add test: provider unavailable → alternatives returned
+- [x] Detect provider-specific "no slots" case in `check_available_appointments_pims()`
+- [x] Offer next 2 available days with same provider
+- [x] Offer same-day slots with different provider as secondary option
+- [x] Update prompt to instruct agent to use these alternatives naturally
+- [x] Add test: provider unavailable → alternatives returned
 
 ---
 
@@ -323,9 +323,9 @@ Most success metrics are tracked via existing analytics. Some require new featur
 
 **Depends on**: Nothing blocking.
 
-- [ ] `test_ai_chat.py` — non-streaming endpoint: auth, valid request, session creation
-- [ ] `test_clinic_ai.py` — clinic-scoped chat: slug routing, clinic context injection
-- [ ] `test_clinic_ai_streaming.py` — SSE streaming: event format, delta chunks, stream end
+- [x] `test_ai_chat.py` — non-streaming endpoint: auth, valid request, session creation
+- [x] `test_clinic_ai.py` — clinic-scoped chat: slug routing, clinic context injection
+- [x] `test_clinic_ai_streaming.py` — SSE streaming: event format, delta chunks, stream end
 
 ---
 
@@ -386,9 +386,9 @@ Agent code is complete. Deployment config exists but is untested.
 
 ### Backend — Thin coverage
 
-- [ ] Expand `tests/api/v1/test_pims.py` (missing: save credentials, test connection, disconnect, trigger sync)
-- [ ] Expand `tests/api/v1/test_patients.py` (missing: search, filter by species, pagination)
-- [ ] Expand `tests/api/v1/test_recordings.py` (missing: upload, download, delete)
+- [x] Expand `tests/api/v1/test_pims.py` (added: save credentials, invalid type, test connection, disconnect, trigger sync patients, invalid entity, disconnect auth)
+- [x] Expand `tests/api/v1/test_patients.py` (added: search by name, search by owner, no results, filter by species, pagination, get 404, delete 404)
+- [x] Expand `tests/api/v1/test_recordings.py` (added: upload success, unsupported format, get URL, not found, requires auth)
 
 ### Frontend
 
